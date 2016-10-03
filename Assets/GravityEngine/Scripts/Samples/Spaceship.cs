@@ -24,16 +24,15 @@ using UnityEngine.UI;
 public class Spaceship : MonoBehaviour {
 
     //! Thrust scale 
-    public float thrustPerKeypress = 1f;
-    public float angularThrustPerKeypress = 1f;
+    public float thrustPerKeypress = 0.5f;
     public float mainEngineThrustPerKeypress = 10f;
 	//! Rate of spin when arrow keys pressed (degress/update cycle)
-	public float spinRate = 1f;
+	public float spinDegreesPerKeypress = 0.01f;
     //! Forward direction of the ship model. Thrust us applies in opposite direction to this vector.
     public ToggleButton RotateButton;
     public ToggleButton TranslateButton;
 
-	private Vector3 axisForeAft; // normalized axis
+    private Vector3 axisForeAft; // normalized axis
     private Vector3 axisAftFore;
     private Vector3 axisUpDown;
     private Vector3 axisDownUp;
@@ -42,21 +41,22 @@ public class Spaceship : MonoBehaviour {
 	private NBody nbody; 
     private enum RCSMode { Rotate, Translate };
     private RCSMode currentRCSMode;
-    private Rigidbody rb;
+    private Vector3 currentSpin;
+    private bool killingRot;
 
-	//private Vector3 coneScale; // nitial scale of thrust cone
+    //private Vector3 coneScale; // nitial scale of thrust cone
 
 
-	// Use this for initialization
-	void Start () {
-		if (transform.parent == null) {
-			Debug.LogError("Spaceship script must be applied to a model that is a child of an NBody object.");
-			return;
-		}
-		nbody = transform.parent.GetComponent<NBody>();
-		if (nbody == null) {
-			Debug.LogError("Parent must have an NBody script attached.");
-		}
+    // Use this for initialization
+    void Start() {
+        if (transform.parent == null) {
+            Debug.LogError("Spaceship script must be applied to a model that is a child of an NBody object.");
+            return;
+        }
+        nbody = transform.parent.GetComponent<NBody>();
+        if (nbody == null) {
+            Debug.LogError("Parent must have an NBody script attached.");
+        }
         axisForeAft = Vector3.forward;
         axisAftFore = Vector3.back;
         axisStarboardPort = Vector3.right;
@@ -68,8 +68,7 @@ public class Spaceship : MonoBehaviour {
 		GravityEngine.instance.Setup();
         currentRCSMode = RCSMode.Translate;
         UpdateRCSMode();
-        rb = GetComponent<Rigidbody>();
-		//coneScale = thrustCone.transform.localScale;
+        //coneScale = thrustCone.transform.localScale;
 	}
 
     public void SetRCSModeRotate()
@@ -149,47 +148,97 @@ public class Spaceship : MonoBehaviour {
         }
         if (Input.GetKey(KeyCode.KeypadPlus))
         {
-            ApplyImpulse(axisForeAft, mainEngineThrustPerKeypress);
+            ApplyImpulse(transform.forward, mainEngineThrustPerKeypress);
         }
+        ApplyCurrentRotation();
     }
 
     void UpdateInputRotation()
     {
+        if (Input.GetKey(KeyCode.Keypad2))
+        {
+            killingRot = false;
+            currentSpin.x -= spinDegreesPerKeypress;
+        }
+        if (Input.GetKey(KeyCode.Keypad8))
+        {
+            killingRot = false;
+            currentSpin.x += spinDegreesPerKeypress;
+        }
+        if (Input.GetKey(KeyCode.Keypad1))
+        {
+            killingRot = false;
+            currentSpin.y -= spinDegreesPerKeypress;
+        }
+        if (Input.GetKey(KeyCode.Keypad3))
+        {
+            killingRot = false;
+            currentSpin.y += spinDegreesPerKeypress;
+        }
         if (Input.GetKey(KeyCode.Keypad6))
         {
-            float torque = 1000000000;
-            float turn = 1;
-            rb.AddTorque(transform.up * torque * turn);
-//            Quaternion rotation = Quaternion.identity;
-//                rotation = Quaternion.AngleAxis(spinRate, Vector3.forward);
+            killingRot = false;
+            currentSpin.z -= spinDegreesPerKeypress;
         }
+        if (Input.GetKey(KeyCode.Keypad4))
+        {
+            killingRot = false;
+            currentSpin.z += spinDegreesPerKeypress;
+        }
+        if (Input.GetKeyDown(KeyCode.Keypad5)) // kill rot
+        {
+            killingRot = !killingRot;
+        }
+    }
+
+    void ApplyCurrentRotation()
+    {
+        if (killingRot)
+        {
+            Vector3 neededOffset = Vector3.zero - currentSpin;
+            Vector3 allowedOffset = new Vector3(
+                Mathf.Clamp(neededOffset.x, -spinDegreesPerKeypress, spinDegreesPerKeypress),
+                Mathf.Clamp(neededOffset.y, -spinDegreesPerKeypress, spinDegreesPerKeypress),
+                Mathf.Clamp(neededOffset.z, -spinDegreesPerKeypress, spinDegreesPerKeypress)
+            );
+            currentSpin += allowedOffset;
+            if (currentSpin == Vector3.zero)
+            {
+                killingRot = false;
+            }
+        }
+        transform.Rotate(
+            currentSpin.x * Time.deltaTime,
+            currentSpin.y * Time.deltaTime,
+            currentSpin.z * Time.deltaTime,
+            Space.Self);
     }
 
     void UpdateInputTranslation()
     {
         if (Input.GetKey(KeyCode.Keypad6))
         {
-            ApplyImpulse(axisForeAft);
+            ApplyImpulse(transform.forward);
         }
         if (Input.GetKey(KeyCode.Keypad9))
         {
-            ApplyImpulse(axisAftFore);
-        }
-        if (Input.GetKey(KeyCode.Keypad8))
-        {
-            ApplyImpulse(axisDownUp);
+            ApplyImpulse(-transform.forward);
         }
         if (Input.GetKey(KeyCode.Keypad2))
         {
-            ApplyImpulse(axisUpDown);
+            ApplyImpulse(transform.up);
+        }
+        if (Input.GetKey(KeyCode.Keypad8))
+        {
+            ApplyImpulse(-transform.up);
         }
         if (Input.GetKey(KeyCode.Keypad1))
         {
-            ApplyImpulse(axisPortStarboard);
+            ApplyImpulse(-transform.right);
         }
         if (Input.GetKey(KeyCode.Keypad3))
         {
-            ApplyImpulse(axisStarboardPort);
+            ApplyImpulse(transform.right);
         }
     }
         /*
