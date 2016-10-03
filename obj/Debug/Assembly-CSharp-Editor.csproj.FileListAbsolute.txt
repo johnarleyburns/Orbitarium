@@ -1,0 +1,78 @@
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\Assembly-CSharp-Editor.dll
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\Assembly-CSharp-Editor.pdb
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\nunit.framework.dll
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\UnityEditor.Advertisements.dll
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\UnityEditor.dll
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\UnityEditor.EditorTestsRunner.dll
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\UnityEditor.Graphs.dll
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\UnityEditor.Networking.dll
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\UnityEditor.TreeEditor.dll
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\UnityEditor.UI.dll
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\UnityEditor.WindowsStandalone.Extensions.dll
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\UnityEngine.Analytics.dll
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\UnityEngine.dll
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\UnityEngine.Networking.dll
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\UnityEngine.UI.dll
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\Mono.Cecil.dll
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\Unity.SerializationLogic.dll
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\Unity.DataContract.dll
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\ICSharpCode.NRefactory.dll
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\Unity.UNetWeaver.dll
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\Mono.Cecil.Mdb.dll
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\Unity.CecilTools.dll
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\Mono.Cecil.Pdb.dll
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\Assembly-CSharp.pdb
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\UnityEngine.xml
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\UnityEditor.xml
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\UnityEditor.Advertisements.xml
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\nunit.framework.xml
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\UnityEditor.EditorTestsRunner.xml
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\UnityEngine.UI.xml
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\UnityEditor.UI.xml
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\UnityEngine.Networking.xml
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\UnityEditor.Networking.xml
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\UnityEditor.TreeEditor.xml
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\UnityEngine.Analytics.xml
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\obj\Debug\Assembly-CSharp-Editor.csprojResolveAssemblyReference.cache
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\obj\Debug\Assembly-CSharp-Editor.dll
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\obj\Debug\Assembly-CSharp-Editor.pdb
+D:\unity-project\gravity_engine_0\Gravity Engine Tutorial\Temp\bin\Debug\Assembly-CSharp-firstpass.pdb
+D:\unity-project\Orbitarium\Temp\bin\Debug\Assembly-CSharp-Editor.dll
+D:\unity-project\Orbitarium\Temp\bin\Debug\Assembly-CSharp-Editor.pdb
+D:\unity-project\Orbitarium\Temp\bin\Debug\nunit.framework.dll
+D:\unity-project\Orbitarium\Temp\bin\Debug\UnityEditor.Advertisements.dll
+D:\unity-project\Orbitarium\Temp\bin\Debug\UnityEditor.dll
+D:\unity-project\Orbitarium\Temp\bin\Debug\UnityEditor.EditorTestsRunner.dll
+D:\unity-project\Orbitarium\Temp\bin\Debug\UnityEditor.Graphs.dll
+D:\unity-project\Orbitarium\Temp\bin\Debug\UnityEditor.Networking.dll
+D:\unity-project\Orbitarium\Temp\bin\Debug\UnityEditor.TreeEditor.dll
+D:\unity-project\Orbitarium\Temp\bin\Debug\UnityEditor.UI.dll
+D:\unity-project\Orbitarium\Temp\bin\Debug\UnityEditor.WindowsStandalone.Extensions.dll
+D:\unity-project\Orbitarium\Temp\bin\Debug\UnityEngine.Analytics.dll
+D:\unity-project\Orbitarium\Temp\bin\Debug\UnityEngine.dll
+D:\unity-project\Orbitarium\Temp\bin\Debug\UnityEngine.Networking.dll
+D:\unity-project\Orbitarium\Temp\bin\Debug\UnityEngine.UI.dll
+D:\unity-project\Orbitarium\Temp\bin\Debug\Mono.Cecil.dll
+D:\unity-project\Orbitarium\Temp\bin\Debug\Unity.SerializationLogic.dll
+D:\unity-project\Orbitarium\Temp\bin\Debug\Unity.DataContract.dll
+D:\unity-project\Orbitarium\Temp\bin\Debug\ICSharpCode.NRefactory.dll
+D:\unity-project\Orbitarium\Temp\bin\Debug\Unity.UNetWeaver.dll
+D:\unity-project\Orbitarium\Temp\bin\Debug\Mono.Cecil.Mdb.dll
+D:\unity-project\Orbitarium\Temp\bin\Debug\Unity.CecilTools.dll
+D:\unity-project\Orbitarium\Temp\bin\Debug\Mono.Cecil.Pdb.dll
+D:\unity-project\Orbitarium\Temp\bin\Debug\Assembly-CSharp-firstpass.pdb
+D:\unity-project\Orbitarium\Temp\bin\Debug\Assembly-CSharp.pdb
+D:\unity-project\Orbitarium\Temp\bin\Debug\UnityEngine.xml
+D:\unity-project\Orbitarium\Temp\bin\Debug\UnityEditor.xml
+D:\unity-project\Orbitarium\Temp\bin\Debug\UnityEditor.Advertisements.xml
+D:\unity-project\Orbitarium\Temp\bin\Debug\nunit.framework.xml
+D:\unity-project\Orbitarium\Temp\bin\Debug\UnityEditor.EditorTestsRunner.xml
+D:\unity-project\Orbitarium\Temp\bin\Debug\UnityEngine.UI.xml
+D:\unity-project\Orbitarium\Temp\bin\Debug\UnityEditor.UI.xml
+D:\unity-project\Orbitarium\Temp\bin\Debug\UnityEngine.Networking.xml
+D:\unity-project\Orbitarium\Temp\bin\Debug\UnityEditor.Networking.xml
+D:\unity-project\Orbitarium\Temp\bin\Debug\UnityEditor.TreeEditor.xml
+D:\unity-project\Orbitarium\Temp\bin\Debug\UnityEngine.Analytics.xml
+D:\unity-project\Orbitarium\obj\Debug\Assembly-CSharp-Editor.csprojResolveAssemblyReference.cache
+D:\unity-project\Orbitarium\obj\Debug\Assembly-CSharp-Editor.dll
+D:\unity-project\Orbitarium\obj\Debug\Assembly-CSharp-Editor.pdb
