@@ -92,6 +92,7 @@
      <None Include="Assets\Extended GUI Elements\Scenes\README.txt" />
      <None Include="Assets\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
      <None Include="Assets\Starbox\readme.txt" />
+     <None Include="Assets\_Target &amp; HUD Effect V1\_DemoStuff\_Planet_01\Materials\Planet.shader" />
      <None Include="Assets\Extended GUI Elements\Sprites\license.txt" />
      <None Include="Assets\Extended GUI Elements\Scenes\This Folder can safely be deleted as it only contains scenes and files related to the scenes!.txt" />
      <None Include="Assets\Standard Assets\Characters\ThirdPersonCharacter\ThirdPersonCharacterGuidelines.txt" />
