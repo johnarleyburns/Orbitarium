@@ -32,12 +32,6 @@ public class Spaceship : MonoBehaviour {
     public ToggleButton RotateButton;
     public ToggleButton TranslateButton;
 
-    private Vector3 axisForeAft; // normalized axis
-    private Vector3 axisAftFore;
-    private Vector3 axisUpDown;
-    private Vector3 axisDownUp;
-    private Vector3 axisPortStarboard;
-    private Vector3 axisStarboardPort;
 	private NBody nbody; 
     private enum RCSMode { Rotate, Translate };
     private RCSMode currentRCSMode;
@@ -57,12 +51,6 @@ public class Spaceship : MonoBehaviour {
         if (nbody == null) {
             Debug.LogError("Parent must have an NBody script attached.");
         }
-        axisForeAft = Vector3.forward;
-        axisAftFore = Vector3.back;
-        axisStarboardPort = Vector3.right;
-        axisPortStarboard = Vector3.left;
-        axisUpDown = Vector3.up;
-        axisDownUp = Vector3.down;
 		//running = false;
 		//ravityEngine.instance.SetEvolve(running);
 		GravityEngine.instance.Setup();
