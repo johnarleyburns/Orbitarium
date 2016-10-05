@@ -31,8 +31,12 @@ public class Spaceship : MonoBehaviour {
     //! Forward direction of the ship model. Thrust us applies in opposite direction to this vector.
     public ToggleButton RotateButton;
     public ToggleButton TranslateButton;
+    public GameObject Target;
+    public GameObject HUD;
+    public GameObject RelativeVelocityDirectionIndicator;
+    public GameObject RelativeVelocityAntiDirectionIndicator;
 
-	private NBody nbody; 
+    private NBody nbody; 
     private enum RCSMode { Rotate, Translate };
     private RCSMode currentRCSMode;
     private Vector3 currentSpin;
@@ -139,6 +143,32 @@ public class Spaceship : MonoBehaviour {
             ApplyImpulse(transform.forward, mainEngineThrustPerKeypress);
         }
         ApplyCurrentRotation();
+        UpdateHUD();
+    }
+
+    private void UpdateHUD()
+    {
+        if (HUD != null && Target != null && Target.GetComponent<NBody>() != null)
+        {
+            float targetDistance = (Target.transform.position - transform.parent.transform.position).magnitude;
+            Vector3 myVel = GravityEngine.instance.GetVelocity(transform.parent.gameObject);
+            Vector3 targetVel = GravityEngine.instance.GetVelocity(Target);
+            Vector3 relVel = myVel - targetVel;
+            relVel.
+            float relVelScalar = relVel.magnitude;
+            //float RelativeVelocityIndicatorScale = 5;
+            Vector3 relVelUnit = relVel.normalized;
+            //Vector3 relVelScaled = RelativeVelocityIndicatorScale * relVelUnit;
+
+            RelativeVelocityDirectionIndicator.transform.position = transform.position + relVel; ;
+            RelativeVelocityAntiDirectionIndicator.transform.position = transform.position + -relVel;
+            Greyman.OffScreenIndicator offScreenIndicator = HUD.GetComponent<Greyman.OffScreenIndicator>();
+            if (offScreenIndicator.indicators[0].hasOnScreenText)
+            {
+                string targetString = string.Format("Asteroid\nDist: {0:0,0} m\nRelV: {1:0,0.0} m/s", targetDistance, relVelScalar);
+                offScreenIndicator.UpdateIndicatorText(0, targetString);
+            }
+        }
     }
 
     void UpdateInputRotation()
