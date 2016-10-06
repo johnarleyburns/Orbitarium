@@ -154,18 +154,22 @@ public class Spaceship : MonoBehaviour {
             Vector3 myVel = GravityEngine.instance.GetVelocity(transform.parent.gameObject);
             Vector3 targetVel = GravityEngine.instance.GetVelocity(Target);
             Vector3 relVel = myVel - targetVel;
-            relVel.
+            Vector3 targetPos = Target.transform.position;
+            Vector3 myPos = transform.parent.transform.position;
+            Vector3 relLoc = targetPos - myPos;
+            float relVelDot = Vector3.Dot(relVel, relLoc);
             float relVelScalar = relVel.magnitude;
-            //float RelativeVelocityIndicatorScale = 5;
+            float relVelDirectionalScalar = Mathf.Sign(relVelDot) * relVelScalar;
+            float RelativeVelocityIndicatorScale = 10;
             Vector3 relVelUnit = relVel.normalized;
-            //Vector3 relVelScaled = RelativeVelocityIndicatorScale * relVelUnit;
+            Vector3 relVelScaled = RelativeVelocityIndicatorScale * relVelUnit;
 
-            RelativeVelocityDirectionIndicator.transform.position = transform.position + relVel; ;
-            RelativeVelocityAntiDirectionIndicator.transform.position = transform.position + -relVel;
+            RelativeVelocityDirectionIndicator.transform.position = myPos + relVelScaled; ;
+            RelativeVelocityAntiDirectionIndicator.transform.position = myPos + -relVelScaled;
             Greyman.OffScreenIndicator offScreenIndicator = HUD.GetComponent<Greyman.OffScreenIndicator>();
             if (offScreenIndicator.indicators[0].hasOnScreenText)
             {
-                string targetString = string.Format("Asteroid\nDist: {0:0,0} m\nRelV: {1:0,0.0} m/s", targetDistance, relVelScalar);
+                string targetString = string.Format("Asteroid\nDist: {0:0,0} m\nRelV: {1:0,0.0} m/s", targetDistance, relVelDirectionalScalar);
                 offScreenIndicator.UpdateIndicatorText(0, targetString);
             }
         }

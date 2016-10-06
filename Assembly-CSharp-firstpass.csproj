@@ -90,6 +90,8 @@
      <Compile Include="Assets\Standard Assets\Utility\WaypointCircuit.cs" />
      <Compile Include="Assets\Standard Assets\Utility\WaypointProgressTracker.cs" />
      <None Include="Assets\Extended GUI Elements\Scenes\README.txt" />
+     <None Include="Assets\OffScreenIndicator\Scripts\FirstPersonVRCharacter\readme.txt" />
+     <None Include="Assets\OffScreenIndicator\readme.txt" />
      <None Include="Assets\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
      <None Include="Assets\Starbox\readme.txt" />
      <None Include="Assets\_Target &amp; HUD Effect V1\_DemoStuff\_Planet_01\Materials\Planet.shader" />

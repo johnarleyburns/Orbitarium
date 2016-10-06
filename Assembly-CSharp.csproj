@@ -103,7 +103,16 @@
      <Compile Include="Assets\GravityEngine\Scripts\ThreeBodySolutions\Lagrange.cs" />
      <Compile Include="Assets\GravityEngine\Scripts\ThreeBodySolutions\SolutionServer.cs" />
      <Compile Include="Assets\GravityEngine\Scripts\ThreeBodySolutions\ThreeBodySolution.cs" />
-     <Compile Include="Assets\HUDDockGUI.cs" />
+     <Compile Include="Assets\OffScreenIndicator\Scripts\ArrowIndicator.cs" />
+     <Compile Include="Assets\OffScreenIndicator\Scripts\ArrowIndicatorCanvas.cs" />
+     <Compile Include="Assets\OffScreenIndicator\Scripts\ArrowIndicatorVR.cs" />
+     <Compile Include="Assets\OffScreenIndicator\Scripts\FirstPersonVRCharacter\FirstPersonVRController.cs" />
+     <Compile Include="Assets\OffScreenIndicator\Scripts\FirstPersonVRCharacter\MouseLookVR.cs" />
+     <Compile Include="Assets\OffScreenIndicator\Scripts\Helpers\Utils.cs" />
+     <Compile Include="Assets\OffScreenIndicator\Scripts\OffScreenIndicator.cs" />
+     <Compile Include="Assets\OffScreenIndicator\Scripts\OffScreenIndicatorManager.cs" />
+     <Compile Include="Assets\OffScreenIndicator\Scripts\OffScreenIndicatorManagerCanvas.cs" />
+     <Compile Include="Assets\OffScreenIndicator\Scripts\OffScreenIndicatorManagerVR.cs" />
      <Compile Include="Assets\Scripts\CameraController.cs" />
      <Compile Include="Assets\Starbox\StarboxDemo\StarboxDemoCamControl.cs" />
      <Compile Include="Assets\_Target &amp; HUD Effect V1\Plugins\HTSequence.cs" />
@@ -112,6 +121,8 @@
      <Compile Include="Assets\_Target &amp; HUD Effect V1\Script\FpsCounter.cs" />
      <Compile Include="Assets\_Target &amp; HUD Effect V1\_DemoStuff\_Clouds &amp; Sun\CameraFacingBillboard.cs" />
      <None Include="Assets\Extended GUI Elements\Scenes\README.txt" />
+     <None Include="Assets\OffScreenIndicator\Scripts\FirstPersonVRCharacter\readme.txt" />
+     <None Include="Assets\OffScreenIndicator\readme.txt" />
      <None Include="Assets\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
      <None Include="Assets\Starbox\readme.txt" />
      <None Include="Assets\_Target &amp; HUD Effect V1\_DemoStuff\_Planet_01\Materials\Planet.shader" />
