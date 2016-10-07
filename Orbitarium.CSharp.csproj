@@ -140,7 +140,8 @@
     <Compile Include="Assets\OffScreenIndicator\Scripts\OffScreenIndicatorManager.cs" />
     <Compile Include="Assets\OffScreenIndicator\Scripts\OffScreenIndicatorManagerCanvas.cs" />
     <Compile Include="Assets\OffScreenIndicator\Scripts\OffScreenIndicatorManagerVR.cs" />
-    <Compile Include="Assets\Scripts\CameraController.cs" />
+    <Compile Include="Assets\Scripts\FPSCameraController.cs" />
+    <Compile Include="Assets\Scripts\ThirdPartyCameraController.cs" />
     <Compile Include="Assets\Starbox\StarboxDemo\StarboxDemoCamControl.cs" />
     <Compile Include="Assets\_Target &amp; HUD Effect V1\Plugins\HTSequence.cs" />
     <Compile Include="Assets\_Target &amp; HUD Effect V1\Plugins\HTSpriteSequencer.cs" />

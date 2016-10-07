@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class CameraController : MonoBehaviour {
+public class FPSCameraController : MonoBehaviour {
 
     public GameObject player;
     private Vector3 cameraOffset;

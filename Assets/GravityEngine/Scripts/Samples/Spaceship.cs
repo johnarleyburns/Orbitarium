@@ -35,12 +35,16 @@ public class Spaceship : MonoBehaviour {
     public GameObject HUD;
     public GameObject RelativeVelocityDirectionIndicator;
     public GameObject RelativeVelocityAntiDirectionIndicator;
+    public Camera FPSCamera;
+    public Camera ThirdPartyCamera;
 
     private NBody nbody; 
     private enum RCSMode { Rotate, Translate };
     private RCSMode currentRCSMode;
     private Vector3 currentSpin;
     private bool killingRot;
+    private enum CameraMode { FPS, ThirdParty };
+    private CameraMode currentCameraMode;
 
     //private Vector3 coneScale; // nitial scale of thrust cone
 
@@ -60,6 +64,8 @@ public class Spaceship : MonoBehaviour {
 		GravityEngine.instance.Setup();
         currentRCSMode = RCSMode.Translate;
         UpdateRCSMode();
+        currentCameraMode = CameraMode.FPS;
+        UpdateCameraMode();
         //coneScale = thrustCone.transform.localScale;
 	}
 
@@ -106,6 +112,37 @@ public class Spaceship : MonoBehaviour {
         UpdateRCSMode();
     }
 
+    void ToggleCamera()
+    {
+        switch (currentCameraMode)
+        {
+            default:
+            case CameraMode.FPS:
+                currentCameraMode = CameraMode.ThirdParty;
+                break;
+            case CameraMode.ThirdParty:
+                currentCameraMode = CameraMode.FPS;
+                break;
+        }
+        UpdateCameraMode();
+    }
+
+    void UpdateCameraMode()
+    {
+        switch (currentCameraMode)
+        {
+            default:
+            case CameraMode.FPS:
+                FPSCamera.enabled = true;
+                ThirdPartyCamera.enabled = false;
+                break;
+            case CameraMode.ThirdParty:
+                FPSCamera.enabled = false;
+                ThirdPartyCamera.enabled = true;
+                break;
+        }
+    }
+
     void ApplyImpulse(Vector3 normalizedDirection, float thrustPer = -1)
     {
         if (thrustPer == -1)
@@ -123,6 +160,10 @@ public class Spaceship : MonoBehaviour {
         if (nbody == null)
         {
             return; // misconfigured
+        }
+        if (Input.GetKeyDown(KeyCode.F1))
+        {
+            ToggleCamera();
         }
         if (Input.GetKeyDown(KeyCode.KeypadDivide))
         {
