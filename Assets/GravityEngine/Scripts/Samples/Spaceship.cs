@@ -182,6 +182,11 @@ public class Spaceship : MonoBehaviour {
         if (Input.GetKey(KeyCode.KeypadPlus))
         {
             ApplyImpulse(transform.forward, mainEngineThrustPerKeypress);
+            FPSCamera.GetComponent<FPSCameraController>().StartContinuousShake();
+        }
+        else
+        {
+            FPSCamera.GetComponent<FPSCameraController>().StopShake();
         }
         ApplyCurrentRotation();
         UpdateHUD();
