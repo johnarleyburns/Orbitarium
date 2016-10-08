@@ -22,24 +22,27 @@ public class NBodyCollision : MonoBehaviour {
 	- can handle immediatly -> work done in NBE
 	EXPLODE
 	- same as ABSORB but need to trigger particle(s) at the same time as enveloping
+    EXPLODE_OR_BOUNCE
+    - explode if relative velocity above a minimum, otherwise bounce (e.g. for very low-velocity collisions)
 
 	*/
 	//! Type of collision response
-	public enum CollisionType {ABSORB_IMMEDIATE, ABSORB_ENVELOP, EXPLODE, BOUNCE};
+	public enum CollisionType {ABSORB_IMMEDIATE, ABSORB_ENVELOP, EXPLODE, BOUNCE, EXPLODE_OR_BOUNCE};
 
 	public CollisionType collisionType = CollisionType.ABSORB_IMMEDIATE;
 	//!Precedence of collision script if both bodies have them. Lower takes precedence.
-	public int collisionPrecedence = 1; 
-	//! Game object holding the explosion prefab. Must be inactive and have a DustBallFromNBody script.
-	public GameObject explosionPrefab; 
+	public int collisionPrecedence = 1;
+    //! Game object holding the explosion prefab. Must be inactive and have a DustBallFromNBody script.
+    public GameObject explosionPrefab;
+    public float minRelVtoExplode = 0;
 
-	//! (For a bounce collision) This factor is applied to determine the recoil velocities. 1 indicates no energy loss in the collision.
-	public float bounceFactor = 1f; 
+    //! (For a bounce collision) This factor is applied to determine the recoil velocities. 1 indicates no energy loss in the collision.
+    public float bounceFactor = 1f; 
 
 	private float lastDistance; 
-	private float myRadius; 
+	private float myRadius;
 	private bool prefabOk = false;
-
+    private bool bouncing = false; // use in explode_or_bounce to cache in TriggerEnter and avoid recalculation
 
 	private bool inactivate; 
 
@@ -95,22 +98,21 @@ public class NBodyCollision : MonoBehaviour {
 			GravityEngine.instance.Collision(otherBody.transform.parent.gameObject, transform.parent.gameObject, collisionType, bounceFactor);
 
 		} else if (collisionType == CollisionType.EXPLODE) {
-			// direction away from collision
-			Vector3 body1Pos = transform.position;
-			Vector3 body2Pos = otherBody.transform.position;
-			Vector3 normal = Vector3.Normalize(body1Pos - body2Pos);
-			// determine eject point on surface of otherBody 
-			// add a small offset (5%) to ensure particles are outside the body, otherwise
-			// they will be immediately culled by GravityParticles
-			Vector3 contactPoint = body2Pos + (0.5f*1.05f * otherBody.transform.localScale.x) * normal;
-			Debug.Log("Contact point " + contactPoint);
-			// collision will do velocity update from collision
-			GravityEngine.instance.Collision(otherBody.transform.parent.gameObject, transform.parent.gameObject, collisionType, 0f);
-			StartExplosion(contactPoint, normal, otherBody.transform.parent.gameObject);
-			GravityEngine.instance.InactivateBody(transform.parent.gameObject);
-			inactivate = true;
-
-		} else {
+            ExplodeCollide(otherBody);
+        }
+        else if (collisionType == CollisionType.EXPLODE_OR_BOUNCE)
+        {
+            if (ShouldBounce(otherBody))
+            {
+                GravityEngine.instance.Collision(otherBody.transform.parent.gameObject, transform.parent.gameObject, CollisionType.BOUNCE, bounceFactor);
+            }
+            else
+            {
+                ExplodeCollide(otherBody);
+            }
+        }
+        else
+        {
 			// Note: Normal is in direction of force on this body
 			// Collider is on model that is the child object holding NBody
 			lastDistance = Vector3.Distance(transform.position, otherBody.transform.position); 
@@ -120,7 +122,39 @@ public class NBodyCollision : MonoBehaviour {
 		}
 	}
 
-	private bool SkipThisCollider(GameObject otherBody) {
+    private void ExplodeCollide(GameObject otherBody)
+    {
+        // direction away from collision
+        Vector3 body1Pos = transform.position;
+        Vector3 body2Pos = otherBody.transform.position;
+        Vector3 normal = Vector3.Normalize(body1Pos - body2Pos);
+        // determine eject point on surface of otherBody 
+        // add a small offset (5%) to ensure particles are outside the body, otherwise
+        // they will be immediately culled by GravityParticles
+        Vector3 contactPoint = body2Pos + (0.5f * 1.05f * otherBody.transform.localScale.x) * normal;
+        Debug.Log("Contact point " + contactPoint);
+        // collision will do velocity update from collision
+        CollisionType cType = collisionType == CollisionType.EXPLODE_OR_BOUNCE ? CollisionType.EXPLODE : collisionType;
+        GravityEngine.instance.Collision(otherBody.transform.parent.gameObject, transform.parent.gameObject, cType, 0f);
+        StartExplosion(contactPoint, normal, otherBody.transform.parent.gameObject);
+        GravityEngine.instance.InactivateBody(transform.parent.gameObject);
+        inactivate = true;
+    }
+
+    /* JAB ADD */
+    private bool ShouldBounce(GameObject otherBody)
+    {
+        Vector3 relVelVec =
+        GravityEngine.instance.GetVelocity(otherBody.transform.parent.gameObject)
+        -
+        GravityEngine.instance.GetVelocity(transform.parent.gameObject);
+        float relVel = relVelVec.magnitude;
+        bouncing = relVel < minRelVtoExplode;
+        return bouncing;
+    }
+    /* JAB END */
+
+    private bool SkipThisCollider(GameObject otherBody) {
 		// Does the other body also handle collisions? resolve who should handle this
 		NBodyCollision otherNBC = otherBody.GetComponent<NBodyCollision>();
 		if (otherNBC != null) {
@@ -163,7 +197,8 @@ public class NBodyCollision : MonoBehaviour {
 				inactivate = true;
 			}
 		}
-		else if (collisionType != CollisionType.BOUNCE) {
+    	else if (ShouldCheckForInactivation())
+        {
 			if ((distance < myRadius) || (lastDistance < distance)) {
 				GravityEngine.instance.InactivateBody(transform.parent.gameObject);
 				inactivate = true;
@@ -173,14 +208,27 @@ public class NBodyCollision : MonoBehaviour {
 		}
 	}
 
-	void OnTriggerExit(Collider collider) {
+    bool ShouldCheckForInactivation()
+    {
+        if (collisionType == CollisionType.EXPLODE_OR_BOUNCE)
+        {
+            return !bouncing;
+        }
+        else
+        {
+            return collisionType != CollisionType.BOUNCE;
+        }
+    }
+
+    void OnTriggerExit(Collider collider) {
 
 		GameObject otherBody = collider.attachedRigidbody.gameObject;
 		if (SkipThisCollider(otherBody)) {
 			return;
 		}
-		if (collisionType != CollisionType.BOUNCE) {
-			GravityEngine.instance.InactivateBody(transform.parent.gameObject);
+        else if (ShouldCheckForInactivation())
+        {
+            GravityEngine.instance.InactivateBody(transform.parent.gameObject);
 			inactivate = true;
 		}
 	}
