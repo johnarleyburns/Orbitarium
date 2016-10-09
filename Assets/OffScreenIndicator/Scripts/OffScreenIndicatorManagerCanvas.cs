@@ -138,17 +138,25 @@ namespace Greyman{
 			arrowIndicator.arrow.transform.localEulerAngles = new Vector3(0, 0, angle * Mathf.Rad2Deg - 90);
             if (arrowIndicator.text != null)
             {
-                arrowIndicator.text.transform.rotation = Quaternion.identity;
-                Vector3 localPos = arrowIndicator.text.transform.localPosition;
+                float offsetY;
                 if (arrowIndicator.onScreen)
                 {
-                    localPos = new Vector3(0, arrowIndicator.indicator.onScreenTextPosY, 0);
+                    offsetY = arrowIndicator.indicator.onScreenTextPosY;
                 }
-                else if (v2DPos.y > 0)
+                else
                 {
-                    localPos = new Vector3(0, -2 * arrowIndicator.indicator.onScreenTextPosY, 0);
+                    float angleDeg = Mathf.Rad2Deg * angle;
+                    if (angleDeg > -135 && angleDeg < -45 || angleDeg > 45 && angleDeg < 135)
+                    {
+                        offsetY = -1 * arrowIndicator.indicator.onScreenTextPosY;
+                    }
+                    else
+                    {
+                        offsetY = -1 * arrowIndicator.indicator.onScreenTextWidth / 2;
+                    }
                 }
-                arrowIndicator.text.transform.localPosition = localPos;
+                arrowIndicator.text.transform.localPosition = new Vector3(0, offsetY, 0);
+                arrowIndicator.text.transform.rotation = Quaternion.identity;
             }
         }
 	}

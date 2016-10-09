@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using System.Collections.Generic;
 
 public class Spaceship : MonoBehaviour {
 
@@ -65,7 +66,7 @@ public class Spaceship : MonoBehaviour {
         currentFuelKg = FuelMassKg;
         //coneScale = thrustCone.transform.localScale;
         GravityEngine.instance.Setup();
-        currentRCSMode = RCSMode.Translate;
+        currentRCSMode = RCSMode.Rotate;
         UpdateRCSMode();
         currentCameraMode = CameraMode.FPS;
         UpdateCameraMode();
@@ -120,6 +121,10 @@ public class Spaceship : MonoBehaviour {
             case RCSMode.Rotate:
                 RotateButton.isToggled = true;
                 TranslateButton.isToggled = false;
+                if (FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCS))
+                {
+                    FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
+                }
                 break;
             case RCSMode.Translate:
             default:
@@ -328,6 +333,10 @@ public class Spaceship : MonoBehaviour {
         }
     }
 
+    private static int HUD_INDICATOR_TARGET = 0;
+    private static int HUD_INDICATOR_RELV_PRO = 1;
+    private static int HUD_INDICATOR_RELV_RETR = 2;
+
     private void UpdateHUD()
     {
         if (HUD != null && Target != null && Target.GetComponent<NBody>() != null)
@@ -342,17 +351,27 @@ public class Spaceship : MonoBehaviour {
             float relVelDot = Vector3.Dot(relVel, relLoc);
             float relVelScalar = relVel.magnitude;
             float relVelDirectionalScalar = Mathf.Sign(relVelDot) * relVelScalar;
-            float RelativeVelocityIndicatorScale = 10;
+            float RelativeVelocityIndicatorScale = 1000;
             Vector3 relVelUnit = relVel.normalized;
             Vector3 relVelScaled = RelativeVelocityIndicatorScale * relVelUnit;
 
             RelativeVelocityDirectionIndicator.transform.position = myPos + relVelScaled; ;
             RelativeVelocityAntiDirectionIndicator.transform.position = myPos + -relVelScaled;
             Greyman.OffScreenIndicator offScreenIndicator = HUD.GetComponent<Greyman.OffScreenIndicator>();
-            if (offScreenIndicator.indicators[0].hasOnScreenText)
+            if (offScreenIndicator.indicators[HUD_INDICATOR_TARGET].hasOnScreenText)
             {
-                string targetString = string.Format("Asteroid\nDist: {0:0,0} m\nRelV: {1:0,0.0} m/s", targetDistance, relVelDirectionalScalar);
-                offScreenIndicator.UpdateIndicatorText(0, targetString);
+                string targetString = string.Format("Asteroid\n{0:0,0} m\n{1:0,0.0} m/s", targetDistance, relVelDirectionalScalar);
+                offScreenIndicator.UpdateIndicatorText(HUD_INDICATOR_TARGET, targetString);
+            }
+            if (offScreenIndicator.indicators[HUD_INDICATOR_RELV_PRO].hasOnScreenText)
+            {
+                string targetString = string.Format("PRO {0:0,0.0} m/s", relVelDirectionalScalar);
+                offScreenIndicator.UpdateIndicatorText(HUD_INDICATOR_RELV_PRO, targetString);
+            }
+            if (offScreenIndicator.indicators[HUD_INDICATOR_RELV_RETR].hasOnScreenText)
+            {
+                string targetString = string.Format("RETR {0:0,0.0} m/s", -relVelDirectionalScalar);
+                offScreenIndicator.UpdateIndicatorText(HUD_INDICATOR_RELV_RETR, targetString);
             }
         }
     }
@@ -453,6 +472,10 @@ public class Spaceship : MonoBehaviour {
             {
                 FPSCamera.GetComponent<FPSAudioController>().Play(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
             }
+        }
+        else
+        {
+            FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
         }
     }
 
