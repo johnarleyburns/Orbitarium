@@ -1,36 +1,27 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
-//using System.Collections;
-
-/// <summary>
-/// Spaceship.
-/// A simple example of an object that is subject to the gravitational field and makes changes in 
-/// own motion based on user input. 
-///
-/// Controls:
-///   Arrow Keys: spacecraft pitch and yaw
-///   Space: Pause/Resume
-///   F: Fire engine
-///
-/// When paused the -/= keys can be used to set a course correction that will be applied when resume is pressed.
-///
-/// This script is to be attached to a model that is the child of an NBody object. 
-/// The GravityEngine will perform the physical updates to position and velocity. 
-///
-/// Changes to the spaceship motion are via impulse changes to the velocity. 
-///
-/// </summary>
 
 public class Spaceship : MonoBehaviour {
 
-    //! Thrust scale 
-    public float thrustPerKeypress = 0.5f;
-    public float mainEngineThrustPerKeypress = 10f;
-	//! Rate of spin when arrow keys pressed (degress/update cycle)
-	public float spinDegreesPerKeypress = 0.01f;
-    //! Forward direction of the ship model. Thrust us applies in opposite direction to this vector.
+    //! Thrust scale
+    public float EmptyMassKg = 10000;
+    public float FuelMassKg = 9200;
+    public float RCSThrustNewtons = 880; // 220*4 in the SM
+    public float EngineThrustNewtons = 27700;
+    public float RCSFuelKgPerSec = 0.14f;
+    public float EngineFuelKgPerSec = 8.7f;
+    public float DumpFuelRateKgPerSec = 100;
+    public float RCSRadiusM = 2.5f;
+    public float minRelVtoDamage = 1;
+    public float minRelVtoExplode = 5;
+    public int healthMax = 3;
     public ToggleButton RotateButton;
     public ToggleButton TranslateButton;
+    public ToggleButton StopThrustButton;
+    public ToggleButton GoThrustButton;
+    public Slider FuelSlider;
+    public Text FuelRemainingText;
+    public ToggleButton DumpFuelButton;
     public GameObject Target;
     public GameObject HUD;
     public GameObject RelativeVelocityDirectionIndicator;
@@ -45,6 +36,13 @@ public class Spaceship : MonoBehaviour {
     private bool killingRot;
     private enum CameraMode { FPS, ThirdParty };
     private CameraMode currentCameraMode;
+    private int health;
+    private float currentFuelKg;
+    private float currentTotalMassKg;
+    private float RCSThrustPerSec;
+    private float EngineThrustPerSec;
+    private float RCSAngularDegPerSec;
+    private bool mainEngineOn;
 
     //private Vector3 coneScale; // nitial scale of thrust cone
 
@@ -61,13 +59,34 @@ public class Spaceship : MonoBehaviour {
         }
 		//running = false;
 		//ravityEngine.instance.SetEvolve(running);
-		GravityEngine.instance.Setup();
+        health = healthMax;
+        mainEngineOn = false;
+        currentTotalMassKg = EmptyMassKg + FuelMassKg;
+        currentFuelKg = FuelMassKg;
+        //coneScale = thrustCone.transform.localScale;
+        GravityEngine.instance.Setup();
         currentRCSMode = RCSMode.Translate;
         UpdateRCSMode();
         currentCameraMode = CameraMode.FPS;
         UpdateCameraMode();
-        //coneScale = thrustCone.transform.localScale;
-	}
+        UpdateFuel();
+        UpdateEngine();
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (nbody == null)
+        {
+            return; // misconfigured
+        }
+        UpdateCameraInput();
+        UpdateRCSInput();
+        UpdateEngineInput();
+        ApplyCurrentRotation();
+        UpdateDumpFuel();
+        UpdateHUD();
+    }
 
     public void SetRCSModeRotate()
     {
@@ -79,6 +98,19 @@ public class Spaceship : MonoBehaviour {
     {
         currentRCSMode = RCSMode.Translate;
         UpdateRCSMode();
+    }
+
+    public void DumpFuelPressed()
+    {
+        DumpFuelButton.isToggled = !DumpFuelButton.isToggled;
+    }
+
+    public void UpdateDumpFuel()
+    {
+        if (DumpFuelButton.isToggled)
+        {
+            ApplyFuel(-DumpFuelRateKgPerSec * Time.deltaTime);
+        }
     }
 
     void UpdateRCSMode()
@@ -143,28 +175,101 @@ public class Spaceship : MonoBehaviour {
         }
     }
 
-    void ApplyImpulse(Vector3 normalizedDirection, float thrustPer = -1)
+    public void UpdateInputGoThrust()
     {
-        if (thrustPer == -1)
+        mainEngineOn = true;
+    }
+
+    public void UpdateInputStopThrust()
+    {
+        mainEngineOn = false;
+    }
+
+    private void UpdateEngine()
+    {
+        bool stillRunning;
+        if (mainEngineOn)
         {
-            thrustPer = thrustPerKeypress;
+            if (currentFuelKg > EngineFuelKgPerSec * Time.deltaTime)
+            {
+                ApplyImpulse(transform.forward, EngineThrustPerSec * Time.deltaTime);
+                ApplyFuel(-EngineFuelKgPerSec * Time.deltaTime);
+                FPSCamera.GetComponent<FPSCameraController>().StartContinuousShake();
+                stillRunning = true;
+            }
+            else
+            {
+                stillRunning = false;
+            }
         }
+        else
+        {
+            stillRunning = false;
+        }
+        if (stillRunning)
+        {
+            if (!FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE))
+            {
+                FPSCamera.GetComponent<FPSAudioController>().Play(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE);
+            }
+            GoThrustButton.isToggled = true;
+            StopThrustButton.isToggled = false;
+        }
+        else
+        {
+            FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE);
+            FPSCamera.GetComponent<FPSCameraController>().StopShake();
+            GoThrustButton.isToggled = false;
+            StopThrustButton.isToggled = true;
+        }
+    }
+
+    private void ApplyFuel(float deltaFuel)
+    {
+        currentFuelKg += deltaFuel;
+        if (currentFuelKg <= 0)
+        {
+            currentFuelKg = 0;
+        }
+        UpdateFuel();
+    }
+
+    private void UpdateFuel()
+    {
+        if (currentFuelKg <= 0)
+        {
+            // warn?
+        }
+        currentTotalMassKg = EmptyMassKg + currentFuelKg;
+        RCSThrustPerSec = RCSThrustNewtons / currentTotalMassKg;
+        EngineThrustPerSec = EngineThrustNewtons / currentTotalMassKg;
+        RCSAngularDegPerSec = Mathf.Rad2Deg * Mathf.Sqrt(RCSThrustPerSec / RCSRadiusM);
+        FuelRemainingText.text = string.Format("{0:0}", currentFuelKg);
+        FuelSlider.value = NormalizedFuel(currentFuelKg);
+    }
+
+    private float NormalizedFuel(float fuelRawKg)
+    {
+        return fuelRawKg/ FuelMassKg;
+    }
+
+    private void ApplyImpulse(Vector3 normalizedDirection, float thrustPer)
+    {
         Vector3 thrust = normalizedDirection * thrustPer * Time.deltaTime;
         //thrust = transform.rotation * thrust * Time.deltaTime;
         GravityEngine.instance.ApplyImpulse(nbody, thrust);
     }
 
-    // Update is called once per frame
-    void Update()
+    private void UpdateCameraInput()
     {
-        if (nbody == null)
-        {
-            return; // misconfigured
-        }
         if (Input.GetKeyDown(KeyCode.F1))
         {
             ToggleCamera();
         }
+    }
+
+    private void UpdateRCSInput()
+    {
         if (Input.GetKeyDown(KeyCode.KeypadDivide))
         {
             ToggleRCSMode();
@@ -179,17 +284,48 @@ public class Spaceship : MonoBehaviour {
                 UpdateInputTranslation();
                 break;
         }
-        if (Input.GetKey(KeyCode.KeypadPlus))
+    }
+
+    private void UpdateEngineInput()
+    {
+        if (Input.GetKeyDown(KeyCode.KeypadPlus))
         {
-            ApplyImpulse(transform.forward, mainEngineThrustPerKeypress);
-            FPSCamera.GetComponent<FPSCameraController>().StartContinuousShake();
+            UpdateInputGoThrust();
+        }
+        if (Input.GetKeyDown(KeyCode.KeypadMinus))
+        {
+            UpdateInputStopThrust();
+        }
+        UpdateEngine();
+    }
+
+    private bool ShouldBounce(GameObject otherBody, out float relVel)
+    {
+        Vector3 relVelVec =
+            GravityEngine.instance.GetVelocity(otherBody.transform.parent.gameObject)
+            -
+            GravityEngine.instance.GetVelocity(transform.parent.gameObject);
+        relVel = relVelVec.magnitude;
+        bool bouncing = relVel < minRelVtoExplode;
+        return bouncing;
+    }
+
+    void OnTriggerEnter(Collider collider)
+    {
+        GameObject otherBody = collider.attachedRigidbody.gameObject;
+        float relVel;
+        if (ShouldBounce(otherBody, out relVel))
+        {
+            FPSCamera.GetComponent<FPSCameraController>().PlayShake();
+            if (relVel >= minRelVtoDamage)
+            {
+                health--;
+            }
         }
         else
         {
-            FPSCamera.GetComponent<FPSCameraController>().StopShake();
+            health = 0; // boom
         }
-        ApplyCurrentRotation();
-        UpdateHUD();
     }
 
     private void UpdateHUD()
@@ -226,32 +362,32 @@ public class Spaceship : MonoBehaviour {
         if (Input.GetKey(KeyCode.Keypad2))
         {
             killingRot = false;
-            currentSpin.x -= spinDegreesPerKeypress;
+            currentSpin.x -= RCSAngularDegPerSec * Time.deltaTime;
         }
         if (Input.GetKey(KeyCode.Keypad8))
         {
             killingRot = false;
-            currentSpin.x += spinDegreesPerKeypress;
+            currentSpin.x += RCSAngularDegPerSec * Time.deltaTime;
         }
         if (Input.GetKey(KeyCode.Keypad1))
         {
             killingRot = false;
-            currentSpin.y -= spinDegreesPerKeypress;
+            currentSpin.y -= RCSAngularDegPerSec * Time.deltaTime;
         }
         if (Input.GetKey(KeyCode.Keypad3))
         {
             killingRot = false;
-            currentSpin.y += spinDegreesPerKeypress;
+            currentSpin.y += RCSAngularDegPerSec * Time.deltaTime;
         }
         if (Input.GetKey(KeyCode.Keypad6))
         {
             killingRot = false;
-            currentSpin.z -= spinDegreesPerKeypress;
+            currentSpin.z -= RCSAngularDegPerSec * Time.deltaTime;
         }
         if (Input.GetKey(KeyCode.Keypad4))
         {
             killingRot = false;
-            currentSpin.z += spinDegreesPerKeypress;
+            currentSpin.z += RCSAngularDegPerSec * Time.deltaTime;
         }
         if (Input.GetKeyDown(KeyCode.Keypad5)) // kill rot
         {
@@ -265,9 +401,9 @@ public class Spaceship : MonoBehaviour {
         {
             Vector3 neededOffset = Vector3.zero - currentSpin;
             Vector3 allowedOffset = new Vector3(
-                Mathf.Clamp(neededOffset.x, -spinDegreesPerKeypress, spinDegreesPerKeypress),
-                Mathf.Clamp(neededOffset.y, -spinDegreesPerKeypress, spinDegreesPerKeypress),
-                Mathf.Clamp(neededOffset.z, -spinDegreesPerKeypress, spinDegreesPerKeypress)
+                Mathf.Clamp(neededOffset.x, -RCSAngularDegPerSec * Time.deltaTime, RCSAngularDegPerSec * Time.deltaTime),
+                Mathf.Clamp(neededOffset.y, -RCSAngularDegPerSec * Time.deltaTime, RCSAngularDegPerSec * Time.deltaTime),
+                Mathf.Clamp(neededOffset.z, -RCSAngularDegPerSec * Time.deltaTime, RCSAngularDegPerSec * Time.deltaTime)
             );
             currentSpin += allowedOffset;
             if (currentSpin == Vector3.zero)
@@ -284,151 +420,40 @@ public class Spaceship : MonoBehaviour {
 
     void UpdateInputTranslation()
     {
+        Vector3 v = Vector3.zero;
         if (Input.GetKey(KeyCode.Keypad6))
         {
-            ApplyImpulse(transform.forward);
+            v = transform.forward;
         }
         if (Input.GetKey(KeyCode.Keypad9))
         {
-            ApplyImpulse(-transform.forward);
+            v = -transform.forward;
         }
         if (Input.GetKey(KeyCode.Keypad2))
         {
-            ApplyImpulse(transform.up);
+            v = transform.up;
         }
         if (Input.GetKey(KeyCode.Keypad8))
         {
-            ApplyImpulse(-transform.up);
+            v = -transform.up;
         }
         if (Input.GetKey(KeyCode.Keypad1))
         {
-            ApplyImpulse(-transform.right);
+            v = -transform.right;
         }
         if (Input.GetKey(KeyCode.Keypad3))
         {
-            ApplyImpulse(transform.right);
+            v = transform.right;
+        }
+        if (v != Vector3.zero)
+        {
+            ApplyImpulse(v, RCSThrustPerSec * Time.deltaTime);
+            ApplyFuel(-RCSFuelKgPerSec * Time.deltaTime);
+            if (!FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCS))
+            {
+                FPSCamera.GetComponent<FPSAudioController>().Play(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
+            }
         }
     }
-        /*
-        if (Input.GetKeyDown(KeyCode.KeypadPlus))
-        {
-            running = !running;
-            if (running && thrustSize > 0)
-            {
-                Vector3 thrust = thrustSize * axisForeAft * Time.deltaTime;
-                //thrust = transform.rotation * thrust;
-                GravityEngine.instance.ApplyImpulse(nbody, thrust);
-                // reset thrust
-                thrustSize = 0f;
-                //SetThrustCone(thrustSize);
-            }
-            GravityEngine.instance.SetEvolve(running);
-        }
-        if (!running)
-        {
-            if (Input.GetKeyDown(KeyCode.Minus))
-            {
-                thrustSize -= thrustPerKeypress;
-                if (thrustSize < 0)
-                    thrustSize = 0f;
-            }
-            else if (Input.GetKeyDown(KeyCode.Equals))
-            {
-                thrustSize += thrustPerKeypress;
-            }
-            //SetThrustCone(thrustSize);
-            // In order for change in orbit to be see by the predictor, need to 
-            // determine the new NBody velocity - but not set it (or all updates will
-            // be cumulative). This way can see impact of rotating with a specific thrust setting.
-            Vector3 thrust = thrustSize * axisForeAft * Time.deltaTime;
-//            thrust = transform.rotation * thrust;
-            nbody.vel = GravityEngine.instance.VelocityForImpulse(nbody, thrust);
-        }
-        */
-    /*
-    if (Input.GetKeyDown(KeyCode.Keypad)) {
-        running = !running;
-        if (running && thrustSize > 0) {
-            thrust = thrustSize * axisForeAft;
-            thrust = transform.rotation * thrust;
-            GravityEngine.instance.ApplyImpulse(nbody, thrust);
-            // reset thrust
-            thrustSize = 0f;
-            SetThrustCone(thrustSize);
-        }
-        GravityEngine.instance.SetEvolve(running);
 
-    } else if (Input.GetKey(KeyCode.Keypad5)) {
-        thrust = thrustPerKeypress * axisForeAft;
-        thrust = transform.rotation * thrust;
-        GravityEngine.instance.ApplyImpulse(nbody, thrust);
-    }
-    else if (Input.GetKey(KeyCode.Keypad1))
-    {
-        thrust = angularThrustPerKeypress * -axisPortStarboard * 10 * nbody.mass;
-        GetComponent<Rigidbody>().AddTorque(thrust, ForceMode.Force);    
-} else {
-        Quaternion rotation = Quaternion.identity;
-        if (Input.GetKey(KeyCode.Keypad1))
-        {
-            rotation = Quaternion.AngleAxis(spinRate, Vector3.forward);
-        }
-        else if (Input.GetKey(KeyCode.Keypad3))
-        {
-            rotation = Quaternion.AngleAxis(-spinRate, Vector3.forward);
-        }
-        else if (Input.GetKey(KeyCode.Keypad2))
-        {
-            rotation = Quaternion.AngleAxis(spinRate, Vector3.right);
-        }
-        else if (Input.GetKey(KeyCode.Keypad8))
-        {
-            rotation = Quaternion.AngleAxis(-spinRate, Vector3.right);
-        }
-        else if (Input.GetKey(KeyCode.Keypad4))
-        {
-            rotation = Quaternion.AngleAxis(-spinRate, Vector3.up);
-        }
-        else if (Input.GetKey(KeyCode.Keypad6))
-        {
-            rotation = Quaternion.AngleAxis(spinRate, Vector3.up);
-        }
-        transform.rotation *= rotation;
-        */
-    // }
-    /*
-		// When paused check for course correction
-		if (!running) {
-			if (Input.GetKeyDown(KeyCode.Minus)) {
-				thrustSize -= thrustPerKeypress; 
-				if (thrustSize < 0)
-					thrustSize = 0f; 
-			} else 	if (Input.GetKeyDown(KeyCode.Equals)) {
-				thrustSize += thrustPerKeypress; 
-			}
-			SetThrustCone(thrustSize);
-			// In order for change in orbit to be see by the predictor, need to 
-			// determine the new NBody velocity - but not set it (or all updates will
-			// be cumulative). This way can see impact of rotating with a specific thrust setting.
-			thrust = thrustSize * axisForeAft;
-			thrust = transform.rotation * thrust;
-			nbody.vel = GravityEngine.instance.VelocityForImpulse(nbody, thrust);
-		}
-        */
-    //}
-
-        /*
-    private const float thrustScale = 3f; // adjust for desired visual sensitivity
-
-	private void SetThrustCone(float size) {
-		Vector3 newConeScale = coneScale;
-		newConeScale.z = coneScale.z * size * thrustScale;
-		thrustCone.transform.localScale = newConeScale;
-		// as cone grows, need to offset
-		Vector3 localPos = thrustCone.transform.localPosition;
-		// move cone center along spacecraft axis as cone grows
-		localPos = -(size*thrustScale)/2f*axisForeAft;
-		thrustCone.transform.localPosition = localPos;
-	}
-    */
 }

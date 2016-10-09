@@ -141,7 +141,6 @@ public class NBodyCollision : MonoBehaviour {
         inactivate = true;
     }
 
-    /* JAB ADD */
     private bool ShouldBounce(GameObject otherBody)
     {
         Vector3 relVelVec =
@@ -152,7 +151,6 @@ public class NBodyCollision : MonoBehaviour {
         bouncing = relVel < minRelVtoExplode;
         return bouncing;
     }
-    /* JAB END */
 
     private bool SkipThisCollider(GameObject otherBody) {
 		// Does the other body also handle collisions? resolve who should handle this

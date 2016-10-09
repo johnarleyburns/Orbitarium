@@ -136,6 +136,20 @@ namespace Greyman{
 				angle = 90 * Mathf.Deg2Rad;
 			}
 			arrowIndicator.arrow.transform.localEulerAngles = new Vector3(0, 0, angle * Mathf.Rad2Deg - 90);
-		}
+            if (arrowIndicator.text != null)
+            {
+                arrowIndicator.text.transform.rotation = Quaternion.identity;
+                Vector3 localPos = arrowIndicator.text.transform.localPosition;
+                if (arrowIndicator.onScreen)
+                {
+                    localPos = new Vector3(0, arrowIndicator.indicator.onScreenTextPosY, 0);
+                }
+                else if (v2DPos.y > 0)
+                {
+                    localPos = new Vector3(0, -2 * arrowIndicator.indicator.onScreenTextPosY, 0);
+                }
+                arrowIndicator.text.transform.localPosition = localPos;
+            }
+        }
 	}
 }
