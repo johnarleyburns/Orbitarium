@@ -360,7 +360,8 @@ public class Spaceship : MonoBehaviour {
             Greyman.OffScreenIndicator offScreenIndicator = HUD.GetComponent<Greyman.OffScreenIndicator>();
             if (offScreenIndicator.indicators[HUD_INDICATOR_TARGET].hasOnScreenText)
             {
-                string targetString = string.Format("Asteroid\n{0:0,0} m\n{1:0,0.0} m/s", targetDistance, relVelDirectionalScalar);
+                string targetName = Target.name;
+                string targetString = string.Format("{0}\n{1:0,0} m\n{2:0,0.0} m/s", targetName, targetDistance, relVelDirectionalScalar);
                 offScreenIndicator.UpdateIndicatorText(HUD_INDICATOR_TARGET, targetString);
             }
             if (offScreenIndicator.indicators[HUD_INDICATOR_RELV_PRO].hasOnScreenText)
@@ -378,39 +379,57 @@ public class Spaceship : MonoBehaviour {
 
     void UpdateInputRotation()
     {
+        bool rotInput = false;
         if (Input.GetKey(KeyCode.Keypad2))
         {
+            rotInput = true;
             killingRot = false;
             currentSpin.x -= RCSAngularDegPerSec * Time.deltaTime;
         }
         if (Input.GetKey(KeyCode.Keypad8))
         {
+            rotInput = true;
             killingRot = false;
             currentSpin.x += RCSAngularDegPerSec * Time.deltaTime;
         }
         if (Input.GetKey(KeyCode.Keypad1))
         {
+            rotInput = true;
             killingRot = false;
             currentSpin.y -= RCSAngularDegPerSec * Time.deltaTime;
         }
         if (Input.GetKey(KeyCode.Keypad3))
         {
+            rotInput = true;
             killingRot = false;
             currentSpin.y += RCSAngularDegPerSec * Time.deltaTime;
         }
         if (Input.GetKey(KeyCode.Keypad6))
         {
+            rotInput = true;
             killingRot = false;
             currentSpin.z -= RCSAngularDegPerSec * Time.deltaTime;
         }
         if (Input.GetKey(KeyCode.Keypad4))
         {
+            rotInput = true;
             killingRot = false;
             currentSpin.z += RCSAngularDegPerSec * Time.deltaTime;
         }
         if (Input.GetKeyDown(KeyCode.Keypad5)) // kill rot
         {
             killingRot = !killingRot;
+        }
+        if (rotInput || killingRot)
+        {
+            if (!FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG))
+            {
+                FPSCamera.GetComponent<FPSAudioController>().Play(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG);
+            }
+        }
+        else
+        {
+            FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG);
         }
     }
 
