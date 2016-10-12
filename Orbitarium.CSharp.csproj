@@ -71,6 +71,22 @@
   <ItemGroup>
     <Compile Include="Assets\Asteroids\Scripts\AutoSpinObject.cs" />
     <Compile Include="Assets\Asteroids\Scripts\maxCamera.cs" />
+    <Compile Include="Assets\Easy Weapons\Scripts\BombFragment.cs" />
+    <Compile Include="Assets\Easy Weapons\Scripts\BulletHole.cs" />
+    <Compile Include="Assets\Easy Weapons\Scripts\BulletHolePool.cs" />
+    <Compile Include="Assets\Easy Weapons\Scripts\Easy Camera Shake\Demo\VibrationDemo.cs" />
+    <Compile Include="Assets\Easy Weapons\Scripts\Easy Camera Shake\Vibration.cs" />
+    <Compile Include="Assets\Easy Weapons\Scripts\Explosion.cs" />
+    <Compile Include="Assets\Easy Weapons\Scripts\Health.cs" />
+    <Compile Include="Assets\Easy Weapons\Scripts\Projectile.cs" />
+    <Compile Include="Assets\Easy Weapons\Scripts\Sample\FirstPersonCharacter.cs" />
+    <Compile Include="Assets\Easy Weapons\Scripts\Sample\FirstPersonHeadBob.cs" />
+    <Compile Include="Assets\Easy Weapons\Scripts\Sample\MouseRotator.cs" />
+    <Compile Include="Assets\Easy Weapons\Scripts\SlowMotion.cs" />
+    <Compile Include="Assets\Easy Weapons\Scripts\Spawner.cs" />
+    <Compile Include="Assets\Easy Weapons\Scripts\TimedObjectDestroyer.cs" />
+    <Compile Include="Assets\Easy Weapons\Scripts\Weapon.cs" />
+    <Compile Include="Assets\Easy Weapons\Scripts\WeaponSystem.cs" />
     <Compile Include="Assets\Extended GUI Elements\Scenes\DemoScripts\DemoScript.cs" />
     <Compile Include="Assets\Extended GUI Elements\Scripts\Console.cs" />
     <Compile Include="Assets\Extended GUI Elements\Scripts\ConsoleCommands\CommandSetup.cs" />
@@ -231,6 +247,7 @@
     <Compile Include="Assets\_Target &amp; HUD Effect V1\_DemoStuff\_Clouds &amp; Sun\CameraFacingBillboard.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\Easy Weapons\Readme.txt" />
     <None Include="Assets\Extended GUI Elements\Scenes\README.txt" />
     <None Include="Assets\Extended GUI Elements\Scenes\This Folder can safely be deleted as it only contains scenes and files related to the scenes!.txt" />
     <None Include="Assets\Extended GUI Elements\Sprites\license.txt" />
