@@ -23,7 +23,9 @@ public class Spaceship : MonoBehaviour {
     public Slider FuelSlider;
     public Text FuelRemainingText;
     public ToggleButton DumpFuelButton;
-    public GameObject Target;
+    public GameObject ReferenceBody;
+    public GameObject Didymos;
+    public GameObject Didymoon;
     public GameObject HUD;
     public GameObject RelativeVelocityDirectionIndicator;
     public GameObject RelativeVelocityAntiDirectionIndicator;
@@ -333,47 +335,69 @@ public class Spaceship : MonoBehaviour {
         }
     }
 
-    private static int HUD_INDICATOR_TARGET = 0;
+    private static int HUD_INDICATOR_DIDYMOS = 0;
     private static int HUD_INDICATOR_RELV_PRO = 1;
     private static int HUD_INDICATOR_RELV_RETR = 2;
+    private static int HUD_INDICATOR_DIDYMOON = 3;
+
+    private void CalcRelV(GameObject target, out float dist, out float relv, out Vector3 relVelUnit)
+    {
+        dist = (target.transform.position - transform.parent.transform.position).magnitude;
+        Vector3 myVel = GravityEngine.instance.GetVelocity(transform.parent.gameObject);
+        Vector3 targetVel = GravityEngine.instance.GetVelocity(target);
+        Vector3 relVel = myVel - targetVel;
+        Vector3 targetPos = target.transform.position;
+        Vector3 myPos = transform.parent.transform.position;
+        Vector3 relLoc = targetPos - myPos;
+        float relVelDot = Vector3.Dot(relVel, relLoc);
+        float relVelScalar = relVel.magnitude;
+        relv = Mathf.Sign(relVelDot) * relVelScalar;
+        relVelUnit = relVel.normalized;
+    }
+
+    private Vector3 RelVIndicatorScaled(Vector3 relVelUnit)
+    {
+        float RelativeVelocityIndicatorScale = 1000;
+        return RelativeVelocityIndicatorScale * relVelUnit;
+    }
 
     private void UpdateHUD()
     {
-        if (HUD != null && Target != null && Target.GetComponent<NBody>() != null)
+        float referenceBodyDist;
+        float referenceBodyRelV;
+        Vector3 refBodyRelVelUnit;
+        CalcRelV(ReferenceBody, out referenceBodyDist, out referenceBodyRelV, out refBodyRelVelUnit);
+        Greyman.OffScreenIndicator offScreenIndicator = HUD.GetComponent<Greyman.OffScreenIndicator>();
+        if (offScreenIndicator.indicators[HUD_INDICATOR_DIDYMOS].hasOnScreenText)
         {
-            float targetDistance = (Target.transform.position - transform.parent.transform.position).magnitude;
-            Vector3 myVel = GravityEngine.instance.GetVelocity(transform.parent.gameObject);
-            Vector3 targetVel = GravityEngine.instance.GetVelocity(Target);
-            Vector3 relVel = myVel - targetVel;
-            Vector3 targetPos = Target.transform.position;
-            Vector3 myPos = transform.parent.transform.position;
-            Vector3 relLoc = targetPos - myPos;
-            float relVelDot = Vector3.Dot(relVel, relLoc);
-            float relVelScalar = relVel.magnitude;
-            float relVelDirectionalScalar = Mathf.Sign(relVelDot) * relVelScalar;
-            float RelativeVelocityIndicatorScale = 1000;
-            Vector3 relVelUnit = relVel.normalized;
-            Vector3 relVelScaled = RelativeVelocityIndicatorScale * relVelUnit;
+            string targetName = Didymos.name;
+            string targetString = string.Format("{0}\n{1:0,0} m\n{2:0,0.0} m/s", targetName, referenceBodyDist, referenceBodyRelV);
+            offScreenIndicator.UpdateIndicatorText(HUD_INDICATOR_DIDYMOS, targetString);
+        }
+        if (offScreenIndicator.indicators[HUD_INDICATOR_DIDYMOON].hasOnScreenText)
+        {
+            float moonBodyDist;
+            float moonBodyRelV;
+            Vector3 moonBodyRelVelUnit;
+            CalcRelV(Didymoon, out moonBodyDist, out moonBodyRelV, out moonBodyRelVelUnit);
+            string targetName = Didymoon.name;
+            string targetString = string.Format("{0}\n{1:0,0} m\n{2:0,0.0} m/s", targetName, moonBodyDist, moonBodyRelV);
+            offScreenIndicator.UpdateIndicatorText(HUD_INDICATOR_DIDYMOON, targetString);
+        }
 
-            RelativeVelocityDirectionIndicator.transform.position = myPos + relVelScaled; ;
-            RelativeVelocityAntiDirectionIndicator.transform.position = myPos + -relVelScaled;
-            Greyman.OffScreenIndicator offScreenIndicator = HUD.GetComponent<Greyman.OffScreenIndicator>();
-            if (offScreenIndicator.indicators[HUD_INDICATOR_TARGET].hasOnScreenText)
-            {
-                string targetName = Target.name;
-                string targetString = string.Format("{0}\n{1:0,0} m\n{2:0,0.0} m/s", targetName, targetDistance, relVelDirectionalScalar);
-                offScreenIndicator.UpdateIndicatorText(HUD_INDICATOR_TARGET, targetString);
-            }
-            if (offScreenIndicator.indicators[HUD_INDICATOR_RELV_PRO].hasOnScreenText)
-            {
-                string targetString = string.Format("PRO {0:0,0.0} m/s", relVelDirectionalScalar);
-                offScreenIndicator.UpdateIndicatorText(HUD_INDICATOR_RELV_PRO, targetString);
-            }
-            if (offScreenIndicator.indicators[HUD_INDICATOR_RELV_RETR].hasOnScreenText)
-            {
-                string targetString = string.Format("RETR {0:0,0.0} m/s", -relVelDirectionalScalar);
-                offScreenIndicator.UpdateIndicatorText(HUD_INDICATOR_RELV_RETR, targetString);
-            }
+        Vector3 relVIndicatorScaled = RelVIndicatorScaled(refBodyRelVelUnit);
+        Vector3 myPos = transform.parent.transform.position;
+        if (offScreenIndicator.indicators[HUD_INDICATOR_RELV_PRO].hasOnScreenText)
+        {
+            RelativeVelocityDirectionIndicator.transform.position = myPos + relVIndicatorScaled;
+            string targetString = string.Format("PRO {0:0,0.0} m/s", referenceBodyRelV);
+            offScreenIndicator.UpdateIndicatorText(HUD_INDICATOR_RELV_PRO, targetString);
+        }
+        if (offScreenIndicator.indicators[HUD_INDICATOR_RELV_RETR].hasOnScreenText)
+        {
+            RelativeVelocityAntiDirectionIndicator.transform.position = myPos + -relVIndicatorScaled;
+            string targetString = string.Format("RETR {0:0,0.0} m/s", -referenceBodyRelV);
+            offScreenIndicator.UpdateIndicatorText(HUD_INDICATOR_RELV_RETR, targetString);
         }
     }
 

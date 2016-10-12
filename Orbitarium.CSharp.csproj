@@ -69,6 +69,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Asteroids\Scripts\AutoSpinObject.cs" />
+    <Compile Include="Assets\Asteroids\Scripts\maxCamera.cs" />
     <Compile Include="Assets\Extended GUI Elements\Scenes\DemoScripts\DemoScript.cs" />
     <Compile Include="Assets\Extended GUI Elements\Scripts\Console.cs" />
     <Compile Include="Assets\Extended GUI Elements\Scripts\ConsoleCommands\CommandSetup.cs" />
