@@ -4,6 +4,7 @@ using System.Collections;
 
 public class GameController : MonoBehaviour {
 
+    public GameObject PlayerShipPrefab;
     public GameObject FPSCanvas;
     public GameObject GameStartCanvas;
     public GameObject GameOverCanvas;
@@ -14,6 +15,8 @@ public class GameController : MonoBehaviour {
     public GameObject ReferenceBody;
     public GameObject Didymos;
     public GameObject Didymoon;
+
+    private GameObject playerShip;
 
     public enum GameState
     {
@@ -78,12 +81,38 @@ public class GameController : MonoBehaviour {
 
     private void EnableSplashScreen()
     {
+        InstantiatePlayer();
+        SetupCameras();
         OverviewCamera.enabled = true;
         FPSCamera.enabled = false;
         OverShoulderCamera.enabled = false;
         GameStartCanvas.SetActive(true);
         FPSCanvas.SetActive(false);
         GameOverCanvas.SetActive(false);
+    }
+
+    private void InstantiatePlayer()
+    {
+        if (playerShip != null)
+        {
+            GravityEngine.instance.RemoveBody(playerShip);
+            Destroy(playerShip);
+        }
+        playerShip = Instantiate(PlayerShipPrefab, Vector3.zero, Quaternion.identity) as GameObject;
+        PlayerShipController controller = playerShip.GetComponent<PlayerShipController>();
+        controller.SetGameController(this);
+    }
+
+    private void SetupCameras()
+    {
+        PlayerShipController controller = playerShip.GetComponent<PlayerShipController>();
+        GameObject playerModel = controller.GetShipModel();
+        FPSCamera.GetComponent<FPSCameraController>().player = playerModel;
+        FPSCamera.GetComponent<FPSCameraController>().UpdatePlayerPos();
+        OverShoulderCamera.GetComponent<ThirdPartyCameraController>().player = playerModel;
+        OverShoulderCamera.GetComponent<ThirdPartyCameraController>().UpdatePlayerPos();
+        OverviewCamera.GetComponent<CameraSpin>().target = playerModel;
+        OverviewCamera.GetComponent<CameraSpin>().UpdatePos();
     }
 
     private void EnableRunningScreen()

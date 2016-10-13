@@ -11,7 +11,7 @@ public class FPSCameraController : MonoBehaviour
     public AnimationCurve damper = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(0.9f, .33f, -2f, -2f), new Keyframe(1f, 0f, -5.65f, -5.65f));
     public bool testShake = false;
 
-    private Vector3 cameraOffset;
+    private Vector3 cameraOffset = Vector3.zero;
     private Quaternion shakeRotation;
     private float shakeElapsed = 0;
     private bool shaking = false;
@@ -20,7 +20,6 @@ public class FPSCameraController : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-        cameraOffset = transform.position - player.transform.position;
         if (testShake)
         {
             PlayShake();
@@ -29,6 +28,11 @@ public class FPSCameraController : MonoBehaviour
         {
             StopShake();
         }
+    }
+
+    public void UpdatePlayerPos()
+    {
+        cameraOffset = transform.position - player.transform.position;
     }
 
     // Update is called once per frame

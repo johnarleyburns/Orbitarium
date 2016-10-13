@@ -16,11 +16,10 @@ public class CameraSpin : MonoBehaviour {
     public float spinRate = 1f;
     public GameObject target;
     
-    private Vector3 point;//the coord to the point where the camera looks at
+    private Vector3 point = Vector3.zero;//the coord to the point where the camera looks at
 
     // Use this for initialization
     void Start () {
-        UpdatePos();
     }
 
     public void UpdatePos()
