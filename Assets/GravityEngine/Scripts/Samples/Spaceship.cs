@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using Greyman;
 
 public class Spaceship : MonoBehaviour {
 
@@ -18,21 +19,6 @@ public class Spaceship : MonoBehaviour {
     public float minRelVtoDamage = 1;
     public float minRelVtoExplode = 5;
     public int healthMax = 3;
-    public ToggleButton RotateButton;
-    public ToggleButton TranslateButton;
-    public ToggleButton StopThrustButton;
-    public ToggleButton GoThrustButton;
-    public Slider FuelSlider;
-    public Text FuelRemainingText;
-    public ToggleButton DumpFuelButton;
-    public GameObject ReferenceBody;
-    public GameObject Didymos;
-    public GameObject Didymoon;
-    public GameObject HUD;
-    public GameObject RelativeVelocityDirectionIndicator;
-    public GameObject RelativeVelocityAntiDirectionIndicator;
-    public Camera FPSCamera;
-    public Camera ThirdPartyCamera;
     public GameObject ShipExplosion;
 
     private NBody nbody; 
@@ -153,17 +139,17 @@ public class Spaceship : MonoBehaviour {
 
     private void StopAll()
     {
-        if (FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE))
+        if (gameController.FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE))
         {
-            FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE);
+            gameController.FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE);
         }
-        if (FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCS))
+        if (gameController.FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCS))
         {
-            FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
+            gameController.FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
         }
-        if (FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG))
+        if (gameController.FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG))
         {
-            FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG);
+            gameController.FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG);
         }
     }
 
@@ -181,12 +167,12 @@ public class Spaceship : MonoBehaviour {
 
     public void DumpFuelPressed()
     {
-        DumpFuelButton.isToggled = !DumpFuelButton.isToggled;
+        gameController.GetComponent<InputController>().DumpFuelButton.isToggled = !gameController.GetComponent<InputController>().DumpFuelButton.isToggled;
     }
 
     public void UpdateDumpFuel()
     {
-        if (DumpFuelButton.isToggled)
+        if (gameController.GetComponent<InputController>().DumpFuelButton.isToggled)
         {
             ApplyFuel(-DumpFuelRateKgPerSec * Time.deltaTime);
         }
@@ -197,17 +183,17 @@ public class Spaceship : MonoBehaviour {
         switch (currentRCSMode)
         {
             case RCSMode.Rotate:
-                RotateButton.isToggled = true;
-                TranslateButton.isToggled = false;
-                if (FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCS))
+                gameController.GetComponent<InputController>().RotateButton.isToggled = true;
+                gameController.GetComponent<InputController>().TranslateButton.isToggled = false;
+                if (gameController.FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCS))
                 {
-                    FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
+                    gameController.FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
                 }
                 break;
             case RCSMode.Translate:
             default:
-                RotateButton.isToggled = false;
-                TranslateButton.isToggled = true;
+                gameController.GetComponent<InputController>().RotateButton.isToggled = false;
+                gameController.GetComponent<InputController>().TranslateButton.isToggled = true;
                 break;
         }
     }
@@ -248,12 +234,12 @@ public class Spaceship : MonoBehaviour {
         {
             default:
             case CameraMode.FPS:
-                FPSCamera.enabled = true;
-                ThirdPartyCamera.enabled = false;
+                gameController.FPSCamera.enabled = true;
+                gameController.OverShoulderCamera.enabled = false;
                 break;
             case CameraMode.ThirdParty:
-                FPSCamera.enabled = false;
-                ThirdPartyCamera.enabled = true;
+                gameController.FPSCamera.enabled = false;
+                gameController.OverShoulderCamera.enabled = true;
                 break;
         }
     }
@@ -277,7 +263,7 @@ public class Spaceship : MonoBehaviour {
             {
                 ApplyImpulse(transform.forward, EngineThrustPerSec * Time.deltaTime);
                 ApplyFuel(-EngineFuelKgPerSec * Time.deltaTime);
-                FPSCamera.GetComponent<FPSCameraController>().StartContinuousShake();
+                gameController.FPSCamera.GetComponent<FPSCameraController>().StartContinuousShake();
                 stillRunning = true;
             }
             else
@@ -291,19 +277,19 @@ public class Spaceship : MonoBehaviour {
         }
         if (stillRunning)
         {
-            if (!FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE))
+            if (!gameController.FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE))
             {
-                FPSCamera.GetComponent<FPSAudioController>().Play(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE);
+                gameController.FPSCamera.GetComponent<FPSAudioController>().Play(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE);
             }
-            GoThrustButton.isToggled = true;
-            StopThrustButton.isToggled = false;
+            gameController.GetComponent<InputController>().GoThrustButton.isToggled = true;
+            gameController.GetComponent<InputController>().StopThrustButton.isToggled = false;
         }
         else
         {
-            FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE);
-            FPSCamera.GetComponent<FPSCameraController>().StopShake();
-            GoThrustButton.isToggled = false;
-            StopThrustButton.isToggled = true;
+            gameController.FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE);
+            gameController.FPSCamera.GetComponent<FPSCameraController>().StopShake();
+            gameController.GetComponent<InputController>().GoThrustButton.isToggled = false;
+            gameController.GetComponent<InputController>().StopThrustButton.isToggled = true;
         }
     }
 
@@ -327,8 +313,8 @@ public class Spaceship : MonoBehaviour {
         RCSThrustPerSec = RCSThrustNewtons / currentTotalMassKg;
         EngineThrustPerSec = EngineThrustNewtons / currentTotalMassKg;
         RCSAngularDegPerSec = Mathf.Rad2Deg * Mathf.Sqrt(RCSThrustPerSec / RCSRadiusM);
-        FuelRemainingText.text = string.Format("{0:0}", currentFuelKg);
-        FuelSlider.value = NormalizedFuel(currentFuelKg);
+        gameController.GetComponent<InputController>().FuelRemainingText.text = string.Format("{0:0}", currentFuelKg);
+        gameController.GetComponent<InputController>().FuelSlider.value = NormalizedFuel(currentFuelKg);
     }
 
     private float NormalizedFuel(float fuelRawKg)
@@ -399,7 +385,7 @@ public class Spaceship : MonoBehaviour {
         float relVel;
         if (ShouldBounce(otherBody, out relVel))
         {
-            FPSCamera.GetComponent<FPSCameraController>().PlayShake();
+            gameController.FPSCamera.GetComponent<FPSCameraController>().PlayShake();
             if (relVel >= minRelVtoDamage)
             {
                 health--;
@@ -425,70 +411,10 @@ public class Spaceship : MonoBehaviour {
         //        Instantiate(ShipExplosion, transform.parent.transform.position, transform.parent.transform.rotation);
     }
 
-    private static int HUD_INDICATOR_DIDYMOS = 0;
-    private static int HUD_INDICATOR_RELV_PRO = 1;
-    private static int HUD_INDICATOR_RELV_RETR = 2;
-    private static int HUD_INDICATOR_DIDYMOON = 3;
-
-    private void CalcRelV(GameObject target, out float dist, out float relv, out Vector3 relVelUnit)
-    {
-        dist = (target.transform.position - transform.parent.transform.position).magnitude;
-        Vector3 myVel = GravityEngine.instance.GetVelocity(transform.parent.gameObject);
-        Vector3 targetVel = GravityEngine.instance.GetVelocity(target);
-        Vector3 relVel = myVel - targetVel;
-        Vector3 targetPos = target.transform.position;
-        Vector3 myPos = transform.parent.transform.position;
-        Vector3 relLoc = targetPos - myPos;
-        float relVelDot = Vector3.Dot(relVel, relLoc);
-        float relVelScalar = relVel.magnitude;
-        relv = Mathf.Sign(relVelDot) * relVelScalar;
-        relVelUnit = relVel.normalized;
-    }
-
-    private Vector3 RelVIndicatorScaled(Vector3 relVelUnit)
-    {
-        float RelativeVelocityIndicatorScale = 1000;
-        return RelativeVelocityIndicatorScale * relVelUnit;
-    }
 
     private void UpdateHUD()
     {
-        float referenceBodyDist;
-        float referenceBodyRelV;
-        Vector3 refBodyRelVelUnit;
-        CalcRelV(ReferenceBody, out referenceBodyDist, out referenceBodyRelV, out refBodyRelVelUnit);
-        Greyman.OffScreenIndicator offScreenIndicator = HUD.GetComponent<Greyman.OffScreenIndicator>();
-        if (offScreenIndicator.indicators[HUD_INDICATOR_DIDYMOS].hasOnScreenText)
-        {
-            string targetName = Didymos.name;
-            string targetString = string.Format("{0}\n{1:0,0} m\n{2:0,0.0} m/s", targetName, referenceBodyDist, referenceBodyRelV);
-            offScreenIndicator.UpdateIndicatorText(HUD_INDICATOR_DIDYMOS, targetString);
-        }
-        if (offScreenIndicator.indicators[HUD_INDICATOR_DIDYMOON].hasOnScreenText)
-        {
-            float moonBodyDist;
-            float moonBodyRelV;
-            Vector3 moonBodyRelVelUnit;
-            CalcRelV(Didymoon, out moonBodyDist, out moonBodyRelV, out moonBodyRelVelUnit);
-            string targetName = Didymoon.name;
-            string targetString = string.Format("{0}\n{1:0,0} m\n{2:0,0.0} m/s", targetName, moonBodyDist, moonBodyRelV);
-            offScreenIndicator.UpdateIndicatorText(HUD_INDICATOR_DIDYMOON, targetString);
-        }
-
-        Vector3 relVIndicatorScaled = RelVIndicatorScaled(refBodyRelVelUnit);
-        Vector3 myPos = transform.parent.transform.position;
-        if (offScreenIndicator.indicators[HUD_INDICATOR_RELV_PRO].hasOnScreenText)
-        {
-            RelativeVelocityDirectionIndicator.transform.position = myPos + relVIndicatorScaled;
-            string targetString = string.Format("PRO {0:0,0.0} m/s", referenceBodyRelV);
-            offScreenIndicator.UpdateIndicatorText(HUD_INDICATOR_RELV_PRO, targetString);
-        }
-        if (offScreenIndicator.indicators[HUD_INDICATOR_RELV_RETR].hasOnScreenText)
-        {
-            RelativeVelocityAntiDirectionIndicator.transform.position = myPos + -relVIndicatorScaled;
-            string targetString = string.Format("RETR {0:0,0.0} m/s", -referenceBodyRelV);
-            offScreenIndicator.UpdateIndicatorText(HUD_INDICATOR_RELV_RETR, targetString);
-        }
+        gameController.UpdateHUD(transform.parent);
     }
 
     void UpdateInputRotation()
@@ -536,14 +462,14 @@ public class Spaceship : MonoBehaviour {
         }
         if (rotInput || killingRot)
         {
-            if (!FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG))
+            if (!gameController.FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG))
             {
-                FPSCamera.GetComponent<FPSAudioController>().Play(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG);
+                gameController.FPSCamera.GetComponent<FPSAudioController>().Play(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG);
             }
         }
         else
         {
-            FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG);
+            gameController.FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG);
         }
     }
 
@@ -601,14 +527,14 @@ public class Spaceship : MonoBehaviour {
         {
             ApplyImpulse(v, RCSThrustPerSec * Time.deltaTime);
             ApplyFuel(-RCSFuelKgPerSec * Time.deltaTime);
-            if (!FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCS))
+            if (!gameController.FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCS))
             {
-                FPSCamera.GetComponent<FPSAudioController>().Play(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
+                gameController.FPSCamera.GetComponent<FPSAudioController>().Play(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
             }
         }
         else
         {
-            FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
+            gameController.FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
         }
     }
 

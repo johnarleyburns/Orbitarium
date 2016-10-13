@@ -145,6 +145,7 @@
     <Compile Include="Assets\GravityEngine\Scripts\ThreeBodySolutions\Lagrange.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\ThreeBodySolutions\SolutionServer.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\ThreeBodySolutions\ThreeBodySolution.cs" />
+    <Compile Include="Assets\InputController.cs" />
     <Compile Include="Assets\Missile Behaviours\Scripts\Misc\DestroyAfterTime.cs" />
     <Compile Include="Assets\Missile Behaviours\Scripts\Misc\FlyingCamera.cs" />
     <Compile Include="Assets\Missile Behaviours\Scripts\Misc\LightCurve.cs" />

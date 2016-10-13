@@ -11,6 +11,9 @@ public class GameController : MonoBehaviour {
     public Camera FPSCamera;
     public Camera OverShoulderCamera;
     public Camera OverviewCamera;
+    public GameObject ReferenceBody;
+    public GameObject Didymos;
+    public GameObject Didymoon;
 
     public enum GameState
     {
@@ -102,6 +105,72 @@ public class GameController : MonoBehaviour {
         GameOverCanvas.SetActive(true);
         GameStartCanvas.SetActive(false);
         FPSCanvas.SetActive(false);
+    }
+
+    private static int HUD_INDICATOR_DIDYMOS = 0;
+    private static int HUD_INDICATOR_RELV_PRO = 1;
+    private static int HUD_INDICATOR_RELV_RETR = 2;
+    private static int HUD_INDICATOR_DIDYMOON = 3;
+    private static float RelativeVelocityIndicatorScale = 1000;
+
+    private static Vector3 RelVIndicatorScaled(Vector3 relVelUnit)
+    {
+        return RelativeVelocityIndicatorScale * relVelUnit;
+    }
+
+    public static void CalcRelV(Transform source, GameObject target, out float dist, out float relv, out Vector3 relVelUnit)
+    {
+        dist = (target.transform.position - source.transform.position).magnitude;
+        Vector3 myVel = GravityEngine.instance.GetVelocity(source.gameObject);
+        Vector3 targetVel = GravityEngine.instance.GetVelocity(target);
+        Vector3 relVel = myVel - targetVel;
+        Vector3 targetPos = target.transform.position;
+        Vector3 myPos = source.transform.position;
+        Vector3 relLoc = targetPos - myPos;
+        float relVelDot = Vector3.Dot(relVel, relLoc);
+        float relVelScalar = relVel.magnitude;
+        relv = Mathf.Sign(relVelDot) * relVelScalar;
+        relVelUnit = relVel.normalized;
+    }
+
+    public void UpdateHUD(Transform source)
+    {
+        float referenceBodyDist;
+        float referenceBodyRelV;
+        Vector3 refBodyRelVelUnit;
+        CalcRelV(source, ReferenceBody, out referenceBodyDist, out referenceBodyRelV, out refBodyRelVelUnit);
+        Greyman.OffScreenIndicator offScreenIndicator = GetComponent<InputController>().HUDLogic.GetComponent<Greyman.OffScreenIndicator>();
+        if (offScreenIndicator.indicators[HUD_INDICATOR_DIDYMOS].hasOnScreenText)
+        {
+            string targetName = Didymos.name;
+            string targetString = string.Format("{0}\n{1:0,0} m\n{2:0,0.0} m/s", targetName, referenceBodyDist, referenceBodyRelV);
+            offScreenIndicator.UpdateIndicatorText(HUD_INDICATOR_DIDYMOS, targetString);
+        }
+        if (offScreenIndicator.indicators[HUD_INDICATOR_DIDYMOON].hasOnScreenText)
+        {
+            float moonBodyDist;
+            float moonBodyRelV;
+            Vector3 moonBodyRelVelUnit;
+            CalcRelV(source, Didymoon, out moonBodyDist, out moonBodyRelV, out moonBodyRelVelUnit);
+            string targetName = Didymoon.name;
+            string targetString = string.Format("{0}\n{1:0,0} m\n{2:0,0.0} m/s", targetName, moonBodyDist, moonBodyRelV);
+            offScreenIndicator.UpdateIndicatorText(HUD_INDICATOR_DIDYMOON, targetString);
+        }
+
+        Vector3 relVIndicatorScaled = RelVIndicatorScaled(refBodyRelVelUnit);
+        Vector3 myPos = source.transform.position;
+        if (offScreenIndicator.indicators[HUD_INDICATOR_RELV_PRO].hasOnScreenText)
+        {
+            GetComponent<InputController>().RelativeVelocityDirectionIndicator.transform.position = myPos + relVIndicatorScaled;
+            string targetString = string.Format("PRO {0:0,0.0} m/s", referenceBodyRelV);
+            offScreenIndicator.UpdateIndicatorText(HUD_INDICATOR_RELV_PRO, targetString);
+        }
+        if (offScreenIndicator.indicators[HUD_INDICATOR_RELV_RETR].hasOnScreenText)
+        {
+            GetComponent<InputController>().RelativeVelocityAntiDirectionIndicator.transform.position = myPos + -relVIndicatorScaled;
+            string targetString = string.Format("RETR {0:0,0.0} m/s", -referenceBodyRelV);
+            offScreenIndicator.UpdateIndicatorText(HUD_INDICATOR_RELV_RETR, targetString);
+        }
     }
 
 }
