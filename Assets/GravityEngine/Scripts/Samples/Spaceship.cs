@@ -4,6 +4,8 @@ using System.Collections.Generic;
 
 public class Spaceship : MonoBehaviour {
 
+    public GameController gameController;
+
     //! Thrust scale
     public float EmptyMassKg = 10000;
     public float FuelMassKg = 9200;
@@ -31,6 +33,7 @@ public class Spaceship : MonoBehaviour {
     public GameObject RelativeVelocityAntiDirectionIndicator;
     public Camera FPSCamera;
     public Camera ThirdPartyCamera;
+    public GameObject ShipExplosion;
 
     private NBody nbody; 
     private enum RCSMode { Rotate, Translate };
@@ -46,31 +49,67 @@ public class Spaceship : MonoBehaviour {
     private float EngineThrustPerSec;
     private float RCSAngularDegPerSec;
     private bool mainEngineOn;
+    private bool isInitStatic = false;
+    private bool isInitReady = false;
 
     //private Vector3 coneScale; // nitial scale of thrust cone
 
+    private Vector3 initPos;
+    private Quaternion initRot;
+    private Vector3 initParentPos;
+    private Quaternion initParentRot;
 
     // Use this for initialization
     void Start() {
-        if (transform.parent == null) {
+        initPos = transform.position;
+        initRot = transform.rotation;
+        initParentPos = transform.parent.transform.position;
+        initParentRot = transform.parent.transform.rotation;
+    }
+
+    private void InitStatic()
+    {
+        GravityEngine.instance.Clear();
+        if (transform.parent == null)
+        {
             Debug.LogError("Spaceship script must be applied to a model that is a child of an NBody object.");
             return;
         }
         nbody = transform.parent.GetComponent<NBody>();
-        if (nbody == null) {
+        if (nbody == null)
+        {
             Debug.LogError("Parent must have an NBody script attached.");
         }
-		//running = false;
-		//ravityEngine.instance.SetEvolve(running);
+        /*
+        transform.position = initPos;
+        transform.rotation = initRot;
+        transform.parent.transform.position = initParentPos;
+        transform.parent.transform.rotation = initParentRot;
+        */
+        transform.position = Vector3.zero;
+        transform.rotation = Quaternion.identity;
+        transform.parent.transform.position = Vector3.zero;
+        transform.parent.transform.rotation = Quaternion.identity;
         health = healthMax;
         mainEngineOn = false;
         currentTotalMassKg = EmptyMassKg + FuelMassKg;
         currentFuelKg = FuelMassKg;
-        //coneScale = thrustCone.transform.localScale;
-        GravityEngine.instance.Setup();
         currentRCSMode = RCSMode.Rotate;
-        UpdateRCSMode();
+        currentSpin = Vector3.zero;
+        killingRot = false;
         currentCameraMode = CameraMode.FPS;
+        GravityEngine.instance.Setup();
+    }
+
+    private void InitReady()
+    {
+        if (!isInitStatic)
+        {
+            InitStatic();
+            isInitStatic = true;
+        }
+        GravityEngine.instance.SetEvolve(true);
+        UpdateRCSMode();
         UpdateCameraMode();
         UpdateFuel();
         UpdateEngine();
@@ -79,16 +118,53 @@ public class Spaceship : MonoBehaviour {
     // Update is called once per frame
     void Update()
     {
-        if (nbody == null)
+        switch (gameController.GetGameState())
         {
-            return; // misconfigured
+            case GameController.GameState.SPLASH:
+                if (!isInitStatic)
+                {
+                    InitStatic();
+                    isInitStatic = true;
+                }
+                break;
+            case GameController.GameState.RUNNING:
+                if (!isInitReady)
+                {
+                    InitReady();
+                    isInitReady = true;
+                }
+                UpdateCameraInput();
+                UpdateRCSInput();
+                UpdateEngineInput();
+                ApplyCurrentRotation();
+                UpdateDumpFuel();
+                UpdateHUD();
+                break;
+            case GameController.GameState.OVER:
+                if (isInitStatic || isInitReady)
+                {
+                    StopAll();
+                    isInitStatic = false;
+                    isInitReady = false;
+                }
+                break;
         }
-        UpdateCameraInput();
-        UpdateRCSInput();
-        UpdateEngineInput();
-        ApplyCurrentRotation();
-        UpdateDumpFuel();
-        UpdateHUD();
+    }
+
+    private void StopAll()
+    {
+        if (FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE))
+        {
+            FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE);
+        }
+        if (FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCS))
+        {
+            FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
+        }
+        if (FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG))
+        {
+            FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG);
+        }
     }
 
     public void SetRCSModeRotate()
@@ -332,7 +408,21 @@ public class Spaceship : MonoBehaviour {
         else
         {
             health = 0; // boom
+            GameOverAsteroidHit();
         }
+    }
+
+    private void GameOverAsteroidHit()
+    {
+        PlayExplosion();
+        gameController.GameOver("You hit an asteroid!");
+    }
+
+    private void PlayExplosion()
+    {
+        ShipExplosion.GetComponent<ParticleSystem>().Play();
+        ShipExplosion.GetComponent<AudioSource>().Play();
+        //        Instantiate(ShipExplosion, transform.parent.transform.position, transform.parent.transform.rotation);
     }
 
     private static int HUD_INDICATOR_DIDYMOS = 0;

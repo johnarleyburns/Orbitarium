@@ -191,6 +191,7 @@
     <Compile Include="Assets\OffScreenIndicator\Scripts\OffScreenIndicatorManagerVR.cs" />
     <Compile Include="Assets\Scripts\FPSAudioController.cs" />
     <Compile Include="Assets\Scripts\FPSCameraController.cs" />
+    <Compile Include="Assets\Scripts\GameController.cs" />
     <Compile Include="Assets\Scripts\PerlinShake.cs" />
     <Compile Include="Assets\Scripts\ThirdPartyCameraController.cs" />
     <Compile Include="Assets\SolarSystem\Scripts\GlobalValues.cs" />

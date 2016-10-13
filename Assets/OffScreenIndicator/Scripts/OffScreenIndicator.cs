@@ -9,6 +9,7 @@ using System.Collections;
 namespace Greyman{
     public class OffScreenIndicator : MonoBehaviour {
 
+        public GameController gameController;
         public bool enableDebug = true;
         public bool VirtualRealitySupported = false;
         public float VR_cameraDistance = 5;
@@ -22,8 +23,53 @@ namespace Greyman{
         public FixedTarget[] targets;
         //public 
         private OffScreenIndicatorManager manager;
+        private bool showing;
 
+        void Update()
+        {
+            if (gameController.IsReady())
+            {
+                if (!showing)
+                {
+                    Setup();
+                    showing = true;
+                }
+            }
+            else
+            {
+                if (showing)
+                {
+                    TearDown();
+                    showing = false;
+                }
+            }
+        }
+        /*
         void Awake() {
+            Setup();
+        }
+        */
+        /* JAB NEW */
+        public void UpdateIndicatorText(int indicatorId, string text)
+        {
+            if (manager != null && manager.indicators != null && manager.indicators.Length > 0)
+            {
+                manager.indicators[indicatorId].onScreenTextString = text;
+            }
+        }
+
+        public void AddIndicator(Transform target, int indicatorID)
+        {
+            manager.AddIndicator(target, indicatorID);
+        }
+
+        public void RemoveIndicator(Transform target)
+        {
+            manager.RemoveIndicator(target);
+        }
+
+        private void Setup()
+        {
             /*
 			if (VRSettings.enabled){
 				VR = true;
@@ -31,13 +77,16 @@ namespace Greyman{
 				VR = false;
 			}
 			*/
-            if (VirtualRealitySupported) {
+            if (VirtualRealitySupported)
+            {
                 manager = gameObject.AddComponent<OffScreenIndicatorManagerVR>();
                 (manager as OffScreenIndicatorManagerVR).cameraDistance = VR_cameraDistance;
                 (manager as OffScreenIndicatorManagerVR).radius = VR_radius;
                 (manager as OffScreenIndicatorManagerVR).indicatorScale = VR_indicatorScale;
                 (manager as OffScreenIndicatorManagerVR).CreateIndicatorsParent();
-            } else {
+            }
+            else
+            {
                 manager = gameObject.AddComponent<OffScreenIndicatorManagerCanvas>();
                 (manager as OffScreenIndicatorManagerCanvas).indicatorsParentObj = canvas;
                 (manager as OffScreenIndicatorManagerCanvas).circleRadius = Canvas_circleRadius;
@@ -47,26 +96,22 @@ namespace Greyman{
             manager.indicators = indicators;
             manager.enableDebug = enableDebug;
             manager.CheckFields();
-            foreach (FixedTarget target in targets) {
-                AddIndicator(target.target, target.indicatorID);
+            foreach (FixedTarget target in targets)
+            {
+                manager.AddIndicator(target.target, target.indicatorID);
             }
         }
 
-        /* JAB NEW */
-        public void UpdateIndicatorText(int indicatorId, string text)
+        private void TearDown()
         {
-            manager.indicators[indicatorId].onScreenTextString = text;
+            manager.indicators = new Indicator[]{};
+            foreach (FixedTarget target in targets)
+            {
+                manager.RemoveIndicator(target.target);
+            }
         }
+    }
 
-		public void AddIndicator(Transform target, int indicatorID){
-			manager.AddIndicator(target, indicatorID);
-		}
-
-		public void RemoveIndicator(Transform target){
-			manager.RemoveIndicator(target);
-		}
-
-	}
 
 	/// <summary>
 	/// Indicator.
