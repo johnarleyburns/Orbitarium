@@ -10,13 +10,17 @@ public class ThirdPartyCameraController : MonoBehaviour {
 	void Start () {
 	}
 	
-    public void UpdatePlayerPos()
+    public void UpdatePlayer(GameObject newPlayer)
     {
+        player = newPlayer;
         cameraOffset = transform.position - player.transform.position;
     }
 
     // Update is called once per frame
     void Update () {
-        transform.position = cameraOffset + player.transform.position;
-	}
+        if (player != null && player.activeInHierarchy)
+        {
+            transform.position = cameraOffset + player.transform.position;
+        }
+    }
 }

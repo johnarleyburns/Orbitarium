@@ -26,6 +26,7 @@ public class WeaponSystem : MonoBehaviour
 	// Update is called once per frame
 	void Update()
 	{
+        /*
 		// Allow the user to instantly switch to any weapon
 		if (Input.GetButtonDown("Weapon 1"))
 			SetActiveWeapon(0);
@@ -51,6 +52,7 @@ public class WeaponSystem : MonoBehaviour
 			NextWeapon();
 		if (Input.GetAxis("Mouse ScrollWheel") < 0)
 			PreviousWeapon();
+        */
 	}
 
 	void OnGUI()

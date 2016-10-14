@@ -38,19 +38,7 @@ public class Spaceship : MonoBehaviour {
     private bool isInitStatic = false;
     private bool isInitReady = false;
 
-    //private Vector3 coneScale; // nitial scale of thrust cone
-
-    private Vector3 initPos;
-    private Quaternion initRot;
-    private Vector3 initParentPos;
-    private Quaternion initParentRot;
-
-    // Use this for initialization
     void Start() {
-        initPos = transform.position;
-        initRot = transform.rotation;
-        initParentPos = transform.parent.transform.position;
-        initParentRot = transform.parent.transform.rotation;
     }
 
     private void InitStatic()
@@ -66,12 +54,6 @@ public class Spaceship : MonoBehaviour {
         {
             Debug.LogError("Parent must have an NBody script attached.");
         }
-        /*
-        transform.position = initPos;
-        transform.rotation = initRot;
-        transform.parent.transform.position = initParentPos;
-        transform.parent.transform.rotation = initParentRot;
-        */
         transform.position = Vector3.zero;
         transform.rotation = Quaternion.identity;
         transform.parent.transform.position = Vector3.zero;
@@ -129,15 +111,13 @@ public class Spaceship : MonoBehaviour {
             case GameController.GameState.OVER:
                 if (isInitStatic || isInitReady)
                 {
-                    StopAll();
-                    isInitStatic = false;
-                    isInitReady = false;
+                    PrepareDestroy();
                 }
                 break;
         }
     }
 
-    private void StopAll()
+    public void PrepareDestroy()
     {
         if (gameController.FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE))
         {
@@ -151,6 +131,8 @@ public class Spaceship : MonoBehaviour {
         {
             gameController.FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG);
         }
+        isInitStatic = false;
+        isInitReady = false;
     }
 
     public void SetRCSModeRotate()

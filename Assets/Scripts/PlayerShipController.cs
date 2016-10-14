@@ -4,7 +4,6 @@ public class PlayerShipController : MonoBehaviour {
 
     private static int SHIP_MODEL_INDEX = 0;
     private GameObject ShipModel;
-    private GameController GameController;
 
     void Awake()
     {
@@ -13,7 +12,6 @@ public class PlayerShipController : MonoBehaviour {
 
     public void SetGameController(GameController controller)
     {
-        GameController = controller;
         ShipModel.GetComponent<Spaceship>().gameController = controller;
     }
 

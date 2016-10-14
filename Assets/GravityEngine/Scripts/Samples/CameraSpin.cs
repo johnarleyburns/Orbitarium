@@ -22,8 +22,9 @@ public class CameraSpin : MonoBehaviour {
     void Start () {
     }
 
-    public void UpdatePos()
+    public void UpdateTarget(GameObject newTarget)
     {
+        target = newTarget;
         point = target.transform.position;//get target's coords
         transform.position = point + new Vector3(5, 5, -40);
         transform.LookAt(point);//makes the camera look to it

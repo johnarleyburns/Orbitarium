@@ -82,7 +82,6 @@ public class GameController : MonoBehaviour {
     private void EnableSplashScreen()
     {
         InstantiatePlayer();
-        SetupCameras();
         OverviewCamera.enabled = true;
         FPSCamera.enabled = false;
         OverShoulderCamera.enabled = false;
@@ -93,26 +92,34 @@ public class GameController : MonoBehaviour {
 
     private void InstantiatePlayer()
     {
-        if (playerShip != null)
-        {
-            GravityEngine.instance.RemoveBody(playerShip);
-            Destroy(playerShip);
-        }
+        DestroyPlayer();
         playerShip = Instantiate(PlayerShipPrefab, Vector3.zero, Quaternion.identity) as GameObject;
         PlayerShipController controller = playerShip.GetComponent<PlayerShipController>();
         controller.SetGameController(this);
+        GameObject playerModel = controller.GetShipModel();
+        SetupCameras(playerModel);
     }
 
-    private void SetupCameras()
+    private void DestroyPlayer()
     {
-        PlayerShipController controller = playerShip.GetComponent<PlayerShipController>();
-        GameObject playerModel = controller.GetShipModel();
-        FPSCamera.GetComponent<FPSCameraController>().player = playerModel;
-        FPSCamera.GetComponent<FPSCameraController>().UpdatePlayerPos();
-        OverShoulderCamera.GetComponent<ThirdPartyCameraController>().player = playerModel;
-        OverShoulderCamera.GetComponent<ThirdPartyCameraController>().UpdatePlayerPos();
-        OverviewCamera.GetComponent<CameraSpin>().target = playerModel;
-        OverviewCamera.GetComponent<CameraSpin>().UpdatePos();
+        if (playerShip != null)
+        {
+            GameObject playerModel = playerShip.GetComponent<PlayerShipController>().GetShipModel();
+            if (playerModel != null && playerModel.activeInHierarchy)
+            {
+                playerModel.GetComponent<PlayerShipController>().GetComponent<Spaceship>().PrepareDestroy();
+            }
+            GravityEngine.instance.RemoveBody(playerShip);
+            Destroy(playerShip);
+            playerShip = null;
+        }
+    }
+
+    private void SetupCameras(GameObject playerModel)
+    {
+        FPSCamera.GetComponent<FPSCameraController>().UpdatePlayer(playerModel);
+        OverShoulderCamera.GetComponent<ThirdPartyCameraController>().UpdatePlayer(playerModel);
+        OverviewCamera.GetComponent<CameraSpin>().UpdateTarget(playerModel);
     }
 
     private void EnableRunningScreen()
@@ -127,13 +134,16 @@ public class GameController : MonoBehaviour {
 
     private void EnableOverScreen()
     {
-        OverviewCamera.GetComponent<CameraSpin>().UpdatePos();
+        GameObject playerModel = playerShip.GetComponent<PlayerShipController>().GetShipModel();
+        OverviewCamera.GetComponent<CameraSpin>().UpdateTarget(playerModel);
         OverviewCamera.enabled = true;
         FPSCamera.enabled = false;
         OverShoulderCamera.enabled = false;
         GameOverCanvas.SetActive(true);
         GameStartCanvas.SetActive(false);
         FPSCanvas.SetActive(false);
+        playerModel.GetComponent<Spaceship>().PrepareDestroy();
+        Destroy(playerModel);
     }
 
     private static int HUD_INDICATOR_DIDYMOS = 0;

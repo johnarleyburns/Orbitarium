@@ -30,23 +30,27 @@ public class FPSCameraController : MonoBehaviour
         }
     }
 
-    public void UpdatePlayerPos()
+    public void UpdatePlayer(GameObject newPlayer)
     {
+        player = newPlayer;
         cameraOffset = transform.position - player.transform.position;
     }
 
     // Update is called once per frame
     void Update()
     {
-        transform.position = (player.transform.rotation * cameraOffset) + player.transform.position;
-        if (shaking)
+        if (player != null && player.activeInHierarchy)
         {
-            ApplyShake();
-            transform.rotation = player.transform.rotation * shakeRotation;
-        }
-        else
-        {
-            transform.rotation = player.transform.rotation;
+            transform.position = (player.transform.rotation * cameraOffset) + player.transform.position;
+            if (shaking)
+            {
+                ApplyShake();
+                transform.rotation = player.transform.rotation * shakeRotation;
+            }
+            else
+            {
+                transform.rotation = player.transform.rotation;
+            }
         }
     }
 
