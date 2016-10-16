@@ -46,17 +46,19 @@ namespace Greyman{
 			}
 			if (!ExistsIndicator(target)){
 				ArrowIndicatorCanvas newArrowIndicator = new ArrowIndicatorCanvas();
-				newArrowIndicator.target = target;
+                Indicator indicator = indicators[indicatorID];
+                newArrowIndicator.target = target;
 				newArrowIndicator.arrow = new GameObject();
 				newArrowIndicator.arrow.transform.SetParent(indicatorsParentObj.transform);
 				newArrowIndicator.arrow.name = "Indicator";
 				newArrowIndicator.arrow.transform.SetAsFirstSibling();
 				newArrowIndicator.arrow.transform.localScale = Vector3.one;
 				newArrowIndicator.arrow.AddComponent<Image>();
-				newArrowIndicator.indicator = indicators[indicatorID];
+                newArrowIndicator.indicator = indicator;
 				newArrowIndicator.arrow.GetComponent<Image>().sprite = newArrowIndicator.indicator.offScreenSprite;
-				newArrowIndicator.arrow.GetComponent<RectTransform>().sizeDelta = new Vector2(indicatorSize, indicatorSize);
-				newArrowIndicator.arrow.GetComponent<Image>().color = newArrowIndicator.indicator.offScreenColor;
+                //newArrowIndicator.arrow.GetComponent<RectTransform>().sizeDelta = new Vector2(indicatorSize, indicatorSize);
+                newArrowIndicator.arrow.GetComponent<RectTransform>().sizeDelta = new Vector2(indicator.CanvasIndicatorSizeX, indicator.CanvasIndicatorSizeY);
+                newArrowIndicator.arrow.GetComponent<Image>().color = newArrowIndicator.indicator.offScreenColor;
 
                 if (!newArrowIndicator.indicator.showOffScreen){
 					newArrowIndicator.arrow.SetActive(false);

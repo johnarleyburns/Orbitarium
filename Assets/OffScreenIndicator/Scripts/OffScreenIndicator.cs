@@ -143,22 +143,6 @@ namespace Greyman
             }
         }
 
-        private Transform highlightedTarget = null;
-        private int highlightedTargetOldIndicatorId = -1;
-
-        public void HighlightIndicator(Transform target, int oldIndicatorId, int newIndicatorId)
-        {
-            if (highlightedTargetOldIndicatorId >= 0)
-            {
-                RemoveIndicator(highlightedTarget);
-                AddIndicator(highlightedTarget, highlightedTargetOldIndicatorId);
-            }
-            highlightedTargetOldIndicatorId = oldIndicatorId;
-            RemoveIndicator(target);
-            AddIndicator(target, newIndicatorId);
-            highlightedTarget = target;
-        }
-
         public int AddNewIndicatorFromClone(int indicatorId, string text)
         {
             Indicator clone = indicators[indicatorId].Clone();
@@ -208,6 +192,8 @@ namespace Greyman
         public Sprite offScreenSprite;
         public Color offScreenColor = Color.white;
         public bool offScreenRotates;
+        public int CanvasIndicatorSizeX = 100;
+        public int CanvasIndicatorSizeY = 100;
         public Vector3 targetOffset;
         /// <summary>
         /// Both sprites need to have the same transition

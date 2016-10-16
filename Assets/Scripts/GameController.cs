@@ -23,8 +23,9 @@ public class GameController : MonoBehaviour
 
     private OffScreenIndicator OffscreenIndicator;
     private GameObject playerShip;
-    private HashSet<GameObject> enemyShips = new HashSet<GameObject>();
+    private List<GameObject> enemyShips = new List<GameObject>();
     private List<GameObject> targets = new List<GameObject>();
+    private GameObject referenceBody = null;
     private GameObject selectedTarget = null;
     private int selectedTargetIndex = -1;
     private static int HUD_INDICATOR_DIDYMOS = 0;
@@ -32,7 +33,7 @@ public class GameController : MonoBehaviour
     private static int HUD_INDICATOR_RELV_RETR = 2;
     private static int HUD_INDICATOR_DIDYMOON = 3;
     private static int HUD_INDICATOR_ENEMY_SHIP_TEMPLATE = 4;
-    private static int HUD_INDICATOR_TARGET_SELECTED = 5;
+    private static int HUD_INDICATOR_TARGET_DIRECTION = 5;
     private static float RelativeVelocityIndicatorScale = 1000;
     private Dictionary<GameObject, int> targetIndicatorId = new Dictionary<GameObject, int>();
 
@@ -106,6 +107,8 @@ public class GameController : MonoBehaviour
 
     private void EnableSplashScreen()
     {
+        HideTargetIndicator();
+        GetComponent<InputController>().TargetDirectionIndicator.SetActive(true);
         InstantiatePlayer();
         OverviewCamera.enabled = true;
         FPSCamera.enabled = false;
@@ -115,10 +118,24 @@ public class GameController : MonoBehaviour
         GameOverCanvas.SetActive(false);
     }
 
+    private void HideTargetIndicator()
+    {
+        OffscreenIndicator.indicators[HUD_INDICATOR_TARGET_DIRECTION].showOnScreen = false;
+        OffscreenIndicator.indicators[HUD_INDICATOR_TARGET_DIRECTION].showOffScreen = false;
+    }
+
+    private void ShowTargetIndicator()
+    {
+        OffscreenIndicator.indicators[HUD_INDICATOR_TARGET_DIRECTION].showOnScreen = true;
+        OffscreenIndicator.indicators[HUD_INDICATOR_TARGET_DIRECTION].showOffScreen = true;
+    }
+
     private void InstantiatePlayer()
     {
         DestroyPlayer();
         playerShip = Instantiate(PlayerShipPrefab, Vector3.zero, Quaternion.identity) as GameObject;
+        playerShip.transform.position = Vector3.zero;
+        playerShip.transform.rotation = Quaternion.identity;
         PlayerShipController controller = playerShip.GetComponent<PlayerShipController>();
         controller.SetGameController(this);
         GravityEngine.instance.AddBody(playerShip);
@@ -149,29 +166,50 @@ public class GameController : MonoBehaviour
         OffscreenIndicator.AddIndicator(enemyShip.transform, newIndicatorId);
         enemyShips.Add(enemyShip);
         AddTarget(enemyShip, newIndicatorId);
+        SelectNextTarget();
     }
 
     private void SelectNextTarget()
     {
-        selectedTargetIndex = (selectedTargetIndex + 1) % targets.Count;
-        SelectTarget();
+        if (enemyShips.Count > 0)
+        {
+            selectedTargetIndex = (selectedTargetIndex + 1) % enemyShips.Count;
+            selectedTarget = enemyShips[selectedTargetIndex];
+            GetComponent<InputController>().TargetToggleText.text = selectedTarget.name;
+            ShowTargetIndicator();
+            SelectNextReferenceBody(selectedTarget);
+        }
+        else
+        {
+            selectedTargetIndex = -1;
+            selectedTarget = null;
+            GetComponent<InputController>().TargetToggleText.text = "TARGET";
+            HideTargetIndicator();
+            SelectNextReferenceBody();
+        }
     }
 
-    private void SelectTarget()
+    private void SelectNextReferenceBody(GameObject specificTarget = null)
     {
-        selectedTarget = targets[selectedTargetIndex];
-        GetComponent<InputController>().TargetToggleText.text = selectedTarget.name;
-        int oldIndicatorId = targetIndicatorId[selectedTarget];
-        OffscreenIndicator.HighlightIndicator(selectedTarget.transform, oldIndicatorId, HUD_INDICATOR_TARGET_SELECTED);
-        targetIndicatorId[selectedTarget] = HUD_INDICATOR_TARGET_SELECTED;
+        if (specificTarget != null)
+        {
+            referenceBody = specificTarget;
+        }
+        else if (targets.Count > 0)
+        {
+            referenceBody = targets[targets.Count - 1];
+        }
+        else
+        {
+            referenceBody = null;
+        }
     }
 
     private void AddTarget(GameObject target, int indicatorId)
     {
         targetIndicatorId[target] = indicatorId;
         targets.Add(target);
-        selectedTargetIndex = targets.Count - 1;
-        SelectTarget();
+        SelectNextReferenceBody();
     }
 
     private void AddFixedTargets()
@@ -197,7 +235,8 @@ public class GameController : MonoBehaviour
 
     private void DestroyEnemies()
     {
-        foreach (GameObject enemyShip in enemyShips)
+        List<GameObject> allEnemies = new List<GameObject>(enemyShips);
+        foreach (GameObject enemyShip in allEnemies)
         {
             DestroyEnemy(enemyShip);
         }
@@ -208,6 +247,15 @@ public class GameController : MonoBehaviour
     {
         if (enemyShip != null)
         {
+            if (enemyShip == selectedTarget)
+            {
+                SelectNextTarget();
+            }
+            enemyShips.Remove(enemyShip);
+            if (enemyShips.Count == 0)
+            {
+                SelectNextTarget();
+            }
             //GameObject enemyModel = enemyShip.GetComponent<enemyShipController>().GetShipModel();
             //if (enemyModel != null && enemyModel.activeInHierarchy)
             //{
@@ -299,8 +347,9 @@ public class GameController : MonoBehaviour
     private void UpdateTargetIndicator(Transform source, int index, GameObject target)
     {
         bool hasText = OffscreenIndicator.indicators[index].hasOnScreenText;
-        bool isRefBody = target == selectedTarget;
-        bool calcRelV = hasText || isRefBody;
+        bool isRefBody = target == referenceBody;
+        bool isSelectedTarget = target == selectedTarget;
+        bool calcRelV = hasText || isRefBody || isSelectedTarget;
         if (calcRelV)
         {
             float targetDist;
@@ -320,14 +369,24 @@ public class GameController : MonoBehaviour
                 if (OffscreenIndicator.indicators[HUD_INDICATOR_RELV_PRO].hasOnScreenText)
                 {
                     GetComponent<InputController>().RelativeVelocityDirectionIndicator.transform.position = myPos + relVIndicatorScaled;
-                    string targetString = string.Format("PRO {0:0,0.0} m/s", targetRelV);
+                    string targetString = string.Format("POS {0:0,0.0} m/s", targetRelV);
                     OffscreenIndicator.UpdateIndicatorText(HUD_INDICATOR_RELV_PRO, targetString);
                 }
                 if (OffscreenIndicator.indicators[HUD_INDICATOR_RELV_RETR].hasOnScreenText)
                 {
                     GetComponent<InputController>().RelativeVelocityAntiDirectionIndicator.transform.position = myPos + -relVIndicatorScaled;
-                    string targetString = string.Format("RETR {0:0,0.0} m/s", -targetRelV);
+                    string targetString = string.Format("NEG {0:0,0.0} m/s", -targetRelV);
                     OffscreenIndicator.UpdateIndicatorText(HUD_INDICATOR_RELV_RETR, targetString);
+                }
+            }
+            if (isSelectedTarget)
+            {
+                GetComponent<InputController>().TargetDirectionIndicator.transform.position = target.transform.position;
+                if (OffscreenIndicator.indicators[HUD_INDICATOR_TARGET_DIRECTION].hasOnScreenText)
+                {
+                    //GetComponent<InputController>().TargetDirectionIndicator.transform.position = target.transform.position;
+                    //string targetString = string.Format("TARGET {0:0,0.0} m/s", -targetRelV);
+                    //OffscreenIndicator.UpdateIndicatorText(HUD_INDICATOR_RELV_RETR, targetString);
                 }
             }
         }

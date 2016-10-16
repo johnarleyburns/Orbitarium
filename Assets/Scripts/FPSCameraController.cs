@@ -16,6 +16,12 @@ public class FPSCameraController : MonoBehaviour
     private float shakeElapsed = 0;
     private bool shaking = false;
     private float shakeDuration = 0;
+    private Vector3 originalPos = Vector3.zero;
+
+    void Awake()
+    {
+        originalPos = transform.position;
+    }
 
     // Use this for initialization
     void Start()
@@ -33,6 +39,7 @@ public class FPSCameraController : MonoBehaviour
     public void UpdatePlayer(GameObject newPlayer)
     {
         player = newPlayer;
+        transform.position = originalPos;
         cameraOffset = transform.position - player.transform.position;
     }
 
