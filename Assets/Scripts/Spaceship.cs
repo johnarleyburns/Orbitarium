@@ -376,14 +376,15 @@ public class Spaceship : MonoBehaviour {
         else
         {
             health = 0; // boom
-            GameOverAsteroidHit();
+            GameOverCollision(otherBody.name);
         }
     }
 
-    private void GameOverAsteroidHit()
+    private void GameOverCollision(string otherName)
     {
         PlayExplosion();
-        gameController.GameOver("You hit an asteroid!");
+        string msg = string.Format("Smashed into {0}", otherName);
+        gameController.GameOver(msg);
     }
 
     private void PlayExplosion()

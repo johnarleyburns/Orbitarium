@@ -22,7 +22,7 @@ namespace Greyman{
 			arrowIndicators = new List<ArrowIndicator>();
 		}
 
-		protected bool ExistsIndicator(Transform target){
+		public bool ExistsIndicator(Transform target){
 			bool exists = false;
 			foreach(ArrowIndicator arrowIndicator in arrowIndicators){
 				if(arrowIndicator.target == target){

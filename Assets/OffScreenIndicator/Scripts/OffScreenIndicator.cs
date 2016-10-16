@@ -1,13 +1,16 @@
 ﻿using UnityEngine;
 using UnityEngine.VR;
-using System.Collections;
+using System.Collections.Generic;
+using System;
 
 /// <summary>
 /// Off screen indicator.
 /// Classic wrapper, user doesn't need to worry about implementation
 /// </summary>
-namespace Greyman{
-    public class OffScreenIndicator : MonoBehaviour {
+namespace Greyman
+{
+    public class OffScreenIndicator : MonoBehaviour
+    {
 
         public GameController gameController;
         public bool enableDebug = true;
@@ -21,9 +24,17 @@ namespace Greyman{
         public int Canvas_indicatorSize = 100; //size in pixels
         public Indicator[] indicators;
         public FixedTarget[] targets;
+
         //public 
         private OffScreenIndicatorManager manager;
         private bool showing;
+        private int runtimeIndicatorsAddedCount = 0;
+        private List<Transform> allTargets = new List<Transform>();
+
+        void Awake()
+        {
+            Setup();
+        }
 
         void Update()
         {
@@ -31,7 +42,7 @@ namespace Greyman{
             {
                 if (!showing)
                 {
-                    Setup();
+                    AddFixedIndicators();
                     showing = true;
                 }
             }
@@ -61,11 +72,13 @@ namespace Greyman{
         public void AddIndicator(Transform target, int indicatorID)
         {
             manager.AddIndicator(target, indicatorID);
+            allTargets.Add(target);
         }
 
         public void RemoveIndicator(Transform target)
         {
             manager.RemoveIndicator(target);
+            allTargets.Remove(target);
         }
 
         private void Setup()
@@ -96,32 +109,89 @@ namespace Greyman{
             manager.indicators = indicators;
             manager.enableDebug = enableDebug;
             manager.CheckFields();
+        }
+
+        private void AddFixedIndicators()
+        {
             foreach (FixedTarget target in targets)
             {
                 manager.AddIndicator(target.target, target.indicatorID);
+                allTargets.Add(target.target);
             }
         }
 
         private void TearDown()
         {
-            manager.indicators = new Indicator[]{};
-            foreach (FixedTarget target in targets)
+            /*
+             *             foreach (FixedTarget target in targets)
+                        {
+                            manager.RemoveIndicator(target.target);
+                        }
+            */
+            foreach (Transform target in allTargets)
             {
-                manager.RemoveIndicator(target.target);
+                if (manager.ExistsIndicator(target))
+                {
+                    manager.RemoveIndicator(target);
+                }
             }
+            manager.indicators = new Indicator[] { };
+            if (runtimeIndicatorsAddedCount > 0)
+            {
+                Array.Resize(ref indicators, indicators.Length - runtimeIndicatorsAddedCount);
+                runtimeIndicatorsAddedCount = 0;
+            }
+        }
+
+        private Transform highlightedTarget = null;
+        private int highlightedTargetOldIndicatorId = -1;
+
+        public void HighlightIndicator(Transform target, int oldIndicatorId, int newIndicatorId)
+        {
+            if (highlightedTargetOldIndicatorId >= 0)
+            {
+                RemoveIndicator(highlightedTarget);
+                AddIndicator(highlightedTarget, highlightedTargetOldIndicatorId);
+            }
+            highlightedTargetOldIndicatorId = oldIndicatorId;
+            RemoveIndicator(target);
+            AddIndicator(target, newIndicatorId);
+            highlightedTarget = target;
+        }
+
+        public int AddNewIndicatorFromClone(int indicatorId, string text)
+        {
+            Indicator clone = indicators[indicatorId].Clone();
+            clone.onScreenTextString = text;
+            int newIndicatorId = indicators.Length;
+            Array.Resize(ref indicators, newIndicatorId + 1);
+            indicators[newIndicatorId] = clone;
+            manager.indicators = indicators;
+            runtimeIndicatorsAddedCount++;
+            return newIndicatorId;
         }
     }
 
 
-	/// <summary>
-	/// Indicator.
-	/// References and colors for indicator sprites
-	/// </summary>
-	[System.Serializable]
-	public class Indicator{
-		public Sprite onScreenSprite;
-		public Color onScreenColor = Color.white;
-		public bool onScreenRotates;
+    /// <summary>
+    /// Indicator.
+    /// References and colors for indicator sprites
+    /// </summary>
+    [System.Serializable]
+    public class Indicator
+    {
+
+        public Indicator Clone()
+        {
+            Indicator clone = this.MemberwiseClone() as Indicator;
+            clone.targetOffset = new Vector3(clone.targetOffset.x, clone.targetOffset.y, clone.targetOffset.z);
+            clone.onScreenTextString = "";
+            return clone;
+        }
+
+        public Sprite onScreenSprite;
+        public Color onScreenColor = Color.white;
+        public bool onScreenRotates;
 
         /* JAB NEW */
         public bool hasOnScreenText;
@@ -135,31 +205,35 @@ namespace Greyman{
         public Color onScreenFontColor;
         /* JAB END */
 
-		public Sprite offScreenSprite;
-		public Color offScreenColor = Color.white;
-		public bool offScreenRotates;
-		public Vector3 targetOffset;
-		/// <summary>
-		/// Both sprites need to have the same transition
-		/// aswell both sprites need to have the same duration.
-		/// </summary>
-		public Transition transition;
-		public float transitionDuration = 1;
-		[System.NonSerialized]
-		public bool showOnScreen;
-		[System.NonSerialized]
-		public bool showOffScreen;
+        public Sprite offScreenSprite;
+        public Color offScreenColor = Color.white;
+        public bool offScreenRotates;
+        public Vector3 targetOffset;
+        /// <summary>
+        /// Both sprites need to have the same transition
+        /// aswell both sprites need to have the same duration.
+        /// </summary>
+        public Transition transition;
+        public float transitionDuration = 1;
+        [System.NonSerialized]
+        public bool showOnScreen;
+        [System.NonSerialized]
+        public bool showOffScreen;
 
-		public enum Transition{
-			None,
-			Fading,
-			Scaling
-		}
-	}
+        public enum Transition
+        {
+            None,
+            Fading,
+            Scaling
+        }
 
-	[System.Serializable]
-	public class FixedTarget{
-		public Transform target;
-		public int indicatorID;
-	}
+
+    }
+
+    [System.Serializable]
+    public class FixedTarget
+    {
+        public Transform target;
+        public int indicatorID;
+    }
 }
