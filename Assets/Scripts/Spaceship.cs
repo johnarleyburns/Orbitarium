@@ -18,6 +18,10 @@ public class Spaceship : MonoBehaviour {
     public float RCSRadiusM = 2.5f;
     public float minRelVtoDamage = 1;
     public float minRelVtoExplode = 5;
+    public float minDeltaTheta = 0.1f;
+    public float minSpinDeltaDegPerSec = 0.1f;
+    public float MaxRotationDegPerSec = 45;
+    public float RotationTimeDampeningFactor = 1.2f;
     public int healthMax = 3;
     public GameObject ShipExplosion;
 
@@ -26,6 +30,8 @@ public class Spaceship : MonoBehaviour {
     private RCSMode currentRCSMode;
     private Vector3 currentSpin;
     private bool killingRot;
+    private bool autoRotating;
+    private GameObject autoRotatingTarget;
     private enum CameraMode { FPS, ThirdParty };
     private CameraMode currentCameraMode;
     private int health;
@@ -37,6 +43,7 @@ public class Spaceship : MonoBehaviour {
     private bool mainEngineOn;
     private bool isInitStatic = false;
     private bool isInitReady = false;
+    private bool rotInput = false;
 
     void Start() {
     }
@@ -65,6 +72,8 @@ public class Spaceship : MonoBehaviour {
         currentRCSMode = RCSMode.Rotate;
         currentSpin = Vector3.zero;
         killingRot = false;
+        autoRotating = false;
+        autoRotatingTarget = null;
         currentCameraMode = CameraMode.FPS;
         GravityEngine.instance.Setup();
     }
@@ -335,15 +344,17 @@ public class Spaceship : MonoBehaviour {
                 UpdateInputTranslation();
                 break;
         }
+        UpdateAutoRotate();
+        PlayRotateSounds();
     }
 
     private void UpdateEngineInput()
     {
-        if (Input.GetKeyDown(KeyCode.KeypadPlus))
+        if (Input.GetKeyDown(KeyCode.KeypadEnter))
         {
             UpdateInputGoThrust();
         }
-        if (Input.GetKeyDown(KeyCode.KeypadMinus))
+        if (Input.GetKeyUp(KeyCode.KeypadEnter))
         {
             UpdateInputStopThrust();
         }
@@ -400,55 +411,111 @@ public class Spaceship : MonoBehaviour {
         gameController.UpdateHUD(transform.parent);
     }
 
+    private bool ApplySpinVector(Vector3 inputSpinVector)
+    {
+        Vector3 spinVector = new Vector3(
+            Mathf.Clamp(inputSpinVector.x, -RCSAngularDegPerSec * Time.deltaTime, RCSAngularDegPerSec * Time.deltaTime),
+            Mathf.Clamp(inputSpinVector.y, -RCSAngularDegPerSec * Time.deltaTime, RCSAngularDegPerSec * Time.deltaTime),
+            Mathf.Clamp(inputSpinVector.z, -RCSAngularDegPerSec * Time.deltaTime, RCSAngularDegPerSec * Time.deltaTime)
+            );
+        currentSpin.x = Mathf.Clamp(currentSpin.x + spinVector.x, -MaxRotationDegPerSec, MaxRotationDegPerSec);
+        currentSpin.y = Mathf.Clamp(currentSpin.y + spinVector.y, -MaxRotationDegPerSec, MaxRotationDegPerSec);
+        currentSpin.z = Mathf.Clamp(currentSpin.z + spinVector.z, -MaxRotationDegPerSec, MaxRotationDegPerSec);
+        return spinVector != Vector3.zero;
+    }
+
+    private bool ApplySpinVector(float x, float y, float z)
+    {
+        Vector3 spinVector = new Vector3(x, y, z);
+        return ApplySpinVector(spinVector);
+    }
+
     void UpdateInputRotation()
     {
-        bool rotInput = false;
+        rotInput = false;
         if (Input.GetKey(KeyCode.Keypad2))
         {
-            rotInput = true;
-            killingRot = false;
-            currentSpin.x -= RCSAngularDegPerSec * Time.deltaTime;
+            rotInput = ApplySpinVector(-RCSAngularDegPerSec * Time.deltaTime, 0, 0);
         }
         if (Input.GetKey(KeyCode.Keypad8))
         {
-            rotInput = true;
-            killingRot = false;
-            currentSpin.x += RCSAngularDegPerSec * Time.deltaTime;
+            rotInput = ApplySpinVector(RCSAngularDegPerSec * Time.deltaTime, 0, 0);
         }
         if (Input.GetKey(KeyCode.Keypad1))
         {
-            rotInput = true;
-            killingRot = false;
-            currentSpin.y -= RCSAngularDegPerSec * Time.deltaTime;
+            rotInput = ApplySpinVector(0, -RCSAngularDegPerSec * Time.deltaTime, 0);
         }
         if (Input.GetKey(KeyCode.Keypad3))
         {
-            rotInput = true;
-            killingRot = false;
-            currentSpin.y += RCSAngularDegPerSec * Time.deltaTime;
+            rotInput = ApplySpinVector(0, RCSAngularDegPerSec * Time.deltaTime, 0);
         }
         if (Input.GetKey(KeyCode.Keypad6))
         {
-            rotInput = true;
-            killingRot = false;
-            currentSpin.z -= RCSAngularDegPerSec * Time.deltaTime;
+            rotInput = ApplySpinVector(0, 0, -RCSAngularDegPerSec * Time.deltaTime);
         }
         if (Input.GetKey(KeyCode.Keypad4))
         {
-            rotInput = true;
+            rotInput = ApplySpinVector(0, 0, RCSAngularDegPerSec * Time.deltaTime);
+        }
+        if (rotInput)
+        {
             killingRot = false;
-            currentSpin.z += RCSAngularDegPerSec * Time.deltaTime;
+            autoRotating = false;
+            gameController.GetComponent<InputController>().TargetToggleButton.isToggled = false;
+            gameController.GetComponent<InputController>().POSToggleButton.isToggled = false;
+            gameController.GetComponent<InputController>().NEGToggleButton.isToggled = false;
         }
         if (Input.GetKeyDown(KeyCode.Keypad5)) // kill rot
         {
-            killingRot = !killingRot;
+            killingRot = true;
+            autoRotating = false;
+            gameController.GetComponent<InputController>().TargetToggleButton.isToggled = false;
+            gameController.GetComponent<InputController>().POSToggleButton.isToggled = false;
+            gameController.GetComponent<InputController>().NEGToggleButton.isToggled = false;
         }
-        if (rotInput || killingRot)
+    }
+
+    void UpdateAutoRotate()
+    {
+        if (Input.GetKeyDown(KeyCode.Keypad7)) // autorot
+        {
+            killingRot = false;
+            autoRotating = true;
+            gameController.GetComponent<InputController>().TargetToggleButton.isToggled = true;
+            gameController.GetComponent<InputController>().POSToggleButton.isToggled = false;
+            gameController.GetComponent<InputController>().NEGToggleButton.isToggled = false;
+            autoRotatingTarget = gameController.GetReferenceBody();
+        }
+        if (Input.GetKeyDown(KeyCode.KeypadPlus)) // autorot pos
+        {
+            killingRot = false;
+            autoRotating = true;
+            gameController.GetComponent<InputController>().TargetToggleButton.isToggled = false;
+            gameController.GetComponent<InputController>().POSToggleButton.isToggled = true;
+            gameController.GetComponent<InputController>().NEGToggleButton.isToggled = false;
+            autoRotatingTarget = gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator;
+        }
+        if (Input.GetKeyDown(KeyCode.KeypadMinus)) // autorot neg
+        {
+            killingRot = false;
+            autoRotating = true;
+            gameController.GetComponent<InputController>().TargetToggleButton.isToggled = false;
+            gameController.GetComponent<InputController>().POSToggleButton.isToggled = false;
+            gameController.GetComponent<InputController>().NEGToggleButton.isToggled = true;
+            autoRotatingTarget = gameController.GetComponent<InputController>().RelativeVelocityAntiDirectionIndicator;
+        }
+
+    }
+
+    void PlayRotateSounds()
+    {
+        if (rotInput || killingRot || autoRotating)
         {
             if (!gameController.FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG))
             {
                 gameController.FPSCamera.GetComponent<FPSAudioController>().Play(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG);
             }
+            rotInput = false;
         }
         else
         {
@@ -461,15 +528,56 @@ public class Spaceship : MonoBehaviour {
         if (killingRot)
         {
             Vector3 neededOffset = Vector3.zero - currentSpin;
-            Vector3 allowedOffset = new Vector3(
-                Mathf.Clamp(neededOffset.x, -RCSAngularDegPerSec * Time.deltaTime, RCSAngularDegPerSec * Time.deltaTime),
-                Mathf.Clamp(neededOffset.y, -RCSAngularDegPerSec * Time.deltaTime, RCSAngularDegPerSec * Time.deltaTime),
-                Mathf.Clamp(neededOffset.z, -RCSAngularDegPerSec * Time.deltaTime, RCSAngularDegPerSec * Time.deltaTime)
-            );
-            currentSpin += allowedOffset;
+            bool isZero = ApplySpinVector(neededOffset);
             if (currentSpin == Vector3.zero)
             {
                 killingRot = false;
+            }
+        }
+        else if (autoRotating)
+        {
+            if (autoRotatingTarget == gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator)
+            {
+                gameController.GetComponent<InputController>().TargetToggleButton.isToggled = false;
+                gameController.GetComponent<InputController>().POSToggleButton.isToggled = true;
+                gameController.GetComponent<InputController>().NEGToggleButton.isToggled = false;
+            }
+            else if (autoRotatingTarget == gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator)
+            {
+                gameController.GetComponent<InputController>().TargetToggleButton.isToggled = false;
+                gameController.GetComponent<InputController>().POSToggleButton.isToggled = false;
+                gameController.GetComponent<InputController>().NEGToggleButton.isToggled = true;
+            }
+            else
+            {
+                gameController.GetComponent<InputController>().TargetToggleButton.isToggled = true;
+                gameController.GetComponent<InputController>().POSToggleButton.isToggled = false;
+                gameController.GetComponent<InputController>().NEGToggleButton.isToggled = false;
+            }
+            Vector3 a = transform.forward;
+            Vector3 b = (autoRotatingTarget.transform.position - transform.parent.transform.position).normalized;
+            Quaternion q = Quaternion.FromToRotation(a, b);
+            //q = Quaternion.Euler(-transform.rotation.eulerAngles.x, -transform.rotation.eulerAngles.y, -transform.rotation.eulerAngles.z) * q;
+            q = Quaternion.Euler(0, 0, -transform.rotation.eulerAngles.z) * q;
+
+            float deltaXToApply;
+            bool thetaSatX;
+            CalcRotationDelta(q.eulerAngles.x, currentSpin.x, out deltaXToApply, out thetaSatX);
+            float deltaYToApply;
+            bool thetaSatY;
+            CalcRotationDelta(q.eulerAngles.y, currentSpin.y, out deltaYToApply, out thetaSatY);
+            float deltaZToApply;
+            bool thetaSatZ;
+            CalcRotationDelta(q.eulerAngles.z, currentSpin.z, out deltaZToApply, out thetaSatZ);
+            ApplySpinVector(deltaXToApply, deltaYToApply, deltaZToApply);
+            if (thetaSatX && thetaSatY && thetaSatZ)
+            {
+                autoRotating = false;
+                killingRot = true;
+                autoRotatingTarget = gameController.GetReferenceBody();
+                gameController.GetComponent<InputController>().TargetToggleButton.isToggled = false;
+                gameController.GetComponent<InputController>().POSToggleButton.isToggled = false;
+                gameController.GetComponent<InputController>().NEGToggleButton.isToggled = false;
             }
         }
         transform.Rotate(
@@ -477,6 +585,39 @@ public class Spaceship : MonoBehaviour {
             currentSpin.y * Time.deltaTime,
             currentSpin.z * Time.deltaTime,
             Space.Self);
+    }
+
+    private void CalcRotationDelta(float deltaAngleDeg, float currentSpinDegPerSec, out float deltaToApply, out bool thetaSat)
+    {
+        float theta = deltaAngleDeg;
+        float absTheta = Mathf.Abs(theta);
+        float signTheta = Mathf.Sign(theta);
+        if (theta >= 180)
+        {
+            signTheta = -1;
+            absTheta = 360 - absTheta;
+        }
+        float absCurrentSpin = Mathf.Abs(currentSpinDegPerSec);
+        float signCurrentSpin = Mathf.Sign(currentSpinDegPerSec);
+        if (absTheta < minDeltaTheta && absCurrentSpin < minSpinDeltaDegPerSec) // we are close enough
+        {
+            thetaSat = true;
+            deltaToApply = 0;
+        }
+        else // we need to angular impulse to change orientation, maybe
+        {
+            thetaSat = false;
+            float secLeftAtCurrentSpinX = absCurrentSpin == 0 ? 10000000 : absTheta / absCurrentSpin;
+            float minTimeToSlowToZeroSec = RotationTimeDampeningFactor * Mathf.Sqrt(2 * absTheta / RCSAngularDegPerSec);
+            if (minTimeToSlowToZeroSec < secLeftAtCurrentSpinX) // we can stop in time
+            {
+                deltaToApply = signTheta * RCSAngularDegPerSec * Time.deltaTime;
+            }
+            else
+            {
+                deltaToApply = -1 * (signCurrentSpin * RCSAngularDegPerSec * Time.deltaTime);
+            }
+        }
     }
 
     void UpdateInputTranslation()

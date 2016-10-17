@@ -67,7 +67,7 @@ public class GameController : MonoBehaviour
             case GameState.RUNNING:
                 if (Input.GetKeyDown(KeyCode.KeypadMultiply))
                 {
-                    SelectNextTarget();
+                    SelectNextTarget(1);
                 }
                 if (Input.GetKeyDown(KeyCode.Escape))
                 {
@@ -103,6 +103,11 @@ public class GameController : MonoBehaviour
             + "\nPress any key to continue";
         EnableOverScreen();
         gameState = GameState.OVER;
+    }
+
+    public GameObject GetReferenceBody()
+    {
+        return referenceBody;
     }
 
     private void EnableSplashScreen()
@@ -166,14 +171,18 @@ public class GameController : MonoBehaviour
         OffscreenIndicator.AddIndicator(enemyShip.transform, newIndicatorId);
         enemyShips.Add(enemyShip);
         AddTarget(enemyShip, newIndicatorId);
-        SelectNextTarget();
+        SelectNextTarget(1);
     }
 
-    private void SelectNextTarget()
+    private void SelectNextTarget(int offset)
     {
         if (enemyShips.Count > 0)
         {
-            selectedTargetIndex = (selectedTargetIndex + 1) % enemyShips.Count;
+            selectedTargetIndex = (selectedTargetIndex + offset) % enemyShips.Count;
+            if (selectedTargetIndex < 0)
+            {
+                selectedTargetIndex = enemyShips.Count + selectedTargetIndex;
+            }
             selectedTarget = enemyShips[selectedTargetIndex];
             GetComponent<InputController>().TargetToggleText.text = selectedTarget.name;
             ShowTargetIndicator();
@@ -249,12 +258,12 @@ public class GameController : MonoBehaviour
         {
             if (enemyShip == selectedTarget)
             {
-                SelectNextTarget();
+                SelectNextTarget(1);
             }
             enemyShips.Remove(enemyShip);
             if (enemyShips.Count == 0)
             {
-                SelectNextTarget();
+                SelectNextTarget(0);
             }
             //GameObject enemyModel = enemyShip.GetComponent<enemyShipController>().GetShipModel();
             //if (enemyModel != null && enemyModel.activeInHierarchy)

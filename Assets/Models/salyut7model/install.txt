@@ -1,0 +1,1 @@
+To install, just copy the 3ds file to your "models" folder, and the .bmp texture to your "textures>medres" folder. Ensure you also have the Salyut 7 ssc installed!

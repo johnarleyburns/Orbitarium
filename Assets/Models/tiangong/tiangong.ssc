@@ -1,0 +1,43 @@
+# The Catalogue of Tiangong 1
+# TLE
+# 1 37820U 11053A   13314.12424001  .00044347  00000-0  41072-3 0  4743
+# 2 37820  42.7760 195.3535 0005714 241.8552 275.8832 15.66731545121612
+# TLE source: http://celestrak.com/NORAD/elements/noaa.txt Downloaded by using Stellarium.
+# Transformed into SSC format by using Grant Hutchison's spreadsheet. Available here: http://www.lepp.cornell.edu/~seb/celestia/hutchison/spreadsheets.html#2 Awesome! :)
+# The orbit is only approximately correct in a short period of time, and this add-on should not be used to find the position of Tiangong in the sky. 
+# <QUOTE>
+# Also, don't forget that Celestia models the shape of the Earth using a spheroid. The actual shape of our planet is much more complicated. As a result, a view from the Earth's surface in Celestia is not accurate enough to show the correct path across the sky of satellites in low Earth orbit like the ISS. Another issue is that Celestia v1.5.1 and earlier use a fixed rotation speed for the Earth. Since the Earth's rotation is variable, the surface of Celestia's Earth is displaced from where it should be. Celestia v1.6 will use a more accurate variable rotation speed. In other words, you can't use Celestia to find out where to look in the sky to see the ISS.
+# <END QUOTE>	-- Celestia Wikibooks
+# That's the reason why it shouldn't be used. Meanwhile, as you can see, you are able to update the data simply.
+
+"Tiangong 1"	"Sol/Earth"
+{
+	Class			"spacecraft"
+	Mesh			"tiangong.3ds"
+	NormalizeMesh	false
+	MeshScale		0.001
+	Radius			0.0052	# Semi-Length
+	
+	Beginning		"2011 9 29 13:16:03.507"	# Launched UTC, Beijing Time: 2011-9-29 21:16:03.507
+	
+	EllipticalOrbit
+	{
+		Epoch			2456606.62424001
+		Period			0.06382714
+		SemiMajorAxis	6746.393
+		Eccentricity	0.0005714
+		Inclination		42.7760
+		AscendingNode	195.3535
+		ArgOfPericenter	241.8552
+		MeanAnomaly		275.8832
+	}
+	
+	UniformRotation
+	{
+		Inclination		42.7760
+		MeridianAngle	42.7760
+		AscendingNode	195.3535
+	}
+	
+	Albedo		0.10
+}

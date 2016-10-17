@@ -10,6 +10,8 @@ public class InputController : MonoBehaviour
     public Slider FuelSlider;
     public Text FuelRemainingText;
     public ToggleButton DumpFuelButton;
+    public ToggleButton POSToggleButton;
+    public ToggleButton NEGToggleButton;
     public Text TargetToggleText;
     public ToggleButton TargetToggleButton;
     public GameObject HUDLogic;
