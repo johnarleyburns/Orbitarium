@@ -28,7 +28,7 @@ public class Spaceship : MonoBehaviour {
     private NBody nbody; 
     private enum RCSMode { Rotate, Translate };
     private RCSMode currentRCSMode;
-    private Vector3 currentSpin;
+    private Quaternion currentSpinPerSec;
     private bool killingRot;
     private bool autoRotating;
     private GameObject autoRotatingTarget;
@@ -70,7 +70,7 @@ public class Spaceship : MonoBehaviour {
         currentTotalMassKg = EmptyMassKg + FuelMassKg;
         currentFuelKg = FuelMassKg;
         currentRCSMode = RCSMode.Rotate;
-        currentSpin = Vector3.zero;
+        currentSpinPerSec = Quaternion.identity;
         killingRot = false;
         autoRotating = false;
         autoRotatingTarget = null;
@@ -411,6 +411,12 @@ public class Spaceship : MonoBehaviour {
         gameController.UpdateHUD(transform.parent);
     }
 
+    private bool ApplySpinVector(Quaternion q)
+    {
+        currentSpinPerSec *= q;
+        return q != Quaternion.identity;
+    }
+
     private bool ApplySpinVector(Vector3 inputSpinVector)
     {
         Vector3 spinVector = new Vector3(
@@ -418,9 +424,8 @@ public class Spaceship : MonoBehaviour {
             Mathf.Clamp(inputSpinVector.y, -RCSAngularDegPerSec * Time.deltaTime, RCSAngularDegPerSec * Time.deltaTime),
             Mathf.Clamp(inputSpinVector.z, -RCSAngularDegPerSec * Time.deltaTime, RCSAngularDegPerSec * Time.deltaTime)
             );
-        currentSpin.x = Mathf.Clamp(currentSpin.x + spinVector.x, -MaxRotationDegPerSec, MaxRotationDegPerSec);
-        currentSpin.y = Mathf.Clamp(currentSpin.y + spinVector.y, -MaxRotationDegPerSec, MaxRotationDegPerSec);
-        currentSpin.z = Mathf.Clamp(currentSpin.z + spinVector.z, -MaxRotationDegPerSec, MaxRotationDegPerSec);
+        Quaternion spinQ = Quaternion.Euler(spinVector);
+        currentSpinPerSec *= spinQ;
         return spinVector != Vector3.zero;
     }
 
@@ -527,9 +532,11 @@ public class Spaceship : MonoBehaviour {
     {
         if (killingRot)
         {
-            Vector3 neededOffset = Vector3.zero - currentSpin;
-            bool isZero = ApplySpinVector(neededOffset);
-            if (currentSpin == Vector3.zero)
+            float angleDiff = Mathf.Abs(Quaternion.Angle(Quaternion.identity, currentSpinPerSec));
+            float minTimeToSlowToZeroSec = RotationTimeDampeningFactor * Mathf.Sqrt(2 * angleDiff / RCSAngularDegPerSec);
+            float secRemaining = Mathf.Max(minTimeToSlowToZeroSec, 2);
+            currentSpinPerSec = Quaternion.Slerp(currentSpinPerSec, Quaternion.identity, secRemaining * Time.deltaTime);
+            if (Mathf.Abs(Quaternion.Angle(currentSpinPerSec, Quaternion.identity)) < minDeltaTheta)
             {
                 killingRot = false;
             }
@@ -554,38 +561,121 @@ public class Spaceship : MonoBehaviour {
                 gameController.GetComponent<InputController>().POSToggleButton.isToggled = false;
                 gameController.GetComponent<InputController>().NEGToggleButton.isToggled = false;
             }
-            Vector3 a = transform.forward;
-            Vector3 b = (autoRotatingTarget.transform.position - transform.parent.transform.position).normalized;
-            Quaternion q = Quaternion.FromToRotation(a, b);
-            //q = Quaternion.Euler(-transform.rotation.eulerAngles.x, -transform.rotation.eulerAngles.y, -transform.rotation.eulerAngles.z) * q;
-            q = Quaternion.Euler(0, 0, -transform.rotation.eulerAngles.z) * q;
+            //            Quaternion q = Quaternion.FromToRotation(a, b);
+            ////            Quaternion spinDelta = Quaternion.Slerp(transform.rotation, q, RCSAngularDegPerSec * Time.deltaTime);
+            /*
+                        float angleDiff = Mathf.Abs(Quaternion.Angle(transform.rotation, q));
+                        float minTimeToSlowToZeroSec = RotationTimeDampeningFactor * Mathf.Sqrt(2 * angleDiff / RCSAngularDegPerSec);
+                        float secRemaining = Mathf.Max(minTimeToSlowToZeroSec, 2);
+                        Quaternion deltaQ = Quaternion.Slerp(transform.rotation, q, secRemaining * Time.deltaTime);
+                        currentSpinPerSec = deltaQ;
+                        */
+            /*
+            if (Quaternion.Angle(currentSpinPerSec, spinDelta) > minDeltaTheta)
+            {
+                currentSpinPerSec *= spinDelta;
+            }
+            else if (Quaternion.Angle(currentSpinPerSec, spinDelta) < minDeltaTheta)
+            {
+                currentSpinPerSec *= Quaternion.Inverse(spinDelta);
+            }
+            else
+            */
+            //            {
+            //              currentSpinPerSec = Quaternion.identity;
+            //        }
+            //currentSpinPerSec *= spinDelta;
+            //speedup
+            //coast
+            //slowdown
 
-            float deltaXToApply;
-            bool thetaSatX;
-            CalcRotationDelta(q.eulerAngles.x, currentSpin.x, out deltaXToApply, out thetaSatX);
-            float deltaYToApply;
-            bool thetaSatY;
-            CalcRotationDelta(q.eulerAngles.y, currentSpin.y, out deltaYToApply, out thetaSatY);
-            float deltaZToApply;
-            bool thetaSatZ;
-            CalcRotationDelta(q.eulerAngles.z, currentSpin.z, out deltaZToApply, out thetaSatZ);
-            ApplySpinVector(deltaXToApply, deltaYToApply, deltaZToApply);
-            if (thetaSatX && thetaSatY && thetaSatZ)
+            // speedup
+            /*
+            bool slowing;
+            {
+                //Vector3 a = transform.forward;
+                Vector3 b = (autoRotatingTarget.transform.position - transform.parent.transform.position).normalized;
+                Quaternion q = Quaternion.LookRotation(b);
+                float angleDiffFullRot = Mathf.Abs(Quaternion.Angle(transform.rotation, q));
+                float secMaxSpeed = angleDiffFullRot / MaxRotationDegPerSec;
+                float angleDiffToStop = Quaternion.Angle(Quaternion.identity, currentSpinPerSec);
+                float minTimeToSlowToZeroSec = RotationTimeDampeningFactor * Mathf.Sqrt(2 * angleDiffToStop / RCSAngularDegPerSec);
+                float currentAngularSpinPerSec = Mathf.Abs(Quaternion.Angle(Quaternion.identity, currentSpinPerSec));
+                float minTimeToRotAtCurrentSpin = angleDiffFullRot / currentAngularSpinPerSec;
+                float secRemainingUntilSlowdownNeeded = minTimeToRotAtCurrentSpin - minTimeToSlowToZeroSec;
+                if (secRemainingUntilSlowdownNeeded > 0) // we have time to speedup
+                {
+                    Quaternion maxSpinPerSec = Quaternion.Slerp(transform.rotation, q, 1);
+                    float speed = Mathf.Max(secRemainingUntilSlowdownNeeded, 5);
+                    currentSpinPerSec = Quaternion.Slerp(currentSpinPerSec, maxSpinPerSec, speed * Time.deltaTime);
+                    slowing = false;
+                }
+                else
+                {
+                    float secRemaining = Mathf.Max(minTimeToSlowToZeroSec, 1);
+                    float speed = Mathf.Max(secRemaining, 1);
+                    currentSpinPerSec = Quaternion.Slerp(currentSpinPerSec, Quaternion.identity, speed * Time.deltaTime);
+                    slowing = true;
+                }
+            }
+            */
+            //Vector3 a = transform.forward;
+            Vector3 b = (autoRotatingTarget.transform.position - transform.parent.transform.position).normalized;
+            Quaternion q = Quaternion.LookRotation(b);
+            float angle = Quaternion.Angle(transform.rotation, q);
+            float secToTurn = Mathf.Max(angle / MaxRotationDegPerSec, 1);
+            Quaternion desiredQ = Quaternion.Slerp(transform.rotation, q, 1/secToTurn * Time.deltaTime);
+            transform.rotation = desiredQ;
+            currentSpinPerSec = Quaternion.identity;
+
+            if (Mathf.Abs(Quaternion.Angle(transform.rotation, q)) < minDeltaTheta)
             {
                 autoRotating = false;
-                killingRot = true;
+                killingRot = false;
                 autoRotatingTarget = gameController.GetReferenceBody();
                 gameController.GetComponent<InputController>().TargetToggleButton.isToggled = false;
                 gameController.GetComponent<InputController>().POSToggleButton.isToggled = false;
                 gameController.GetComponent<InputController>().NEGToggleButton.isToggled = false;
             }
         }
+        Quaternion timeQ = Quaternion.Slerp(transform.rotation, transform.rotation * currentSpinPerSec, Time.deltaTime);
+        transform.rotation = timeQ;
+        /*
         transform.Rotate(
             currentSpin.x * Time.deltaTime,
             currentSpin.y * Time.deltaTime,
             currentSpin.z * Time.deltaTime,
             Space.Self);
+            */
     }
+
+    private void SphericalFromCartesian(Vector3 cartesianCoordinate, out float polar, out float elevation)
+    {
+        if (cartesianCoordinate.x == 0f)
+            cartesianCoordinate.x = Mathf.Epsilon;
+        float radius = cartesianCoordinate.magnitude;
+
+        polar = Mathf.Atan(cartesianCoordinate.z / cartesianCoordinate.x);
+
+        if (cartesianCoordinate.x < 0f)
+            polar += Mathf.PI;
+        elevation = Mathf.Asin(cartesianCoordinate.y / radius);
+
+        polar *= Mathf.Rad2Deg;
+        elevation *= Mathf.Rad2Deg;
+    }
+
+    private void swing_twist_decomposition(Quaternion rotation,
+                                       Vector3      direction,
+                                       out Quaternion       swing,
+                                       out Quaternion       twist)
+{
+    Vector3 ra = new Vector3(rotation.x, rotation.y, rotation.z ); // rotation axis
+    Vector3 p = Vector3.Project(ra, direction); // return projection v1 on to v2  (parallel component)
+        twist = new Quaternion();
+    twist.Set( p.x, p.y, p.z, rotation.w );
+        swing = rotation * Quaternion.Inverse(twist);
+}
 
     private void CalcRotationDelta(float deltaAngleDeg, float currentSpinDegPerSec, out float deltaToApply, out bool thetaSat)
     {

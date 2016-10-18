@@ -201,6 +201,7 @@
     <Compile Include="Assets\Scripts\PerlinShake.cs" />
     <Compile Include="Assets\Scripts\PlayerShipController.cs" />
     <Compile Include="Assets\Scripts\Spaceship.cs" />
+    <Compile Include="Assets\Scripts\SphericalCoordinates.cs" />
     <Compile Include="Assets\Scripts\ThirdPartyCameraController.cs" />
     <Compile Include="Assets\SolarSystem\Scripts\GlobalValues.cs" />
     <Compile Include="Assets\SolarSystem\Scripts\ObjectRotation.cs" />
