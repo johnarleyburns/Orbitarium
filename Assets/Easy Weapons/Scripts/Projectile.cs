@@ -133,7 +133,7 @@ public class Projectile : MonoBehaviour
 			//call the ApplyDamage() function on the enenmy CharacterSetup script
 			if (col.collider.gameObject.layer == LayerMask.NameToLayer("Limb"))
 			{
-				Vector3 directionShot = col.collider.transform.position - transform.position;
+				//Vector3 directionShot = col.collider.transform.position - transform.position;
 
 				// Un-comment the following section for Bloody Mess support
 				/*

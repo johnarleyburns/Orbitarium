@@ -627,7 +627,7 @@ public class Weapon : MonoBehaviour
 					//call the ApplyDamage() function on the enenmy CharacterSetup script
 					if (hit.collider.gameObject.layer == LayerMask.NameToLayer("Limb"))
 					{
-						Vector3 directionShot = hit.collider.transform.position - transform.position;
+						//Vector3 directionShot = hit.collider.transform.position - transform.position;
 
 						//  Un-comment the following section for Bloody Mess compatibility
 						/*
@@ -967,7 +967,7 @@ public class Weapon : MonoBehaviour
 					//call the ApplyDamage() function on the enenmy CharacterSetup script
 					if (hit.collider.gameObject.layer == LayerMask.NameToLayer("Limb"))
 					{
-						Vector3 directionShot = hit.collider.transform.position - transform.position;
+						//Vector3 directionShot = hit.collider.transform.position - transform.position;
 
 						//  Remove the comment marks from the following section of code for Bloody Mess support
 						/*

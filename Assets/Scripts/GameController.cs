@@ -52,13 +52,20 @@ public class GameController : MonoBehaviour
         EnableSplashScreen();
     }
 
+    private void ResetGravityEngine()
+    {
+        GravityEngine.instance.Clear();
+        GravityEngine.instance.Setup();
+        GravityEngine.instance.SetEvolve(true);
+    }
+
     // Update is called once per frame
     void Update()
     {
         switch (gameState)
         {
             case GameState.SPLASH:
-                if (Input.anyKeyDown)
+                if (Input.anyKey)
                 {
                     EnableRunningScreen();
                     gameState = GameState.RUNNING;
@@ -69,7 +76,7 @@ public class GameController : MonoBehaviour
                 {
                     SelectNextTarget(1);
                 }
-                if (Input.GetKeyDown(KeyCode.Escape))
+                if (Input.GetKeyUp(KeyCode.Escape))
                 {
                     // pause is better;
                     EnableOverScreen();
@@ -77,7 +84,7 @@ public class GameController : MonoBehaviour
                 }
                 break;
             case GameState.OVER:
-                if (Input.anyKeyDown)
+                if (Input.anyKey)
                 {
                     CleanupScene();
                     EnableSplashScreen();
@@ -112,6 +119,7 @@ public class GameController : MonoBehaviour
 
     private void EnableSplashScreen()
     {
+        ResetGravityEngine();
         HideTargetIndicator();
         GetComponent<InputController>().TargetDirectionIndicator.SetActive(true);
         InstantiatePlayer();
@@ -283,7 +291,7 @@ public class GameController : MonoBehaviour
             GameObject playerModel = playerShip.GetComponent<PlayerShipController>().GetShipModel();
             if (playerModel != null && playerModel.activeInHierarchy)
             {
-                playerModel.GetComponent<PlayerShipController>().GetComponent<Spaceship>().PrepareDestroy();
+                playerModel.GetComponent<PlayerShipController>().GetComponent<PlayerShip>().PrepareDestroy();
             }
             GravityEngine.instance.RemoveBody(playerShip);
             Destroy(playerShip);
@@ -320,7 +328,7 @@ public class GameController : MonoBehaviour
         GameOverCanvas.SetActive(true);
         GameStartCanvas.SetActive(false);
         FPSCanvas.SetActive(false);
-        playerModel.GetComponent<Spaceship>().PrepareDestroy();
+        playerModel.GetComponent<PlayerShip>().PrepareDestroy();
         Destroy(playerModel);
     }
 

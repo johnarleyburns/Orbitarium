@@ -22,10 +22,15 @@ namespace MissileBehaviours.Scene
         {
             if (controller)
             {
+                var foo = exhaust.emission;
                 if (controller.IsAccelerating)
-                    exhaust.emissionRate = controller.Throttle;
+                {
+                    foo.rate = controller.Throttle;
+                }
                 else
-                    exhaust.emissionRate = 0;
+                {
+                    foo.rate = 0;
+                }
             }
         }
     }

@@ -102,7 +102,7 @@ public class NBodyCollision : MonoBehaviour {
         }
         else if (collisionType == CollisionType.EXPLODE_OR_BOUNCE)
         {
-            if (ShouldBounce(otherBody))
+            if (PhysicsUtils.ShouldBounce(gameObject, otherBody))
             {
                 GravityEngine.instance.Collision(otherBody.transform.parent.gameObject, transform.parent.gameObject, CollisionType.BOUNCE, bounceFactor);
             }
@@ -139,17 +139,6 @@ public class NBodyCollision : MonoBehaviour {
         StartExplosion(contactPoint, normal, otherBody.transform.parent.gameObject);
         GravityEngine.instance.InactivateBody(transform.parent.gameObject);
         inactivate = true;
-    }
-
-    private bool ShouldBounce(GameObject otherBody)
-    {
-        Vector3 relVelVec =
-        GravityEngine.instance.GetVelocity(otherBody.transform.parent.gameObject)
-        -
-        GravityEngine.instance.GetVelocity(transform.parent.gameObject);
-        float relVel = relVelVec.magnitude;
-        bouncing = relVel < minRelVtoExplode;
-        return bouncing;
     }
 
     private bool SkipThisCollider(GameObject otherBody) {

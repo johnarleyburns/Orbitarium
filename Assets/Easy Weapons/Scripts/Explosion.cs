@@ -53,7 +53,7 @@ public class Explosion : MonoBehaviour
 					//call the ApplyDamage() function on the enenmy CharacterSetup script
 					if (col.gameObject.layer == LayerMask.NameToLayer("Limb"))
 					{
-						Vector3 directionShot = col.transform.position - transform.position;
+						//Vector3 directionShot = col.transform.position - transform.position;
 
 						//  Un-comment the following section to enable Bloody Mess support
 						/*
