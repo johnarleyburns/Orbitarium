@@ -38,6 +38,10 @@ public class GameController : MonoBehaviour
     private Dictionary<GameObject, int> targetIndicatorId = new Dictionary<GameObject, int>();
     private bool inTargetTap = false;
     private float doubleTapTargetTimer = 0;
+    private float gameStartTimer = -1;
+    private bool startedGameOverTransition = false;
+    private bool doPlayGameOverTransition = false;
+    private float gameOverTimer = -1;
 
     public enum GameState
     {
@@ -51,6 +55,7 @@ public class GameController : MonoBehaviour
     {
         gameState = GameState.SPLASH;
         OffscreenIndicator = GetComponent<InputController>().HUDLogic.GetComponent<Greyman.OffScreenIndicator>();
+        gameStartTimer = 0.5f;
         EnableSplashScreen();
     }
 
@@ -74,17 +79,10 @@ public class GameController : MonoBehaviour
                 UpdateCheckForGamePause();
                 break;
             case GameState.OVER:
-                if (Input.anyKey)
-                {
-                    CleanupScene();
-                    EnableSplashScreen();
-                    gameState = GameState.SPLASH;
-                }
+                UpdateGameOver();
                 break;
         }
     }
-
-    private float gameStartTimer = -1;
 
     private void UpdateCheckForGameStart()
     {
@@ -148,8 +146,7 @@ public class GameController : MonoBehaviour
         if (Input.GetKeyUp(KeyCode.Escape))
         {
             // pause is better;
-            EnableOverScreen();
-            gameState = GameState.OVER;
+            GameOver("Player Quit");
         }
     }
 
@@ -167,8 +164,37 @@ public class GameController : MonoBehaviour
     {
         GameOverText.text = gameOverText
             + "\nPress any key to continue";
-        EnableOverScreen();
+        startedGameOverTransition = true;
+        doPlayGameOverTransition = true;
+        gameOverTimer = 3f;
         gameState = GameState.OVER;
+    }
+
+    private void UpdateGameOver()
+    {
+        if (startedGameOverTransition)
+        {
+            if (gameOverTimer > 0)
+            {
+                if (doPlayGameOverTransition)
+                {
+                    EnableGameOverScreen();
+                    doPlayGameOverTransition = false;
+                }
+                gameOverTimer -= Time.deltaTime;
+            }
+            else
+            {
+                if (Input.anyKey)
+                {
+                    CleanupScene();
+                    EnableSplashScreen();
+                    gameState = GameState.SPLASH;
+                    gameOverTimer = -1;
+                    startedGameOverTransition = false;
+                }
+            }
+        }
     }
 
     public GameObject GetReferenceBody()
@@ -182,9 +208,7 @@ public class GameController : MonoBehaviour
         HideTargetIndicator();
         GetComponent<InputController>().TargetDirectionIndicator.SetActive(true);
         InstantiatePlayer();
-        OverviewCamera.enabled = true;
-        FPSCamera.enabled = false;
-        OverShoulderCamera.enabled = false;
+        EnableOverviewCamera();
         GameStartCanvas.SetActive(true);
         FPSCanvas.SetActive(false);
         GameOverCanvas.SetActive(false);
@@ -373,11 +397,13 @@ public class GameController : MonoBehaviour
     {
         if (playerShip != null)
         {
+            /*
             GameObject playerModel = playerShip.GetComponent<PlayerShipController>().GetShipModel();
             if (playerModel != null && playerModel.activeInHierarchy)
             {
                 playerModel.GetComponent<PlayerShipController>().GetComponent<PlayerShip>().PrepareDestroy();
             }
+            */
             GravityEngine.instance.RemoveBody(playerShip);
             Destroy(playerShip);
             playerShip = null;
@@ -395,26 +421,34 @@ public class GameController : MonoBehaviour
     {
         AddFixedTargets();
         InstantiateEnemies();
-        FPSCanvas.SetActive(true);
-        GameStartCanvas.SetActive(false);
-        GameOverCanvas.SetActive(false);
-        FPSCamera.enabled = true;
-        OverviewCamera.enabled = false;
-        OverShoulderCamera.enabled = false;
+        EnableFPSCamera();
     }
 
-    private void EnableOverScreen()
+    private void EnableGameOverScreen()
+    {
+        EnableOverviewCamera();
+        GameOverCanvas.SetActive(true);
+        GameStartCanvas.SetActive(false);
+        FPSCanvas.SetActive(false);
+    }
+
+    private void EnableOverviewCamera()
     {
         GameObject playerModel = playerShip.GetComponent<PlayerShipController>().GetShipModel();
         OverviewCamera.GetComponent<CameraSpin>().UpdateTarget(playerModel);
         OverviewCamera.enabled = true;
         FPSCamera.enabled = false;
         OverShoulderCamera.enabled = false;
-        GameOverCanvas.SetActive(true);
+    }
+
+    private void EnableFPSCamera()
+    {
+        FPSCanvas.SetActive(true);
         GameStartCanvas.SetActive(false);
-        FPSCanvas.SetActive(false);
-        playerModel.GetComponent<PlayerShip>().PrepareDestroy();
-        Destroy(playerModel);
+        GameOverCanvas.SetActive(false);
+        FPSCamera.enabled = true;
+        OverviewCamera.enabled = false;
+        OverShoulderCamera.enabled = false;
     }
 
     private static Vector3 RelVIndicatorScaled(Vector3 relVelUnit)
