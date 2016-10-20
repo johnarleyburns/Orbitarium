@@ -36,6 +36,8 @@ public class GameController : MonoBehaviour
     private static int HUD_INDICATOR_TARGET_DIRECTION = 5;
     private static float RelativeVelocityIndicatorScale = 1000;
     private Dictionary<GameObject, int> targetIndicatorId = new Dictionary<GameObject, int>();
+    private bool inTargetTap = false;
+    private float doubleTapTargetTimer = 0;
 
     public enum GameState
     {
@@ -65,23 +67,11 @@ public class GameController : MonoBehaviour
         switch (gameState)
         {
             case GameState.SPLASH:
-                if (Input.anyKey)
-                {
-                    EnableRunningScreen();
-                    gameState = GameState.RUNNING;
-                }
+                UpdateCheckForGameStart();
                 break;
             case GameState.RUNNING:
-                if (Input.GetKeyDown(KeyCode.KeypadMultiply))
-                {
-                    SelectNextTarget(1);
-                }
-                if (Input.GetKeyUp(KeyCode.Escape))
-                {
-                    // pause is better;
-                    EnableOverScreen();
-                    gameState = GameState.OVER;
-                }
+                UpdateTargetSelection();
+                UpdateCheckForGamePause();
                 break;
             case GameState.OVER:
                 if (Input.anyKey)
@@ -91,6 +81,75 @@ public class GameController : MonoBehaviour
                     gameState = GameState.SPLASH;
                 }
                 break;
+        }
+    }
+
+    private float gameStartTimer = -1;
+
+    private void UpdateCheckForGameStart()
+    {
+        if (gameStartTimer > 0)
+        {
+            gameStartTimer -= Time.deltaTime;
+        }
+        else if (gameStartTimer == -1)
+        {
+            if (Input.anyKey)
+            {
+                gameStartTimer = 0.5f;
+            }
+        }
+        else
+        {
+            EnableRunningScreen();
+            gameState = GameState.RUNNING;
+            gameStartTimer = -1;
+        }
+    }
+
+    private void UpdateTargetSelection()
+    {
+        if (!inTargetTap)
+        {
+            if (Input.GetKeyDown(KeyCode.KeypadMultiply))
+            {
+                inTargetTap = true;
+                doubleTapTargetTimer = 0.2f;
+            }
+        }
+        else // user tapped before
+        {
+            if (doubleTapTargetTimer <= 0) // double tap time has passed, do default select
+            {
+                SelectNextTarget(1);
+                inTargetTap = false;
+                doubleTapTargetTimer = 0;
+            }
+            else // still waiting to see if user double tapped
+            {
+                if (Input.GetKeyDown(KeyCode.KeypadMultiply)) // user doubletapped
+                {
+                    PlayerShipController controller = playerShip.GetComponent<PlayerShipController>();
+                    GameObject playerModel = controller.GetShipModel();
+                    playerModel.GetComponent<PlayerShip>().RotateTowardsTarget();
+                    inTargetTap = false;
+                    doubleTapTargetTimer = 0;
+                }
+                else // continue countdown
+                {
+                    doubleTapTargetTimer -= Time.deltaTime;
+                }
+            }
+        }
+    }
+
+    private void UpdateCheckForGamePause()
+    {
+        if (Input.GetKeyUp(KeyCode.Escape))
+        {
+            // pause is better;
+            EnableOverScreen();
+            gameState = GameState.OVER;
         }
     }
 
@@ -184,6 +243,8 @@ public class GameController : MonoBehaviour
 
     private void SelectNextTarget(int offset)
     {
+        // enemy-only selector
+        /*
         if (enemyShips.Count > 0)
         {
             selectedTargetIndex = (selectedTargetIndex + offset) % enemyShips.Count;
@@ -201,6 +262,30 @@ public class GameController : MonoBehaviour
             selectedTargetIndex = -1;
             selectedTarget = null;
             GetComponent<InputController>().TargetToggleText.text = "TARGET";
+            HideTargetIndicator();
+            SelectNextReferenceBody();
+        }
+        */
+        if (targets.Count > 0)
+        {
+            if (selectedTargetIndex < 0)
+            {
+                selectedTargetIndex = targets.Count + selectedTargetIndex;
+            }
+            else
+            {
+                selectedTargetIndex = (selectedTargetIndex + offset) % targets.Count;
+            }
+            selectedTarget = targets[selectedTargetIndex];
+            GetComponent<InputController>().TargetToggleText.text = selectedTarget.name;
+            ShowTargetIndicator();
+            SelectNextReferenceBody(selectedTarget);
+        }
+        else
+        {
+            selectedTargetIndex = -1;
+            selectedTarget = null;
+            GetComponent<InputController>().TargetToggleText.text = "NONE";
             HideTargetIndicator();
             SelectNextReferenceBody();
         }
@@ -241,7 +326,7 @@ public class GameController : MonoBehaviour
         DestroyPlayer();
         DestroyEnemies();
     }
-    
+
     private void ClearTargets()
     {
         selectedTarget = null;
@@ -375,25 +460,22 @@ public class GameController : MonoBehaviour
             CalcRelV(source, target, out targetDist, out targetRelV, out targetRelVUnitVec);
             if (hasText)
             {
-                string targetName = target.name;
-                string targetString = string.Format("{0}\n{1:0,0} m\n{2:0,0.0} m/s", targetName, targetDist, targetRelV);
+                string targetString = string.Format("{0}\n{1:0,0} m", target.name, targetDist);
                 OffscreenIndicator.UpdateIndicatorText(index, targetString);
             }
             if (isRefBody)
             {
                 Vector3 relVIndicatorScaled = RelVIndicatorScaled(targetRelVUnitVec);
                 Vector3 myPos = source.transform.position;
+                GetComponent<InputController>().RelativeVelocityDirectionIndicator.transform.position = myPos + relVIndicatorScaled;
                 if (OffscreenIndicator.indicators[HUD_INDICATOR_RELV_PRO].hasOnScreenText)
                 {
-                    GetComponent<InputController>().RelativeVelocityDirectionIndicator.transform.position = myPos + relVIndicatorScaled;
-                    string targetString = string.Format("POS {0:0,0.0} m/s", targetRelV);
-                    OffscreenIndicator.UpdateIndicatorText(HUD_INDICATOR_RELV_PRO, targetString);
+                    OffscreenIndicator.UpdateIndicatorText(HUD_INDICATOR_RELV_PRO, "POS");
                 }
+                GetComponent<InputController>().RelativeVelocityAntiDirectionIndicator.transform.position = myPos + -relVIndicatorScaled;
                 if (OffscreenIndicator.indicators[HUD_INDICATOR_RELV_RETR].hasOnScreenText)
                 {
-                    GetComponent<InputController>().RelativeVelocityAntiDirectionIndicator.transform.position = myPos + -relVIndicatorScaled;
-                    string targetString = string.Format("NEG {0:0,0.0} m/s", -targetRelV);
-                    OffscreenIndicator.UpdateIndicatorText(HUD_INDICATOR_RELV_RETR, targetString);
+                    OffscreenIndicator.UpdateIndicatorText(HUD_INDICATOR_RELV_RETR, "NEG");
                 }
             }
             if (isSelectedTarget)
@@ -401,9 +483,8 @@ public class GameController : MonoBehaviour
                 GetComponent<InputController>().TargetDirectionIndicator.transform.position = target.transform.position;
                 if (OffscreenIndicator.indicators[HUD_INDICATOR_TARGET_DIRECTION].hasOnScreenText)
                 {
-                    //GetComponent<InputController>().TargetDirectionIndicator.transform.position = target.transform.position;
-                    //string targetString = string.Format("TARGET {0:0,0.0} m/s", -targetRelV);
-                    //OffscreenIndicator.UpdateIndicatorText(HUD_INDICATOR_RELV_RETR, targetString);
+                    string targetString = string.Format("{0:0,0.0} m/s", targetRelV);
+                    OffscreenIndicator.UpdateIndicatorText(HUD_INDICATOR_TARGET_DIRECTION, targetString);
                 }
             }
         }

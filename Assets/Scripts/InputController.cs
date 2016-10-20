@@ -12,6 +12,9 @@ public class InputController : MonoBehaviour
     public ToggleButton DumpFuelButton;
     public ToggleButton POSToggleButton;
     public ToggleButton NEGToggleButton;
+    public ToggleButton NMLPOSToggleButton;
+    public ToggleButton NMLNEGToggleButton;
+    public ToggleButton KILLToggleButton;
     public Text TargetToggleText;
     public ToggleButton TargetToggleButton;
     public GameObject HUDLogic;

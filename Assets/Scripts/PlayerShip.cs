@@ -3,7 +3,8 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 using Greyman;
 
-public class PlayerShip : MonoBehaviour {
+public class PlayerShip : MonoBehaviour
+{
 
     public GameController gameController;
     public GameObject ShipExplosion;
@@ -20,13 +21,16 @@ public class PlayerShip : MonoBehaviour {
     private CameraMode currentCameraMode;
     private int health;
     private bool rotInput = false;
+    private bool inEngineTap = false;
+    private float doubleTapEngineTimer = 0;
 
-    void Start() {
+    void Start()
+    {
         ship = GetComponent<RocketShip>();
-//    }
+        //    }
 
-//    private void InitStatic()
-//    {
+        //    private void InitStatic()
+        //    {
         transform.position = Vector3.zero;
         transform.rotation = Quaternion.identity;
         transform.parent.transform.position = Vector3.zero;
@@ -35,15 +39,15 @@ public class PlayerShip : MonoBehaviour {
         currentCameraMode = CameraMode.FPS;
         health = healthMax;
         rotInput = false;
-//    }
+        //    }
 
-//    private void InitReady()
-//    {
-//        if (!isInitStatic)
-//        {
-//            InitStatic();
-//            isInitStatic = true;
-//        }
+        //    private void InitReady()
+        //    {
+        //        if (!isInitStatic)
+        //        {
+        //            InitStatic();
+        //            isInitStatic = true;
+        //        }
         UpdateRCSMode();
         UpdateCameraMode();
         UpdateFuelUI();
@@ -267,15 +271,62 @@ public class PlayerShip : MonoBehaviour {
         PlayRotateSounds();
     }
 
+    private bool scheduleMeco = false;
+    private float mecoTimer = 0;
+
     private void UpdateEngineInput()
     {
-        if (Input.GetKeyDown(KeyCode.KeypadEnter))
+        if (scheduleMeco)
         {
-            ship.MainEngineGo();
+            if (mecoTimer > 0)
+            {
+                mecoTimer -= Time.deltaTime;
+            }
+            else
+            {
+                ship.MainEngineCutoff();
+                mecoTimer = 0;
+                scheduleMeco = false;
+            }
         }
-        if (Input.GetKeyUp(KeyCode.KeypadEnter))
+        if (!inEngineTap)
         {
-            ship.MainEngineCutoff();
+            if (Input.GetKeyDown(KeyCode.KeypadEnter))
+            {
+                inEngineTap = true;
+                doubleTapEngineTimer = 0.2f;
+            }
+        }
+        else // user tapped before
+        {
+            if (doubleTapEngineTimer <= 0) // double tap time has passed, do default select
+            {
+                ship.MainEngineGo();
+                mecoTimer = 0.5f;
+                scheduleMeco = true;
+                inEngineTap = false;
+                doubleTapEngineTimer = 0;
+            }
+            else // still waiting to see if user double tapped
+            {
+                if (Input.GetKeyDown(KeyCode.KeypadEnter)) // user doubletapped
+                {
+                    if (ship.IsMainEngineGo())
+                    {
+                        ship.MainEngineCutoff();
+                    }
+                    else
+                    {
+                        ship.MainEngineGo();
+                    }
+                    inEngineTap = false;
+                    doubleTapEngineTimer = 0;
+                }
+                else // continue countdown
+                {
+                    doubleTapEngineTimer -= Time.deltaTime;
+                }
+            }
         }
     }
 
@@ -356,17 +407,22 @@ public class PlayerShip : MonoBehaviour {
             if (rotInput)
             {
                 ship.NoRot();
-                gameController.GetComponent<InputController>().TargetToggleButton.isToggled = false;
-                gameController.GetComponent<InputController>().POSToggleButton.isToggled = false;
-                gameController.GetComponent<InputController>().NEGToggleButton.isToggled = false;
+                ToggleButtons(false, false, false, false);
             }
             if (Input.GetKeyDown(KeyCode.Keypad5)) // kill rot
             {
                 ship.KillRot();
-                gameController.GetComponent<InputController>().TargetToggleButton.isToggled = false;
-                gameController.GetComponent<InputController>().POSToggleButton.isToggled = false;
-                gameController.GetComponent<InputController>().NEGToggleButton.isToggled = false;
+                ToggleButtons(true, false, false, false);
             }
+        }
+    }
+
+    public void RotateTowardsTarget()
+    {
+        if (gameController != null)
+        {
+            ship.AutoRot(gameController.GetReferenceBody());
+            ToggleButtons(false, true, false, false);
         }
     }
 
@@ -374,29 +430,26 @@ public class PlayerShip : MonoBehaviour {
     {
         if (gameController != null)
         {
-            if (Input.GetKeyDown(KeyCode.Keypad7)) // autorot
-            {
-                ship.AutoRot(gameController.GetReferenceBody());
-                gameController.GetComponent<InputController>().TargetToggleButton.isToggled = true;
-                gameController.GetComponent<InputController>().POSToggleButton.isToggled = false;
-                gameController.GetComponent<InputController>().NEGToggleButton.isToggled = false;
-            }
             if (Input.GetKeyDown(KeyCode.KeypadPlus)) // autorot pos
             {
                 ship.AutoRot(gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator);
-                gameController.GetComponent<InputController>().TargetToggleButton.isToggled = false;
-                gameController.GetComponent<InputController>().POSToggleButton.isToggled = true;
-                gameController.GetComponent<InputController>().NEGToggleButton.isToggled = false;
+                ToggleButtons(false, false, true, false);
             }
             if (Input.GetKeyDown(KeyCode.KeypadMinus)) // autorot neg
             {
                 ship.AutoRot(gameController.GetComponent<InputController>().RelativeVelocityAntiDirectionIndicator);
-                gameController.GetComponent<InputController>().TargetToggleButton.isToggled = false;
-                gameController.GetComponent<InputController>().POSToggleButton.isToggled = false;
-                gameController.GetComponent<InputController>().NEGToggleButton.isToggled = true;
+                ToggleButtons(false, false, false, true);
             }
 
         }
+    }
+
+    private void ToggleButtons(bool kill, bool target, bool pos, bool neg)
+    {
+        gameController.GetComponent<InputController>().KILLToggleButton.isToggled = kill;
+        gameController.GetComponent<InputController>().TargetToggleButton.isToggled = target;
+        gameController.GetComponent<InputController>().POSToggleButton.isToggled = pos;
+        gameController.GetComponent<InputController>().NEGToggleButton.isToggled = neg;
     }
 
     void PlayRotateSounds()
