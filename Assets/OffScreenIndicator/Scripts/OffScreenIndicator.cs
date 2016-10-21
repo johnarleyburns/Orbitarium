@@ -36,30 +36,6 @@ namespace Greyman
             Setup();
         }
 
-        void Update()
-        {
-            if (gameController.IsReady())
-            {
-                if (!showing)
-                {
-                    AddFixedIndicators();
-                    showing = true;
-                }
-            }
-            else
-            {
-                if (showing)
-                {
-                    TearDown();
-                    showing = false;
-                }
-            }
-        }
-        /*
-        void Awake() {
-            Setup();
-        }
-        */
         /* JAB NEW */
         public void UpdateIndicatorText(int indicatorId, string text)
         {
@@ -111,7 +87,7 @@ namespace Greyman
             manager.CheckFields();
         }
 
-        private void AddFixedIndicators()
+        public void AddFixedIndicators()
         {
             foreach (FixedTarget target in targets)
             {
@@ -120,7 +96,7 @@ namespace Greyman
             }
         }
 
-        private void TearDown()
+        public void RemoveIndicators()
         {
             /*
              *             foreach (FixedTarget target in targets)

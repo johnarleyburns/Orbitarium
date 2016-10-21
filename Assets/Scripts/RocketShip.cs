@@ -12,9 +12,11 @@ public class RocketShip : MonoBehaviour {
     public float EngineFuelKgPerSec = 8.7f;
     public float DumpFuelRateKgPerSec = 100;
     public float RCSRadiusM = 2.5f;
-    public float minDeltaTheta = 0.1f;
-    public float minSpinDeltaDegPerSec = 0.1f;
-    public float MaxRotationDegPerSec = 45;
+    public float minDeltaTheta = 0.2f;
+    public float minSpinDeltaDegPerSec = 10f;
+    public float MaxRotationDegPerSec = 720;
+    public float RotationSpeedFactor = 2;
+    public float AutoRotationSpeedFactor = 20;
 
     private NBody nbody;
     private float currentFuelKg;
@@ -150,9 +152,7 @@ public class RocketShip : MonoBehaviour {
 
     public bool ApplyRCSSpin(Quaternion unitQuaternion)
     {
-        //currentSpinPerSec = Quaternion.RotateTowards(currentSpinPerSec, currentSpinPerSec * unitQuaternion, RCSAngularDegPerSec);
-//        Quaternion deltaQ = Quaternion.RotateTowards(Quaternion.identity, unitQuaternion, 360);
-        Quaternion q = Quaternion.Slerp(currentSpinPerSec, currentSpinPerSec * unitQuaternion, RCSAngularDegPerSec * Time.deltaTime);
+        Quaternion q = Quaternion.Lerp(currentSpinPerSec, currentSpinPerSec * unitQuaternion, RotationSpeedFactor * RCSAngularDegPerSec * Time.deltaTime);
         currentSpinPerSec = q;
         return unitQuaternion != Quaternion.identity;
     }
@@ -214,7 +214,7 @@ public class RocketShip : MonoBehaviour {
             q = Quaternion.Euler(q.eulerAngles.x, q.eulerAngles.y, transform.rotation.eulerAngles.z);
             float angle = Mathf.Abs(Quaternion.Angle(transform.rotation, q));
             float secToTurn = Mathf.Max(Mathf.Sqrt(2 * angle / RCSAngularDegPerSec), 1);
-            Quaternion desiredQ = Quaternion.Slerp(transform.rotation, q, 1 / secToTurn);
+            Quaternion desiredQ = Quaternion.Lerp(transform.rotation, q, AutoRotationSpeedFactor * 1 / secToTurn);
             Quaternion deltaQ = Quaternion.Inverse(transform.rotation) * desiredQ;
             ConvergeSpin(deltaQ);
             if (Mathf.Abs(Quaternion.Angle(currentSpinPerSec, Quaternion.identity)) < minDeltaTheta
@@ -225,15 +225,16 @@ public class RocketShip : MonoBehaviour {
                 currentSpinPerSec = Quaternion.identity;
             }
         }
-        Quaternion timeQ = Quaternion.Slerp(transform.rotation, transform.rotation * currentSpinPerSec, Time.deltaTime);
+        Quaternion timeQ = Quaternion.Lerp(transform.rotation, transform.rotation * currentSpinPerSec, Time.deltaTime);
         transform.rotation = timeQ;
     }
 
     private void ConvergeSpin(Quaternion deltaQ)
     {
         float angle = Mathf.Abs(Quaternion.Angle(currentSpinPerSec, deltaQ));
+//        float speed = RCSAngularDegPerSec;
         float speed = Mathf.Max(RCSAngularDegPerSec / angle, 1);
-        currentSpinPerSec = Quaternion.Slerp(currentSpinPerSec, deltaQ, speed * Time.deltaTime);
+        currentSpinPerSec = Quaternion.Lerp(currentSpinPerSec, deltaQ, RotationSpeedFactor * speed * Time.deltaTime);
     }
 
     /*

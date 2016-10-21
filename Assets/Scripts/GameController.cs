@@ -128,8 +128,10 @@ public class GameController : MonoBehaviour
     private void TransitionToGameOverFromPaused()
     {
         gameState = GameState.START_GAME_OVER;
+        OffscreenIndicator.RemoveIndicators();
+        Time.timeScale = 0.5f;
         gameOverInputTimer = 1f;
-        GameOverText.text = "Player Quit";
+        GameOverText.text = "Try again? (Y/N)";
         EnableOverviewCamera();
         GameOverCanvas.SetActive(true);
         GamePauseCanvas.SetActive(false);
@@ -141,9 +143,10 @@ public class GameController : MonoBehaviour
     public void TransitionToGameOverFromDeath(string reason)
     {
         gameState = GameState.START_GAME_OVER;
+        OffscreenIndicator.RemoveIndicators();
         Time.timeScale = 0.5f;
-        gameOverInputTimer = 3f;
-        GameOverText.text = reason;
+        gameOverInputTimer = 1f;
+        GameOverText.text = reason + "\nTry again? (Y/N)";
         EnableOverviewCamera();
         GameOverCanvas.SetActive(true);
         GameStartCanvas.SetActive(false);
@@ -162,6 +165,11 @@ public class GameController : MonoBehaviour
         CleanupScene();
         SceneManager.UnloadScene(SceneManager.GetActiveScene().name);
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    private void TransitionToQuit()
+    {
+        Application.CancelQuit();
     }
 
 #endregion
@@ -210,7 +218,7 @@ void Update()
     {
         if (gameOverInputTimer > 0)
         {
-            gameStartInputTimer -= 2 * Time.deltaTime;
+            gameOverInputTimer -= 2 * Time.deltaTime;
         }
         else
         {
@@ -228,7 +236,7 @@ void Update()
 
     private void UpdateCheckForGameUnpause()
     {
-        if (Input.GetKeyUp(KeyCode.Escape))
+        if (Input.GetKeyDown(KeyCode.Y))
         {
             TransitionToGameOverFromPaused();
         }
@@ -240,9 +248,13 @@ void Update()
 
     private void UpdateCheckForGameFinished()
     {
-        if (Input.anyKeyDown)
+        if (Input.GetKeyDown(KeyCode.Y))
         {
             TransitionToStartingFromGameOver();
+        }
+        else if (Input.anyKeyDown)
+        {
+            TransitionToQuit();
         }
     }
 
@@ -291,7 +303,7 @@ void Update()
 
     private void UpdateCheckForGamePause()
     {
-        if (Input.GetKeyUp(KeyCode.Escape))
+        if (Input.GetKeyDown(KeyCode.Escape))
         {
             TransitionToPaused();
         }
@@ -312,7 +324,7 @@ void Update()
         return gameState;
     }
 
-    public bool IsReady()
+    public bool IsRunning()
     {
         return gameState == GameState.RUNNING;
     }
@@ -451,6 +463,7 @@ void Update()
     {
         AddTarget(Didymos, HUD_INDICATOR_DIDYMOS);
         AddTarget(Didymoon, HUD_INDICATOR_DIDYMOON);
+        OffscreenIndicator.AddFixedIndicators();
     }
 
     private void CleanupScene()

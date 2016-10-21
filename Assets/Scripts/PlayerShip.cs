@@ -51,7 +51,7 @@ public class PlayerShip : MonoBehaviour
         UpdateDumpFuel();
     }
 
-    public void PrepareDestroy()
+    private void HaltAudio()
     {
         if (gameController.FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE))
         {
@@ -65,8 +65,6 @@ public class PlayerShip : MonoBehaviour
         {
             gameController.FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG);
         }
-        //isInitStatic = false;
-        //isInitReady = false;
     }
 
     public void SetRCSModeRotate()
@@ -306,16 +304,26 @@ public class PlayerShip : MonoBehaviour
             else
             {
                 health = 0; // boom
-                GameOverCollision(otherBody.name);
+                GameOverCollision(otherBody.transform.parent.name);
             }
         }
     }
 
     private void GameOverCollision(string otherName)
     {
+        RemoveBody();
+        HaltAudio();
         PlayExplosion();
         string msg = string.Format("Smashed into {0}", otherName);
         gameController.TransitionToGameOverFromDeath(msg);
+    }
+
+    private void RemoveBody()
+    {
+        foreach (Transform child in transform)
+        {
+            GameObject.Destroy(child.gameObject);
+        }
     }
 
     private void PlayExplosion()

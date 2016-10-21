@@ -33,9 +33,13 @@ namespace Greyman{
 		
 		void LateUpdate(){
 			//update enemies arrows
-			foreach(ArrowIndicator arrowIndicator in arrowIndicators){
-				UpdateIndicatorPosition(arrowIndicator);
-				arrowIndicator.UpdateEffects();
+            if (Time.timeScale > 0)
+            {
+                foreach (ArrowIndicator arrowIndicator in arrowIndicators)
+                {
+                    UpdateIndicatorPosition(arrowIndicator);
+                    arrowIndicator.UpdateEffects();
+                }
             }
         }
 		
