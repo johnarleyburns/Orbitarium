@@ -24,13 +24,9 @@ public class PlayerShip : MonoBehaviour
     private bool inEngineTap = false;
     private float doubleTapEngineTimer = 0;
 
-    void Start()
+    public void StartShip()
     {
         ship = GetComponent<RocketShip>();
-        //    }
-
-        //    private void InitStatic()
-        //    {
         transform.position = Vector3.zero;
         transform.rotation = Quaternion.identity;
         transform.parent.transform.position = Vector3.zero;
@@ -39,57 +35,20 @@ public class PlayerShip : MonoBehaviour
         currentCameraMode = CameraMode.FPS;
         health = healthMax;
         rotInput = false;
-        //    }
 
-        //    private void InitReady()
-        //    {
-        //        if (!isInitStatic)
-        //        {
-        //            InitStatic();
-        //            isInitStatic = true;
-        //        }
-        UpdateRCSMode();
-        UpdateCameraMode();
-        UpdateFuelUI();
-        UpdateEngineUI();
     }
 
-    // Update is called once per frame
-    void Update()
+    public void UpdateShip()
     {
-        if (gameController != null)
-        {
-            switch (gameController.GetGameState())
-            {
-                case GameController.GameState.SPLASH:
-                    //if (!isInitStatic)
-                    //{
-                    //    InitStatic();
-                    //    isInitStatic = true;
-                    //}
-                    break;
-                case GameController.GameState.RUNNING:
-                    //if (!isInitReady)
-                    //{
-                    //    InitReady();
-                    //    isInitReady = true;
-                    //}
-                    UpdateCameraInput();
-                    UpdateRCSInput();
-                    UpdateEngineInput();
-                    UpdateEngineUI();
-                    UpdateSpinUI();
-                    UpdateDumpFuel();
-                    UpdateHUD();
-                    break;
-                case GameController.GameState.OVER:
-                    //if (isInitStatic || isInitReady)
-                    //{
-                    PrepareDestroy();
-                    //}
-                    break;
-            }
-        }
+        UpdateRCSMode();
+        UpdateCameraMode();
+        UpdateCameraInput();
+        UpdateRCSInput();
+        UpdateEngineInput();
+        UpdateFuelUI();
+        UpdateEngineUI();
+        UpdateSpinUI();
+        UpdateDumpFuel();
     }
 
     public void PrepareDestroy()
@@ -356,7 +315,7 @@ public class PlayerShip : MonoBehaviour
     {
         PlayExplosion();
         string msg = string.Format("Smashed into {0}", otherName);
-        gameController.GameOver(msg);
+        gameController.TransitionToGameOverFromDeath(msg);
     }
 
     private void PlayExplosion()
@@ -364,15 +323,6 @@ public class PlayerShip : MonoBehaviour
         ShipExplosion.GetComponent<ParticleSystem>().Play();
         ShipExplosion.GetComponent<AudioSource>().Play();
         //        Instantiate(ShipExplosion, transform.parent.transform.position, transform.parent.transform.rotation);
-    }
-
-
-    private void UpdateHUD()
-    {
-        if (gameController != null)
-        {
-            gameController.UpdateHUD(transform.parent);
-        }
     }
 
     void UpdateInputRotation()

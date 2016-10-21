@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using Greyman;
 using System.Collections.Generic;
 
@@ -10,6 +11,7 @@ public class GameController : MonoBehaviour
     public GameObject EnemyShipPrefab;
     public GameObject FPSCanvas;
     public GameObject GameStartCanvas;
+    public GameObject GamePauseCanvas;
     public GameObject GameOverCanvas;
     public Text GameOverText;
     public Camera FPSCamera;
@@ -38,71 +40,217 @@ public class GameController : MonoBehaviour
     private Dictionary<GameObject, int> targetIndicatorId = new Dictionary<GameObject, int>();
     private bool inTargetTap = false;
     private float doubleTapTargetTimer = 0;
-    private float gameStartTimer = -1;
-    private bool startedGameOverTransition = false;
-    private bool doPlayGameOverTransition = false;
-    private float gameOverTimer = -1;
-
+    private float gameStartInputTimer = -1;
+    private float gameOverInputTimer = -1;
+    private GameState gameState;
     public enum GameState
     {
-        SPLASH,
+        STARTING,
+        START_NOT_ACCEPTING_INPUT,
+        START_AWAIT_INPUT,
+        PREPARING_RUN,
         RUNNING,
-        OVER
+        PAUSED,
+        START_GAME_OVER,
+        GAME_OVER_NOT_ACCEPTING_INPUT,
+        GAME_OVER_AWAIT_INPUT
     }
-    private GameState gameState;
 
     void Start()
     {
-        gameState = GameState.SPLASH;
-        OffscreenIndicator = GetComponent<InputController>().HUDLogic.GetComponent<Greyman.OffScreenIndicator>();
-        gameStartTimer = 0.5f;
-        EnableSplashScreen();
+        TransitionToStarting();
     }
 
-    private void ResetGravityEngine()
+    #region Transitions
+
+    private void TransitionToStarting()
     {
-        GravityEngine.instance.Clear();
-        GravityEngine.instance.Setup();
-        GravityEngine.instance.SetEvolve(true);
+        gameState = GameState.STARTING;
+        OffscreenIndicator = GetComponent<InputController>().HUDLogic.GetComponent<Greyman.OffScreenIndicator>();
+        gameStartInputTimer = 0.5f;
+        ResetGravityEngine();
+        HideTargetIndicator();
+        GetComponent<InputController>().TargetDirectionIndicator.SetActive(true);
+        InstantiatePlayer();
+        EnableOverviewCamera();
+        GameStartCanvas.SetActive(true);
+        FPSCanvas.SetActive(false);
+        GamePauseCanvas.SetActive(false);
+        GameOverCanvas.SetActive(false);
+        gameState = GameState.START_NOT_ACCEPTING_INPUT;
     }
 
-    // Update is called once per frame
-    void Update()
+    private void TransitionToRunning()
+    {
+        AddFixedTargets();
+        InstantiateEnemies();
+        FPSCanvas.SetActive(true);
+        GameStartCanvas.SetActive(false);
+        GamePauseCanvas.SetActive(false);
+        GameOverCanvas.SetActive(false);
+        FPSCamera.enabled = true;
+        OverviewCamera.enabled = false;
+        OverShoulderCamera.enabled = false;
+        gameState = GameState.RUNNING;
+    }
+
+    private void TransitionToPaused()
+    {
+        Time.timeScale = 0;
+        FPSCanvas.SetActive(false);
+        GameStartCanvas.SetActive(false);
+        GamePauseCanvas.SetActive(true);
+        GameOverCanvas.SetActive(false);
+        FPSCamera.enabled = true;
+        OverviewCamera.enabled = false;
+        OverShoulderCamera.enabled = false;
+        gameState = GameState.PAUSED;
+    }
+
+    private void TransitionToRunningFromPaused()
+    {
+        FPSCanvas.SetActive(true);
+        GameStartCanvas.SetActive(false);
+        GamePauseCanvas.SetActive(false);
+        GameOverCanvas.SetActive(false);
+        FPSCamera.enabled = true;
+        OverviewCamera.enabled = false;
+        OverShoulderCamera.enabled = false;
+        Time.timeScale = 1.0f;
+        gameState = GameState.RUNNING;
+    }
+
+    private void TransitionToStartAwaitInput()
+    {
+        gameState = GameState.START_AWAIT_INPUT;
+    }
+
+    private void TransitionToGameOverFromPaused()
+    {
+        gameState = GameState.START_GAME_OVER;
+        gameOverInputTimer = 1f;
+        GameOverText.text = "Player Quit";
+        EnableOverviewCamera();
+        GameOverCanvas.SetActive(true);
+        GamePauseCanvas.SetActive(false);
+        GameStartCanvas.SetActive(false);
+        FPSCanvas.SetActive(false);
+        gameState = GameState.GAME_OVER_NOT_ACCEPTING_INPUT;
+    }
+
+    public void TransitionToGameOverFromDeath(string reason)
+    {
+        gameState = GameState.START_GAME_OVER;
+        Time.timeScale = 0.5f;
+        gameOverInputTimer = 3f;
+        GameOverText.text = reason;
+        EnableOverviewCamera();
+        GameOverCanvas.SetActive(true);
+        GameStartCanvas.SetActive(false);
+        GamePauseCanvas.SetActive(false);
+        FPSCanvas.SetActive(false);
+        gameState = GameState.GAME_OVER_NOT_ACCEPTING_INPUT;
+    }
+
+    private void TransitionToGameOverAwaitInput()
+    {
+        gameState = GameState.GAME_OVER_AWAIT_INPUT;
+    }
+
+    private void TransitionToStartingFromGameOver()
+    {
+        CleanupScene();
+        SceneManager.UnloadScene(SceneManager.GetActiveScene().name);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+#endregion
+
+#region Updates
+
+void Update()
     {
         switch (gameState)
         {
-            case GameState.SPLASH:
+            case GameState.START_NOT_ACCEPTING_INPUT:
+                UpdateWaitForSplash();
+                break;
+            case GameState.START_AWAIT_INPUT:
                 UpdateCheckForGameStart();
                 break;
             case GameState.RUNNING:
-                UpdateTargetSelection();
+                UpdateShip();
                 UpdateCheckForGamePause();
                 break;
-            case GameState.OVER:
-                UpdateGameOver();
+            case GameState.PAUSED:
+                UpdateCheckForGameUnpause();
                 break;
+            case GameState.GAME_OVER_NOT_ACCEPTING_INPUT:
+                UpdateWaitForGameOver();
+                break;
+            case GameState.GAME_OVER_AWAIT_INPUT:
+                UpdateCheckForGameFinished();
+                break;
+        }
+    }
+
+    private void UpdateWaitForSplash()
+    {
+        if (gameStartInputTimer > 0)
+        {
+            gameStartInputTimer -= Time.deltaTime;
+        }
+        else
+        {
+            TransitionToStartAwaitInput();
+        }
+    }
+
+    private void UpdateWaitForGameOver()
+    {
+        if (gameOverInputTimer > 0)
+        {
+            gameStartInputTimer -= 2 * Time.deltaTime;
+        }
+        else
+        {
+            TransitionToGameOverAwaitInput();
         }
     }
 
     private void UpdateCheckForGameStart()
     {
-        if (gameStartTimer > 0)
+        if (Input.anyKey)
         {
-            gameStartTimer -= Time.deltaTime;
+            TransitionToRunning();
         }
-        else if (gameStartTimer == -1)
+    }
+
+    private void UpdateCheckForGameUnpause()
+    {
+        if (Input.GetKeyUp(KeyCode.Escape))
         {
-            if (Input.anyKey)
-            {
-                gameStartTimer = 0.5f;
-            }
+            TransitionToGameOverFromPaused();
         }
-        else
+        else if (Input.anyKeyDown)
         {
-            EnableRunningScreen();
-            gameState = GameState.RUNNING;
-            gameStartTimer = -1;
+            TransitionToRunningFromPaused();
         }
+    }
+
+    private void UpdateCheckForGameFinished()
+    {
+        if (Input.anyKeyDown)
+        {
+            TransitionToStartingFromGameOver();
+        }
+    }
+
+    private void UpdateShip()
+    {
+        playerShip.GetComponent<PlayerShipController>().GetShipModel().GetComponent<PlayerShip>().UpdateShip();
+        UpdateHUD();
+        UpdateTargetSelection();
     }
 
     private void UpdateTargetSelection()
@@ -145,10 +293,19 @@ public class GameController : MonoBehaviour
     {
         if (Input.GetKeyUp(KeyCode.Escape))
         {
-            // pause is better;
-            GameOver("Player Quit");
+            TransitionToPaused();
         }
     }
+
+    #endregion
+
+    private void ResetGravityEngine()
+    {
+        GravityEngine.instance.Clear();
+        GravityEngine.instance.Setup();
+        GravityEngine.instance.SetEvolve(true);
+    }
+
 
     public GameState GetGameState()
     {
@@ -160,58 +317,9 @@ public class GameController : MonoBehaviour
         return gameState == GameState.RUNNING;
     }
 
-    public void GameOver(string gameOverText)
-    {
-        GameOverText.text = gameOverText
-            + "\nPress any key to continue";
-        startedGameOverTransition = true;
-        doPlayGameOverTransition = true;
-        gameOverTimer = 3f;
-        gameState = GameState.OVER;
-    }
-
-    private void UpdateGameOver()
-    {
-        if (startedGameOverTransition)
-        {
-            if (gameOverTimer > 0)
-            {
-                if (doPlayGameOverTransition)
-                {
-                    EnableGameOverScreen();
-                    doPlayGameOverTransition = false;
-                }
-                gameOverTimer -= Time.deltaTime;
-            }
-            else
-            {
-                if (Input.anyKey)
-                {
-                    CleanupScene();
-                    EnableSplashScreen();
-                    gameState = GameState.SPLASH;
-                    gameOverTimer = -1;
-                    startedGameOverTransition = false;
-                }
-            }
-        }
-    }
-
     public GameObject GetReferenceBody()
     {
         return referenceBody;
-    }
-
-    private void EnableSplashScreen()
-    {
-        ResetGravityEngine();
-        HideTargetIndicator();
-        GetComponent<InputController>().TargetDirectionIndicator.SetActive(true);
-        InstantiatePlayer();
-        EnableOverviewCamera();
-        GameStartCanvas.SetActive(true);
-        FPSCanvas.SetActive(false);
-        GameOverCanvas.SetActive(false);
     }
 
     private void HideTargetIndicator()
@@ -237,6 +345,7 @@ public class GameController : MonoBehaviour
         GravityEngine.instance.AddBody(playerShip);
         GameObject playerModel = controller.GetShipModel();
         SetupCameras(playerModel);
+        playerModel.GetComponent<PlayerShip>().StartShip();
     }
 
     private void InstantiateEnemies()
@@ -417,38 +526,13 @@ public class GameController : MonoBehaviour
         OverviewCamera.GetComponent<CameraSpin>().UpdateTarget(playerModel);
     }
 
-    private void EnableRunningScreen()
-    {
-        AddFixedTargets();
-        InstantiateEnemies();
-        EnableFPSCamera();
-    }
-
-    private void EnableGameOverScreen()
-    {
-        EnableOverviewCamera();
-        GameOverCanvas.SetActive(true);
-        GameStartCanvas.SetActive(false);
-        FPSCanvas.SetActive(false);
-    }
-
     private void EnableOverviewCamera()
     {
         GameObject playerModel = playerShip.GetComponent<PlayerShipController>().GetShipModel();
-        OverviewCamera.GetComponent<CameraSpin>().UpdateTarget(playerModel);
         OverviewCamera.enabled = true;
         FPSCamera.enabled = false;
         OverShoulderCamera.enabled = false;
-    }
-
-    private void EnableFPSCamera()
-    {
-        FPSCanvas.SetActive(true);
-        GameStartCanvas.SetActive(false);
-        GameOverCanvas.SetActive(false);
-        FPSCamera.enabled = true;
-        OverviewCamera.enabled = false;
-        OverShoulderCamera.enabled = false;
+        OverviewCamera.GetComponent<CameraSpin>().UpdateTarget(playerModel);
     }
 
     private static Vector3 RelVIndicatorScaled(Vector3 relVelUnit)
@@ -456,23 +540,9 @@ public class GameController : MonoBehaviour
         return RelativeVelocityIndicatorScale * relVelUnit;
     }
 
-    public static void CalcRelV(Transform source, GameObject target, out float dist, out float relv, out Vector3 relVelUnit)
+    public void UpdateHUD()
     {
-        dist = (target.transform.position - source.transform.position).magnitude;
-        Vector3 myVel = GravityEngine.instance.GetVelocity(source.gameObject);
-        Vector3 targetVel = GravityEngine.instance.GetVelocity(target);
-        Vector3 relVel = myVel - targetVel;
-        Vector3 targetPos = target.transform.position;
-        Vector3 myPos = source.transform.position;
-        Vector3 relLoc = targetPos - myPos;
-        float relVelDot = Vector3.Dot(relVel, relLoc);
-        float relVelScalar = relVel.magnitude;
-        relv = Mathf.Sign(relVelDot) * relVelScalar;
-        relVelUnit = relVel.normalized;
-    }
-
-    public void UpdateHUD(Transform source)
-    {
+        Transform source = playerShip.transform;
         foreach (GameObject target in targets)
         {
             int indicatorId = targetIndicatorId[target];
@@ -491,7 +561,7 @@ public class GameController : MonoBehaviour
             float targetDist;
             float targetRelV;
             Vector3 targetRelVUnitVec;
-            CalcRelV(source, target, out targetDist, out targetRelV, out targetRelVUnitVec);
+            RocketShip.CalcRelV(source, target, out targetDist, out targetRelV, out targetRelVUnitVec);
             if (hasText)
             {
                 string targetString = string.Format("{0}\n{1:0,0} m", target.name, targetDist);
