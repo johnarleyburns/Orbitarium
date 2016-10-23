@@ -63,13 +63,11 @@ public class WeaponEditor : Editor
 			if (weapon.type == WeaponType.Projectile)
 			{
 				weapon.projectile = (GameObject)EditorGUILayout.ObjectField("Projectile", weapon.projectile, typeof(GameObject), false);
-                weapon.projectileSpawnSpot = (Transform)EditorGUILayout.ObjectField("Projectile Spawn Point", weapon.projectileSpawnSpot, typeof(Transform), true);
-                weapon.projectileSpawnDist = EditorGUILayout.FloatField("Spawn distance from point (m)", weapon.projectileSpawnDist);
-                weapon.projectileMuzzleVelocity = EditorGUILayout.FloatField("Muzzle Velocity (m/s)", weapon.projectileMuzzleVelocity);
-            }
+				weapon.projectileSpawnSpot = (Transform)EditorGUILayout.ObjectField("Projectile Spawn Point", weapon.projectileSpawnSpot, typeof(Transform), true);
+			}
 
-            // Beam
-            if (weapon.type == WeaponType.Beam)
+			// Beam
+			if (weapon.type == WeaponType.Beam)
 			{
 				weapon.reflect = EditorGUILayout.Toggle("Reflect", weapon.reflect);
 				weapon.reflectionMaterial = (Material)EditorGUILayout.ObjectField("Reflection Material", weapon.reflectionMaterial, typeof(Material), false);

@@ -844,7 +844,12 @@ public class GravityEngine : MonoBehaviour {
 			Debug.LogError("No NBody found on " + body.name + " cannot get velocity"); 
 			return Vector3.zero;
 		}
-		if (nbody.engineRef.bodyType == BodyType.MASSLESS) {
+        if (nbody.engineRef == null)
+        {
+            Debug.LogError("No NBody engine ref found on " + body.name + " cannot get velocity");
+            return Vector3.zero;
+        }
+        if (nbody.engineRef.bodyType == BodyType.MASSLESS) {
 			return masslessEngine.GetVelocity(body);
 		} 
 		return integrator.GetVelocityForIndex(nbody.engineRef.index);

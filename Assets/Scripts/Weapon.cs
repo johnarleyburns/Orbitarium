@@ -100,9 +100,11 @@ public class Weapon : MonoBehaviour
 	// Projectile
 	public GameObject projectile;						// The projectile to be launched (if the type is projectile)
 	public Transform projectileSpawnSpot;				// The spot where the projectile should be instantiated
+    public float projectileSpawnDist;
+    public float projectileMuzzleVelocity;
 
-	// Beam
-	public bool reflect = true;							// Whether or not the laser beam should reflect off of certain surfaces
+    // Beam
+    public bool reflect = true;							// Whether or not the laser beam should reflect off of certain surfaces
 	public Material reflectionMaterial;					// The material that reflects the laser.  If this is null, the laser will reflect off all surfaces
 	public int maxReflections = 5;						// The maximum number of times the laser beam can reflect off surfaces.  Without this limit, the system can possibly become stuck in an infinite loop
 	public string beamTypeName = "laser_beam";			// This is the name that will be used as the name of the instantiated beam effect.  It is not necessary.
@@ -833,8 +835,15 @@ public class Weapon : MonoBehaviour
 			// Instantiate the projectile
 			if (projectile != null)
 			{
-				GameObject proj = Instantiate(projectile, projectileSpawnSpot.position, projectileSpawnSpot.rotation) as GameObject;
-
+                Vector3 forwardDir = projectileSpawnSpot.forward;
+                //Vector3 spawnPos = projectileSpawnSpot.position + projectileSpawnDist * projectileSpawnSpot.forward;
+                Vector3 spawnPos = projectileSpawnSpot.position;
+                Quaternion spawnRot = projectileSpawnSpot.rotation;
+                GameObject nBodyProj = Instantiate(projectile, spawnPos, spawnRot) as GameObject;
+                GameObject proj = nBodyProj.transform.GetChild(0).gameObject;
+                Vector3 impulse = projectileMuzzleVelocity * forwardDir;
+                GravityEngine.instance.AddBody(nBodyProj);
+                GravityEngine.instance.ApplyImpulse(nBodyProj.GetComponent<NBody>(), impulse);
 				// Warmup heat
 				if (warmup)
 				{

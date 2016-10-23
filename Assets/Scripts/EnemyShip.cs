@@ -5,11 +5,11 @@ public class EnemyShip : MonoBehaviour {
 
     public GameController gameController;
     public string VisibleName;
-    public float healthMax = 3;
+    public float healthMax = 1;
     public float minRelVtoDamage = 5;
-    public bool hasRandomRotation = true;
-    public bool hasRandomV = true;
-    public float randomVMainEngineMaxSec = 5;
+//    public bool hasRandomRotation = true;
+//    public bool hasRandomV = true;
+//    public float randomVMainEngineMaxSec = 5;
     public GameObject ShipExplosion;
 
     private float health;
@@ -20,11 +20,11 @@ public class EnemyShip : MonoBehaviour {
     {
         health = healthMax;
         ship = GetComponent<RocketShip>();
-        if (hasRandomRotation)
-        {
-            InitRandomRotation();
-        }
-        StartTimedMainEngineBurn(Random.Range(0, randomVMainEngineMaxSec));
+//        if (hasRandomRotation)
+//        {
+//            InitRandomRotation();
+//        }
+//        StartTimedMainEngineBurn(Random.Range(0, randomVMainEngineMaxSec));
     }
 
     void Update()
@@ -32,12 +32,12 @@ public class EnemyShip : MonoBehaviour {
         UpdateTimedMainEngineBurn();
     }
 
-    private void InitRandomRotation()
-    {
-        Vector3 r = Random.insideUnitSphere;
-        Quaternion rot = Quaternion.Euler(r);
-        transform.rotation = rot;
-    }
+//    private void InitRandomRotation()
+//    {
+//        Vector3 r = Random.insideUnitSphere;
+//        Quaternion rot = Quaternion.Euler(r);
+//        transform.rotation = rot;
+//    }
 
     private void StartTimedMainEngineBurn(float timeSec)
     {
@@ -81,7 +81,8 @@ public class EnemyShip : MonoBehaviour {
             {
                 health = 0; // boom
                 ShipExplosion.GetComponent<ParticleSystem>().Play();
-                Destroy(gameObject);
+                gameObject.SetActive(false);
+                gameController.DestroyEnemyShipByCollision(transform.parent.gameObject);
             }
         }
     }

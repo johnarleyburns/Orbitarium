@@ -19,9 +19,12 @@ public class GameController : MonoBehaviour
     public Camera OverviewCamera;
     public GameObject Didymos;
     public GameObject Didymoon;
+    public float PlayerInitialImpulse;
     public float EnemyDistanceMeters = 500;
     public float EnemyRandomSpreadMeters = 200;
     public float EnemyInitialCount = 3;
+    public float EnemyInitialImpulse = 10;
+    public float DestroyedEnemyTimeToLiveSec = 5;
 
     private OffScreenIndicator OffscreenIndicator;
     private GameObject playerShip;
@@ -42,6 +45,7 @@ public class GameController : MonoBehaviour
     private float doubleTapTargetTimer = 0;
     private float gameStartInputTimer = -1;
     private float gameOverInputTimer = -1;
+    private Dictionary<GameObject, float> destroyedEnemiesTimeToLive = new Dictionary<GameObject, float>();
     private GameState gameState;
     public enum GameState
     {
@@ -84,6 +88,7 @@ public class GameController : MonoBehaviour
     {
         AddFixedTargets();
         InstantiateEnemies();
+        SetupInitialVelocities();
         FPSCanvas.SetActive(true);
         GameStartCanvas.SetActive(false);
         GamePauseCanvas.SetActive(false);
@@ -172,11 +177,11 @@ public class GameController : MonoBehaviour
         Application.CancelQuit();
     }
 
-#endregion
+    #endregion
 
-#region Updates
+    #region Updates
 
-void Update()
+    void Update()
     {
         switch (gameState)
         {
@@ -188,6 +193,7 @@ void Update()
                 break;
             case GameState.RUNNING:
                 UpdateShip();
+                UpdateCheckForDestroyedEnemies();
                 UpdateCheckForGamePause();
                 break;
             case GameState.PAUSED:
@@ -231,6 +237,36 @@ void Update()
         if (Input.anyKey)
         {
             TransitionToRunning();
+        }
+    }
+
+    private void UpdateCheckForDestroyedEnemies()
+    {
+        HashSet<GameObject> pruneEnemies = new HashSet<GameObject>();
+        List<GameObject> keys = new List<GameObject>(destroyedEnemiesTimeToLive.Keys);
+        foreach (GameObject enemyShip in keys)
+        {
+            float timeToLive;
+            if (destroyedEnemiesTimeToLive.TryGetValue(enemyShip, out timeToLive))
+            {
+                timeToLive -= Time.deltaTime;
+                if (timeToLive <= 0)
+                {
+                    pruneEnemies.Add(enemyShip);
+                }
+                else
+                {
+                    destroyedEnemiesTimeToLive[enemyShip] = timeToLive;
+                }
+            }
+        }
+        foreach (GameObject g in pruneEnemies)
+        {
+            destroyedEnemiesTimeToLive.Remove(g);
+        }
+        foreach (GameObject g in pruneEnemies)
+        {
+            DestroyEnemy(g);
         }
     }
 
@@ -358,6 +394,17 @@ void Update()
         GameObject playerModel = controller.GetShipModel();
         SetupCameras(playerModel);
         playerModel.GetComponent<PlayerShip>().StartShip();
+    }
+
+    private void SetupInitialVelocities()
+    {
+        float playerImpulse = Random.Range(0, PlayerInitialImpulse);
+        GravityEngine.instance.ApplyImpulse(playerShip.GetComponent<NBody>(), playerImpulse * playerShip.transform.forward);
+        foreach (GameObject enemyShip in enemyShips)
+        {
+            float enemyImpulse = Random.Range(0, EnemyInitialImpulse);
+            GravityEngine.instance.ApplyImpulse(enemyShip.GetComponent<NBody>(), enemyImpulse * -playerShip.transform.forward);
+        }
     }
 
     private void InstantiateEnemies()
@@ -489,6 +536,15 @@ void Update()
             DestroyEnemy(enemyShip);
         }
         enemyShips.Clear();
+        destroyedEnemiesTimeToLive.Clear();
+    }
+
+    public void DestroyEnemyShipByCollision(GameObject enemyShip)
+    {
+        if (!destroyedEnemiesTimeToLive.ContainsKey(enemyShip))
+        {
+            destroyedEnemiesTimeToLive.Add(enemyShip, DestroyedEnemyTimeToLiveSec);
+        }
     }
 
     private void DestroyEnemy(GameObject enemyShip)
@@ -499,19 +555,17 @@ void Update()
             {
                 SelectNextTarget(1);
             }
+            targets.Remove(enemyShip);
+            OffscreenIndicator.RemoveIndicator(enemyShip.transform);
             enemyShips.Remove(enemyShip);
             if (enemyShips.Count == 0)
             {
                 SelectNextTarget(0);
             }
-            //GameObject enemyModel = enemyShip.GetComponent<enemyShipController>().GetShipModel();
-            //if (enemyModel != null && enemyModel.activeInHierarchy)
-            //{
-            //    enemyModel.GetComponent<enemyShipController>().GetComponent<Spaceship>().PrepareDestroy();
-            //}
-            GravityEngine.instance.RemoveBody(enemyShip);
-            Destroy(enemyShip);
-            enemyShip = null;
+            //GravityEngine.instance.RemoveBody(enemyShip);     
+            //Destroy(enemyShip);
+            GravityEngine.instance.InactivateBody(enemyShip);
+            enemyShip.SetActive(false);
         }
     }
 

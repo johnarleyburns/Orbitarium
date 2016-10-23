@@ -71,6 +71,10 @@ public class NBodyCollision : MonoBehaviour {
 	there were visual offsets (bumps) even when object masses were set to the minimum. Hence triggers. 
 	*/
 	void OnTriggerEnter(Collider collider) {
+        if (collider == null || collider.attachedRigidbody == null)
+        {
+            return;
+        }
 		GameObject otherBody = collider.attachedRigidbody.gameObject;
 
 		if (SkipThisCollider(otherBody)) {

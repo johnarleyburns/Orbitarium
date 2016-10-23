@@ -75,7 +75,7 @@ public class RocketShip : MonoBehaviour {
 
     public void DumpFuel()
     {
-        ApplyFuel(-DumpFuelRateKgPerSec * Time.deltaTime);
+        ApplyFuel(-DumpFuelRateKgPerSec);
     }
 
     public void MainEngineGo()
@@ -97,10 +97,10 @@ public class RocketShip : MonoBehaviour {
     {
         if (mainEngineOn)
         {
-            if (currentFuelKg > EngineFuelKgPerSec * Time.deltaTime)
+            if (currentFuelKg > EngineFuelKgPerSec)
             {
-                ApplyImpulse(transform.forward, EngineThrustPerSec * Time.deltaTime);
-                ApplyFuel(-EngineFuelKgPerSec * Time.deltaTime);
+                ApplyImpulse(transform.forward, EngineThrustPerSec);
+                ApplyFuel(-EngineFuelKgPerSec);
             }
             else
             {
@@ -121,20 +121,19 @@ public class RocketShip : MonoBehaviour {
 
     public void ApplyRCSImpulse(Vector3 normalizedDirection)
     {
-        ApplyImpulse(normalizedDirection, RCSThrustPerSec * Time.deltaTime);
-        ApplyFuel(-RCSFuelKgPerSec * Time.deltaTime);
+        ApplyImpulse(normalizedDirection, RCSThrustPerSec);
+        ApplyFuel(-RCSFuelKgPerSec);
     }
 
-    private void ApplyImpulse(Vector3 normalizedDirection, float thrustPer)
+    private void ApplyImpulse(Vector3 normalizedDirection, float thrustPerSec)
     {
-        Vector3 thrust = normalizedDirection * thrustPer * Time.deltaTime;
-        //thrust = transform.rotation * thrust * Time.deltaTime;
+        Vector3 thrust = normalizedDirection * thrustPerSec * Time.deltaTime;
         GravityEngine.instance.ApplyImpulse(nbody, thrust);
     }
 
     private void ApplyFuel(float deltaFuel)
     {
-        currentFuelKg += deltaFuel;
+        currentFuelKg += deltaFuel * Time.deltaTime;
         if (currentFuelKg <= 0)
         {
             currentFuelKg = 0;

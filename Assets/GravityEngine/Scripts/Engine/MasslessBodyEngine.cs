@@ -129,8 +129,9 @@ public class MasslessBodyEngine  {
 			info_copy[j] = info[j];
 			bodies_copy[j] = bodies[j];
 		}
-		v = new double[arraySize+growBy, GravityEngine.NDIM];
-		a = new double[arraySize+growBy, GravityEngine.NDIM];
+        r = new double[arraySize + growBy, GravityEngine.NDIM];
+        v = new double[arraySize + growBy, GravityEngine.NDIM];
+        a = new double[arraySize+growBy, GravityEngine.NDIM];
 		info = new byte[arraySize+growBy];
 		bodies = new GameObject[arraySize+growBy];
 
