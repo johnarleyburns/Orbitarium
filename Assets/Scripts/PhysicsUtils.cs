@@ -4,6 +4,7 @@ using System.Collections;
 public class PhysicsUtils : MonoBehaviour {
 
     public static float minRelVtoExplode = 5;
+    public static string NeverBounceTag = "Projectile";
 
     public static bool ShouldBounce(GameObject myNBodyChild, GameObject otherBody)
     {
@@ -13,13 +14,21 @@ public class PhysicsUtils : MonoBehaviour {
 
     public static bool ShouldBounce(GameObject myNBodyChild, GameObject otherBody, out float relVel)
     {
-        Vector3 relVelVec =
-            GravityEngine.instance.GetVelocity(otherBody.transform.parent.gameObject)
-            -
-            GravityEngine.instance.GetVelocity(myNBodyChild.transform.parent.gameObject);
-        relVel = relVelVec.magnitude;
-        bool bouncing = relVel < minRelVtoExplode;
-        return bouncing;
+        if (otherBody.tag == NeverBounceTag || myNBodyChild.tag == NeverBounceTag)
+        {
+            relVel = 0;
+            return false;
+        }
+        else
+        {
+            Vector3 relVelVec =
+                GravityEngine.instance.GetVelocity(otherBody.transform.parent.gameObject)
+                -
+                GravityEngine.instance.GetVelocity(myNBodyChild.transform.parent.gameObject);
+            relVel = relVelVec.magnitude;
+            bool bouncing = relVel < minRelVtoExplode;
+            return bouncing;
+        }
     }
 
 
