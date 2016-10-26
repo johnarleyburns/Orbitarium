@@ -10,8 +10,6 @@ public class PlayerShip : MonoBehaviour
     public GameObject ShipExplosion;
     public int healthMax = 3;
     public float minRelVtoDamage = 1;
-    //   private bool isInitStatic = false;
-    //   private bool isInitReady = false;
 
     //! Thrust scale
     private RocketShip ship;
@@ -23,6 +21,11 @@ public class PlayerShip : MonoBehaviour
     private bool rotInput = false;
     private bool inEngineTap = false;
     private float doubleTapEngineTimer = 0;
+    private bool inKillRotVTap = false;
+    private float doubleTapKillRotVTimer = 0;
+    private bool scheduleMeco = false;
+    private float mecoTimer = 0;
+
 
     public void StartShip()
     {
@@ -220,16 +223,48 @@ public class PlayerShip : MonoBehaviour
                 UpdateInputRotation();
                 break;
             case RCSMode.Translate:
-            default:
                 UpdateInputTranslation();
                 break;
         }
+        UpdateKillRotV();
         UpdateAutoRotate();
         PlayRotateSounds();
     }
 
-    private bool scheduleMeco = false;
-    private float mecoTimer = 0;
+    private void UpdateKillRotV()
+    {
+        if (!inKillRotVTap)
+        {
+            if (Input.GetKeyDown(KeyCode.Keypad5))
+            {
+                inKillRotVTap = true;
+                doubleTapKillRotVTimer = 0.2f;
+            }
+        }
+        else // user tapped before
+        {
+            if (doubleTapKillRotVTimer <= 0) // double tap time has passed, do killrot
+            {
+                ship.KillRot();
+                inKillRotVTap = false;
+                doubleTapKillRotVTimer = 0;
+            }
+            else // still waiting to see if user double tapped
+            {
+                if (Input.GetKeyDown(KeyCode.Keypad5)) // user doubletapped do killv
+                {
+                    KillVTarget();
+                    inKillRotVTap = false;
+                    doubleTapKillRotVTimer = 0;
+                }
+                else // continue countdown
+                {
+                    doubleTapKillRotVTimer -= Time.deltaTime;
+                }
+            }
+        }
+
+    }
 
     private void UpdateEngineInput()
     {
@@ -364,13 +399,8 @@ public class PlayerShip : MonoBehaviour
             }
             if (rotInput)
             {
-                ship.NoRot();
+                ship.AutopilotOff();
                 ToggleButtons(false, false, false, false);
-            }
-            if (Input.GetKeyDown(KeyCode.Keypad5)) // kill rot
-            {
-                ship.KillRot();
-                ToggleButtons(true, false, false, false);
             }
         }
     }
@@ -384,10 +414,24 @@ public class PlayerShip : MonoBehaviour
         }
     }
 
+    public void KillVTarget()
+    {
+        if (gameController != null)
+        {
+            ship.KillRelV(gameController.GetReferenceBody());
+            ToggleButtons(false, true, false, false);
+        }
+    }
+
     void UpdateAutoRotate()
     {
         if (gameController != null)
         {
+            if (Input.GetKeyDown(KeyCode.Keypad5)) // kill rot
+            {
+                ship.KillRot();
+                ToggleButtons(true, false, false, false);
+            }
             if (Input.GetKeyDown(KeyCode.KeypadPlus)) // autorot pos
             {
                 ship.AutoRot(gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator);

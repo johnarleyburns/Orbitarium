@@ -26,9 +26,17 @@ public class RocketShip : MonoBehaviour {
     private float RCSAngularDegPerSec;
     private bool mainEngineOn;
     private Quaternion currentSpinPerSec;
-    private bool killingRot;
-    private bool autoRotating;
-    private GameObject autoRotatingTarget;
+    private AutopilotMode autopilotMode;
+    private GameObject autopilotTarget;
+    private GameObject autopilotRotTarget;
+    private enum AutopilotMode
+    {
+        OFF,
+        KILL_ROT,
+        ROT_TO_TARGET,
+        KILL_RELV_TARGET,
+        KILL_RELV_TARGET_ROT
+    };
 
     void Start()
     {
@@ -37,9 +45,9 @@ public class RocketShip : MonoBehaviour {
         currentTotalMassKg = EmptyMassKg + FuelMassKg;
         currentFuelKg = FuelMassKg;
         currentSpinPerSec = Quaternion.identity;
-        killingRot = false;
-        autoRotating = false;
-        autoRotatingTarget = null;
+        autopilotMode = AutopilotMode.OFF;
+        autopilotTarget = null;
+        autopilotRotTarget = null;
         UpdateThrustRates();
     }
 
@@ -156,59 +164,63 @@ public class RocketShip : MonoBehaviour {
         return unitQuaternion != Quaternion.identity;
     }
 
-    public void NoRot()
+    public void AutopilotOff()
     {
-        killingRot = false;
-        autoRotating = false;
+        autopilotMode = AutopilotMode.OFF;
     }
 
     public bool IsRot()
     {
-        return killingRot || autoRotating;
+        return autopilotMode == AutopilotMode.KILL_ROT || autopilotMode == AutopilotMode.ROT_TO_TARGET || autopilotMode == AutopilotMode.KILL_RELV_TARGET_ROT;
     }
 
     public bool IsKillRot()
     {
-        return killingRot;
+        return autopilotMode == AutopilotMode.KILL_ROT;
     }
 
     public bool IsAutoRot()
     {
-        return autoRotating;
+        return autopilotMode == AutopilotMode.ROT_TO_TARGET;
     }
 
     public void KillRot()
     {
-        killingRot = true;
-        autoRotating = false;
+        autopilotMode = AutopilotMode.KILL_ROT;
     }
 
     public void AutoRot(GameObject target)
     {
-        killingRot = false;
-        autoRotating = true;
-        autoRotatingTarget = target;
+        autopilotMode = AutopilotMode.ROT_TO_TARGET;
+        autopilotTarget = target;
+    }
+
+    public void KillRelV(GameObject target)
+    {
+        autopilotMode = AutopilotMode.KILL_RELV_TARGET_ROT;
+        autopilotTarget = target;
+        autopilotRotTarget = null; // rel neg velocity direction unit vector
     }
 
     public GameObject AutoRotTarget()
     {
-        return autoRotatingTarget;
+        return autopilotTarget;
     }
 
     public void ApplyCurrentSpin()
     {
-        if (killingRot)
+        if (autopilotMode == AutopilotMode.KILL_ROT)
         {
             ConvergeSpin(Quaternion.identity);
             if (Mathf.Abs(Quaternion.Angle(currentSpinPerSec, Quaternion.identity)) < minDeltaTheta)
             {
-                killingRot = false;
+                autopilotMode = AutopilotMode.OFF;
                 currentSpinPerSec = Quaternion.identity;
             }
         }
-        else if (autoRotating)
+        else if (autopilotMode == AutopilotMode.ROT_TO_TARGET)
         {
-            Vector3 b = (autoRotatingTarget.transform.position - transform.parent.transform.position).normalized;
+            Vector3 b = (autopilotTarget.transform.position - transform.parent.transform.position).normalized;
             Quaternion q = Quaternion.LookRotation(b);
             q = Quaternion.Euler(q.eulerAngles.x, q.eulerAngles.y, transform.rotation.eulerAngles.z);
             float angle = Mathf.Abs(Quaternion.Angle(transform.rotation, q));
@@ -219,8 +231,7 @@ public class RocketShip : MonoBehaviour {
             if (Mathf.Abs(Quaternion.Angle(currentSpinPerSec, Quaternion.identity)) < minDeltaTheta
                 && Mathf.Abs(Quaternion.Angle(transform.rotation, q)) < minDeltaTheta)
             {
-                autoRotating = false;
-                killingRot = false;
+                autopilotMode = AutopilotMode.OFF;
                 currentSpinPerSec = Quaternion.identity;
             }
         }
@@ -236,23 +247,4 @@ public class RocketShip : MonoBehaviour {
         currentSpinPerSec = Quaternion.Lerp(currentSpinPerSec, deltaQ, RotationSpeedFactor * speed * Time.deltaTime);
     }
 
-    /*
-    private bool ApplySpinVector(Vector3 inputSpinVector)
-    {
-        Vector3 spinVector = new Vector3(
-            Mathf.Clamp(inputSpinVector.x, -RCSAngularDegPerSec * Time.deltaTime, RCSAngularDegPerSec * Time.deltaTime),
-            Mathf.Clamp(inputSpinVector.y, -RCSAngularDegPerSec * Time.deltaTime, RCSAngularDegPerSec * Time.deltaTime),
-            Mathf.Clamp(inputSpinVector.z, -RCSAngularDegPerSec * Time.deltaTime, RCSAngularDegPerSec * Time.deltaTime)
-            );
-        Quaternion spinQ = Quaternion.Euler(spinVector);
-        currentSpinPerSec *= spinQ;
-        return spinVector != Vector3.zero;
-    }
-
-    public bool ApplySpinVector(float x, float y, float z)
-    {
-        Vector3 spinVector = new Vector3(x, y, z);
-        return ApplySpinVector(spinVector);
-    }
-    */
 }
