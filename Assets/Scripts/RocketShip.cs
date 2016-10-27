@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-using System.Collections;
+using System.Collections.Generic;
 
 public class RocketShip : MonoBehaviour {
 
@@ -26,16 +26,28 @@ public class RocketShip : MonoBehaviour {
     private float RCSAngularDegPerSec;
     private bool mainEngineOn;
     private Quaternion currentSpinPerSec;
-    private AutopilotMode autopilotMode;
-    private GameObject autopilotTarget;
-    private GameObject autopilotRotTarget;
-    private enum AutopilotMode
+    private List<AutopilotCommand> currentProgram;
+    private int currentProgramCounter;
+    public class AutopilotCommand
     {
-        OFF,
+        public AutopilotCommand(AutopilotInstruction a, GameObject b, float c, int d)
+        {
+            instruction = a;
+            target = b;
+            number = c;
+            nextPC = d;
+        }
+        public AutopilotInstruction instruction;
+        public GameObject target;
+        public float number;
+        public int nextPC;
+    }
+    public enum AutopilotInstruction
+    {
+        NOOP,
         KILL_ROT,
         ROT_TO_TARGET,
-        KILL_RELV_TARGET,
-        KILL_RELV_TARGET_ROT
+        BURN_TO_V
     };
 
     void Start()
@@ -45,9 +57,7 @@ public class RocketShip : MonoBehaviour {
         currentTotalMassKg = EmptyMassKg + FuelMassKg;
         currentFuelKg = FuelMassKg;
         currentSpinPerSec = Quaternion.identity;
-        autopilotMode = AutopilotMode.OFF;
-        autopilotTarget = null;
-        autopilotRotTarget = null;
+        ClearProgram();
         UpdateThrustRates();
     }
 
@@ -58,9 +68,10 @@ public class RocketShip : MonoBehaviour {
             switch (gameController.GetGameState())
             {
                 case GameController.GameState.RUNNING:
+                    UpdateExecuteInstruction();
                     UpdateThrustRates();
                     UpdateEngine();
-                    ApplyCurrentSpin();
+                    UpdateApplyCurrentSpin();
                     break;
             }
         }
@@ -99,6 +110,15 @@ public class RocketShip : MonoBehaviour {
     public bool IsMainEngineGo()
     {
         return mainEngineOn;
+    }
+
+    private void ClearProgram()
+    {
+        currentProgram = new List<AutopilotCommand>()
+        {
+            new AutopilotCommand(AutopilotInstruction.NOOP, null, 0, 0)
+        };
+        currentProgramCounter = 0;
     }
 
     private void UpdateEngine()
@@ -166,75 +186,139 @@ public class RocketShip : MonoBehaviour {
 
     public void AutopilotOff()
     {
-        autopilotMode = AutopilotMode.OFF;
+        ClearProgram();
+    }
+
+    private AutopilotCommand CurrentCommand()
+    {
+        return currentProgram[currentProgramCounter];
     }
 
     public bool IsRot()
     {
-        return autopilotMode == AutopilotMode.KILL_ROT || autopilotMode == AutopilotMode.ROT_TO_TARGET || autopilotMode == AutopilotMode.KILL_RELV_TARGET_ROT;
+        AutopilotCommand currentCommand = CurrentCommand();
+        return currentCommand.instruction == AutopilotInstruction.KILL_ROT
+            || currentCommand.instruction == AutopilotInstruction.ROT_TO_TARGET
+            || currentCommand.instruction == AutopilotInstruction.BURN_TO_V;
     }
 
     public bool IsKillRot()
     {
-        return autopilotMode == AutopilotMode.KILL_ROT;
+        AutopilotCommand currentCommand = CurrentCommand();
+        return currentCommand.instruction == AutopilotInstruction.KILL_ROT;
     }
 
     public bool IsAutoRot()
     {
-        return autopilotMode == AutopilotMode.ROT_TO_TARGET;
+        AutopilotCommand currentCommand = CurrentCommand();
+        return currentCommand.instruction == AutopilotInstruction.ROT_TO_TARGET;
     }
 
     public void KillRot()
     {
-        autopilotMode = AutopilotMode.KILL_ROT;
+        currentProgram = new List<AutopilotCommand>()
+        {
+            new AutopilotCommand(AutopilotInstruction.KILL_ROT, null, 0, 1),
+            new AutopilotCommand(AutopilotInstruction.NOOP, null, 0, 1)
+        };
+        currentProgramCounter = 0;
     }
 
     public void AutoRot(GameObject target)
     {
-        autopilotMode = AutopilotMode.ROT_TO_TARGET;
-        autopilotTarget = target;
+        currentProgram = new List<AutopilotCommand>()
+        {
+            new AutopilotCommand(AutopilotInstruction.ROT_TO_TARGET, target, 0, 1),
+            new AutopilotCommand(AutopilotInstruction.NOOP, null, 0, 1)
+        };
     }
 
     public void KillRelV(GameObject target)
     {
-        autopilotMode = AutopilotMode.KILL_RELV_TARGET_ROT;
-        autopilotTarget = target;
-        autopilotRotTarget = null; // rel neg velocity direction unit vector
+        GameObject negV = null;
+        currentProgram = new List<AutopilotCommand>()
+        {
+            new AutopilotCommand(AutopilotInstruction.ROT_TO_TARGET, negV, 0, 1),
+            new AutopilotCommand(AutopilotInstruction.BURN_TO_V, null, 0, 2),
+            new AutopilotCommand(AutopilotInstruction.NOOP, null, 0, 2)
+        };
+        currentProgramCounter = 0;
     }
 
-    public GameObject AutoRotTarget()
+    public GameObject CurrentTarget()
     {
-        return autopilotTarget;
+        AutopilotCommand currentCommand = currentProgram[currentProgramCounter];
+        return currentCommand.target;
     }
 
-    public void ApplyCurrentSpin()
+    private void UpdateExecuteInstruction()
     {
-        if (autopilotMode == AutopilotMode.KILL_ROT)
+        switch (CurrentCommand().instruction)
         {
-            ConvergeSpin(Quaternion.identity);
-            if (Mathf.Abs(Quaternion.Angle(currentSpinPerSec, Quaternion.identity)) < minDeltaTheta)
-            {
-                autopilotMode = AutopilotMode.OFF;
-                currentSpinPerSec = Quaternion.identity;
-            }
+            case AutopilotInstruction.NOOP:
+                ExecuteNoop();
+                break;
+            case AutopilotInstruction.KILL_ROT:
+                ExecuteKillRot();
+                break;
+            case AutopilotInstruction.ROT_TO_TARGET:
+                ExecuteRotToTarget();
+                break;
+            case AutopilotInstruction.BURN_TO_V:
+                ExecuteBurnToV();
+                break;
         }
-        else if (autopilotMode == AutopilotMode.ROT_TO_TARGET)
+    }
+
+    private void ExecuteNoop()
+    {
+        JumpToNextInstruction();
+    }
+
+    private void ExecuteKillRot()
+    {
+        ConvergeSpin(Quaternion.identity);
+        if (Mathf.Abs(Quaternion.Angle(currentSpinPerSec, Quaternion.identity)) < minDeltaTheta)
         {
-            Vector3 b = (autopilotTarget.transform.position - transform.parent.transform.position).normalized;
-            Quaternion q = Quaternion.LookRotation(b);
-            q = Quaternion.Euler(q.eulerAngles.x, q.eulerAngles.y, transform.rotation.eulerAngles.z);
-            float angle = Mathf.Abs(Quaternion.Angle(transform.rotation, q));
-            float secToTurn = Mathf.Max(Mathf.Sqrt(2 * angle / RCSAngularDegPerSec), 1);
-            Quaternion desiredQ = Quaternion.Lerp(transform.rotation, q, AutoRotationSpeedFactor * 1 / secToTurn);
-            Quaternion deltaQ = Quaternion.Inverse(transform.rotation) * desiredQ;
-            ConvergeSpin(deltaQ);
-            if (Mathf.Abs(Quaternion.Angle(currentSpinPerSec, Quaternion.identity)) < minDeltaTheta
-                && Mathf.Abs(Quaternion.Angle(transform.rotation, q)) < minDeltaTheta)
-            {
-                autopilotMode = AutopilotMode.OFF;
-                currentSpinPerSec = Quaternion.identity;
-            }
+            currentSpinPerSec = Quaternion.identity;
+            JumpToNextInstruction();
         }
+    }
+
+    private void ExecuteRotToTarget()
+    {
+        Vector3 b = (CurrentCommand().target.transform.position - transform.parent.transform.position).normalized;
+        Quaternion q = Quaternion.LookRotation(b);
+        q = Quaternion.Euler(q.eulerAngles.x, q.eulerAngles.y, transform.rotation.eulerAngles.z);
+        float angle = Mathf.Abs(Quaternion.Angle(transform.rotation, q));
+        float secToTurn = Mathf.Max(Mathf.Sqrt(2 * angle / RCSAngularDegPerSec), 1);
+        Quaternion desiredQ = Quaternion.Lerp(transform.rotation, q, AutoRotationSpeedFactor * 1 / secToTurn);
+        Quaternion deltaQ = Quaternion.Inverse(transform.rotation) * desiredQ;
+        ConvergeSpin(deltaQ);
+        if (Mathf.Abs(Quaternion.Angle(currentSpinPerSec, Quaternion.identity)) < minDeltaTheta
+            && Mathf.Abs(Quaternion.Angle(transform.rotation, q)) < minDeltaTheta)
+        {
+            currentSpinPerSec = Quaternion.identity;
+            JumpToNextInstruction();
+        }
+    }
+
+    private void ExecuteBurnToV()
+    {
+        // check relv magnitude
+        // if not burning and magnitude greater than RCS thrust then main engine burn
+        // else if not burning and magnitude less than RCS thrust then RCS thrust once
+        // else if burning and relv magnitude less than min delta then stop burning
+        // else jumptonext
+    }
+
+    private void JumpToNextInstruction()
+    {
+        currentProgramCounter = CurrentCommand().nextPC;
+    }
+
+    public void UpdateApplyCurrentSpin()
+    {
         Quaternion timeQ = Quaternion.Lerp(transform.rotation, transform.rotation * currentSpinPerSec, Time.deltaTime);
         transform.rotation = timeQ;
     }
@@ -242,7 +326,7 @@ public class RocketShip : MonoBehaviour {
     private void ConvergeSpin(Quaternion deltaQ)
     {
         float angle = Mathf.Abs(Quaternion.Angle(currentSpinPerSec, deltaQ));
-//        float speed = RCSAngularDegPerSec;
+        // float speed = RCSAngularDegPerSec;
         float speed = Mathf.Max(RCSAngularDegPerSec / angle, 1);
         currentSpinPerSec = Quaternion.Lerp(currentSpinPerSec, deltaQ, RotationSpeedFactor * speed * Time.deltaTime);
     }

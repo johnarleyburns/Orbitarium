@@ -483,13 +483,13 @@ public class PlayerShip : MonoBehaviour
             }
             else if (ship.IsAutoRot())
             {
-                if (ship.AutoRotTarget() == gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator)
+                if (ship.CurrentTarget() == gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator)
                 {
                     gameController.GetComponent<InputController>().TargetToggleButton.isToggled = false;
                     gameController.GetComponent<InputController>().POSToggleButton.isToggled = true;
                     gameController.GetComponent<InputController>().NEGToggleButton.isToggled = false;
                 }
-                else if (ship.AutoRotTarget() == gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator)
+                else if (ship.CurrentTarget() == gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator)
                 {
                     gameController.GetComponent<InputController>().TargetToggleButton.isToggled = false;
                     gameController.GetComponent<InputController>().POSToggleButton.isToggled = false;
