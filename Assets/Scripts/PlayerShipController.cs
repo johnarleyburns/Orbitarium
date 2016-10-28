@@ -14,6 +14,7 @@ public class PlayerShipController : MonoBehaviour {
     {
         ShipModel.GetComponent<PlayerShip>().gameController = controller;
         ShipModel.GetComponent<RocketShip>().gameController = controller;
+        ShipModel.GetComponent<Autopilot>().gameController = controller;
     }
 
     public GameObject GetShipModel()

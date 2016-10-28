@@ -628,7 +628,7 @@ public class GameController : MonoBehaviour
             float targetDist;
             float targetRelV;
             Vector3 targetRelVUnitVec;
-            RocketShip.CalcRelV(source, target, out targetDist, out targetRelV, out targetRelVUnitVec);
+            PhysicsUtils.CalcRelV(source, target, out targetDist, out targetRelV, out targetRelVUnitVec);
             if (hasText)
             {
                 string targetString = string.Format("{0}\n{1:0,0} m", target.name, targetDist);

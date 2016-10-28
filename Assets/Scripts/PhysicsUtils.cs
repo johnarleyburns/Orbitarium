@@ -31,5 +31,19 @@ public class PhysicsUtils : MonoBehaviour {
         }
     }
 
+    public static void CalcRelV(Transform source, GameObject target, out float dist, out float relv, out Vector3 relVelUnit)
+    {
+        dist = (target.transform.position - source.transform.position).magnitude;
+        Vector3 myVel = GravityEngine.instance.GetVelocity(source.gameObject);
+        Vector3 targetVel = GravityEngine.instance.GetVelocity(target);
+        Vector3 relVel = myVel - targetVel;
+        Vector3 targetPos = target.transform.position;
+        Vector3 myPos = source.transform.position;
+        Vector3 relLoc = targetPos - myPos;
+        float relVelDot = Vector3.Dot(relVel, relLoc);
+        float relVelScalar = relVel.magnitude;
+        relv = Mathf.Sign(relVelDot) * relVelScalar;
+        relVelUnit = relVel.normalized;
+    }
 
 }
