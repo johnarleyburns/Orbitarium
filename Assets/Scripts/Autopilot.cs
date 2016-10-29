@@ -1,14 +1,22 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
-public class Autopilot : MonoBehaviour {
+public class Autopilot : MonoBehaviour
+{
 
     public GameController gameController;
     public float MaxRCSAutoBurnSec = 10;
     public float MinDeltaVforBurn = 0.1f;
-
+    public float InterceptDeltaV = 30;
+    public float AutoRotationSpeedFactor = 20;
+    public float NavigationalConstant = 3;
+    public bool APNG = true;
 
     private RocketShip ship;
+    private Vector3 previousLos;
+    private Vector3 los;
+    private Vector3 losDelta;
+    private Vector3 desiredRotation;
     private List<AutopilotCommand> currentProgram = new List<AutopilotCommand>()
     {
         new AutopilotCommand(AutopilotInstruction.NOOP, null, 0)
@@ -32,10 +40,14 @@ public class Autopilot : MonoBehaviour {
         KILL_ROT,
         ROT_TO_UNITVEC,
         ROT_TO_TARGET,
-        BURN_TO_ZERO_RELV
+        ROT_TO_TARGET_APNG,
+        BURN_GO,
+        BURN_TO_ZERO_RELV,
+        BURN_TO_INTER_RELV
     };
 
-    void Start () {
+    void Start()
+    {
         ship = GetComponent<RocketShip>();
         ClearProgram();
     }
@@ -55,14 +67,7 @@ public class Autopilot : MonoBehaviour {
 
     private void ClearProgram()
     {
-        lock (this)
-        {
-            currentProgram = new List<AutopilotCommand>()
-            {
-                new AutopilotCommand(AutopilotInstruction.NOOP, null, 0)
-            };
-            currentProgramCounter = 0;
-        }
+        LoadProgram(new AutopilotCommand(AutopilotInstruction.NOOP, null, 0));
     }
 
     public void AutopilotOff()
@@ -91,8 +96,7 @@ public class Autopilot : MonoBehaviour {
     {
         AutopilotCommand currentCommand = CurrentCommand();
         return currentCommand.instruction == AutopilotInstruction.KILL_ROT
-            || currentCommand.instruction == AutopilotInstruction.ROT_TO_TARGET
-            || currentCommand.instruction == AutopilotInstruction.BURN_TO_ZERO_RELV;
+            || IsAutoRot();
     }
 
     public bool IsKillRot()
@@ -104,7 +108,9 @@ public class Autopilot : MonoBehaviour {
     public bool IsAutoRot()
     {
         AutopilotCommand currentCommand = CurrentCommand();
-        return currentCommand.instruction == AutopilotInstruction.ROT_TO_TARGET;
+        return currentCommand.instruction == AutopilotInstruction.ROT_TO_TARGET
+            || currentCommand.instruction == AutopilotInstruction.ROT_TO_UNITVEC
+            || currentCommand.instruction == AutopilotInstruction.ROT_TO_TARGET_APNG;
     }
 
     public void KillRot()
@@ -137,6 +143,18 @@ public class Autopilot : MonoBehaviour {
         );
     }
 
+    public void APNGToTarget(GameObject target)
+    {
+        float dist;
+        float relv;
+        Vector3 relVelUnit;
+        PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
+        LoadProgram(
+            new AutopilotCommand(AutopilotInstruction.BURN_GO, null, 1),
+            new AutopilotCommand(AutopilotInstruction.ROT_TO_TARGET_APNG, target, 1)
+        );
+    }
+
     public GameObject CurrentTarget()
     {
         AutopilotCommand currentCommand = currentProgram[currentProgramCounter];
@@ -159,8 +177,17 @@ public class Autopilot : MonoBehaviour {
             case AutopilotInstruction.ROT_TO_TARGET:
                 ExecuteRotToTarget();
                 break;
+            case AutopilotInstruction.ROT_TO_TARGET_APNG:
+                ExecuteRotToTargetAPNG();
+                break;
+            case AutopilotInstruction.BURN_GO:
+                ExecuteBurnGo();
+                break;
             case AutopilotInstruction.BURN_TO_ZERO_RELV:
-                ExecuteBurnToV();
+                ExecuteBurnToV(0f);
+                break;
+            case AutopilotInstruction.BURN_TO_INTER_RELV:
+                ExecuteBurnToV(InterceptDeltaV);
                 break;
         }
     }
@@ -217,15 +244,18 @@ public class Autopilot : MonoBehaviour {
         {
             converged = true;
         }
-        else 
+        else
         {
             Quaternion q = Quaternion.LookRotation(b);
             q = Quaternion.Euler(q.eulerAngles.x, q.eulerAngles.y, transform.rotation.eulerAngles.z);
+            /*
             float angle = Mathf.Abs(Quaternion.Angle(transform.rotation, q));
             float secToTurn = Mathf.Max(Mathf.Sqrt(2 * angle / ship.CurrentRCSAngularDegPerSec()), 1);
             Quaternion desiredQ = Quaternion.Lerp(transform.rotation, q, ship.RotationSpeedFactor * 1 / secToTurn);
             Quaternion deltaQ = Quaternion.Inverse(transform.rotation) * desiredQ;
             converged = ship.ConvergeSpin(deltaQ, q);
+*/
+            converged = ship.ConvergeSpin(q);
         }
         if (converged)
         {
@@ -233,7 +263,59 @@ public class Autopilot : MonoBehaviour {
         }
     }
 
-    private void ExecuteBurnToV()
+    private void ExecuteRotToTargetAPNG()
+    {
+        GameObject targetObj = CurrentCommand().parameter as GameObject;
+        Transform target = targetObj.transform;
+        Vector3 b = target.position;
+        previousLos = los;
+        los = b - transform.position;
+        losDelta = los - previousLos;
+        losDelta = losDelta - Vector3.Project(losDelta, los);
+
+        if (APNG)
+            desiredRotation = (Time.deltaTime * los) + (losDelta * NavigationalConstant) + (Time.deltaTime * desiredRotation * NavigationalConstant * 0.5f); // Augmented version of proportional navigation.
+        else
+            desiredRotation = (Time.deltaTime * los) + (losDelta * NavigationalConstant); // Plain proportional navigation.
+
+        bool converged;
+        if (b == Vector3.zero)
+        {
+            converged = true;
+        }
+        else
+        {
+            //            Quaternion q = Quaternion.LookRotation(b);
+            Quaternion q = Quaternion.LookRotation(desiredRotation);
+//            q = Quaternion.Euler(q.eulerAngles.x, q.eulerAngles.y, transform.rotation.eulerAngles.z);
+//            float angle = Mathf.Abs(Quaternion.Angle(transform.rotation, q));
+//            float secToTurn = Mathf.Max(Mathf.Sqrt(2 * angle / ship.CurrentRCSAngularDegPerSec()), 1);
+//            Quaternion desiredQ = Quaternion.Lerp(transform.rotation, q, ship.RotationSpeedFactor * 1 / secToTurn);
+//            Quaternion desiredQ = Quaternion.Lerp(transform.rotation, q, AutoRotationSpeedFactor * 1 / secToTurn);
+            Quaternion desiredQ = q;
+            Quaternion deltaQ = Quaternion.Inverse(transform.rotation) * desiredQ;
+
+//            converged = ship.ConvergeSpin(deltaQ, q);
+            converged = ship.ConvergeSpin(q);
+        }
+        if (converged)
+        {
+            JumpToNextInstruction();
+        }
+
+        //controller.Rotate(Quaternion.LookRotation(desiredRotation, transform.up)); // Use the Rotate function of the controller, instead of the transforms, to consider the rotation rate of the missile.
+    }
+
+    private void ExecuteBurnGo()
+    {
+        if (!ship.IsMainEngineGo())
+        {
+            ship.MainEngineGo();
+        }
+        JumpToNextInstruction();
+    }
+
+    private void ExecuteBurnToV(float desiredDeltaV)
     {
         bool done = false;
         bool burnMain = false;
@@ -246,7 +328,9 @@ public class Autopilot : MonoBehaviour {
         float relv;
         Vector3 relVelUnit;
         PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
-        if (relv <= MinDeltaVforBurn) // burned enough or too much
+        float absRelVGap = Mathf.Abs(desiredDeltaV - relv);
+        if ((desiredDeltaV > 0 && relv > desiredDeltaV)
+            || absRelVGap <= MinDeltaVforBurn) // burned enough or too much
         {
             burnMain = false;
             burnRCS = false;
@@ -255,12 +339,11 @@ public class Autopilot : MonoBehaviour {
         else
         {
             // is RCS sufficient?
-            float absRelV = Mathf.Abs(relv);
-            bool rcsSufficient = absRelV <= ship.RCSFuelKgPerSec;
+            bool rcsSufficient = absRelVGap <= ship.RCSFuelKgPerSec;
             // if not burning and magnitude greater than RCS thrust ten sec then main engine burn
             float maxRCSDeltaV = MaxRCSAutoBurnSec * ship.CurrentRCSAccelerationPerSec();
-            burnMain = relv > maxRCSDeltaV;
-            burnRCS = relv <= maxRCSDeltaV; 
+            burnMain = absRelVGap > maxRCSDeltaV;
+            burnRCS = absRelVGap <= maxRCSDeltaV;
         }
 
         if (burnMain)

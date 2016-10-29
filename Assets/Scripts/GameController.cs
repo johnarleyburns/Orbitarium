@@ -435,8 +435,7 @@ public class GameController : MonoBehaviour
 
     private void SelectNextTarget(int offset)
     {
-        // enemy-only selector
-        /*
+        // prefer enemy targets
         if (enemyShips.Count > 0)
         {
             selectedTargetIndex = (selectedTargetIndex + offset) % enemyShips.Count;
@@ -449,16 +448,7 @@ public class GameController : MonoBehaviour
             ShowTargetIndicator();
             SelectNextReferenceBody(selectedTarget);
         }
-        else
-        {
-            selectedTargetIndex = -1;
-            selectedTarget = null;
-            GetComponent<InputController>().TargetToggleText.text = "TARGET";
-            HideTargetIndicator();
-            SelectNextReferenceBody();
-        }
-        */
-        if (targets.Count > 0)
+        else if (targets.Count > 0)
         {
             if (selectedTargetIndex < 0)
             {

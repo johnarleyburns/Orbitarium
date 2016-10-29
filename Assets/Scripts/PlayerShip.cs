@@ -10,7 +10,7 @@ public class PlayerShip : MonoBehaviour
     public GameObject ShipExplosion;
     public int healthMax = 3;
     public float minRelVtoDamage = 1;
-    public float DoubleTapInterval = 0.5f;
+    public float DoubleTapInterval = 0.2f;
 
     //! Thrust scale
     private RocketShip ship;
@@ -21,13 +21,9 @@ public class PlayerShip : MonoBehaviour
     private CameraMode currentCameraMode;
     private int health;
     private bool rotInput = false;
-    private bool inEngineTap = false;
-    private float doubleTapEngineTimer = 0;
-    private bool inKillRotVTap = false;
-    private float doubleTapKillRotVTimer = 0;
-    private bool scheduleMeco = false;
-    private float mecoTimer = 0;
-
+    private float doubleTapEngineTimer;
+    private float doubleTapKillRotVTimer;
+    private float doubleTapRotatePlusTimer;
 
     public void StartShip()
     {
@@ -39,6 +35,8 @@ public class PlayerShip : MonoBehaviour
         transform.parent.transform.rotation = Quaternion.identity;
         currentRCSMode = RCSMode.Rotate;
         currentCameraMode = CameraMode.FPS;
+        doubleTapEngineTimer = -1;
+        doubleTapKillRotVTimer = -1;
         health = healthMax;
         rotInput = false;
 
@@ -230,98 +228,66 @@ public class PlayerShip : MonoBehaviour
                 break;
         }
         UpdateKillRotV();
-        UpdateAutoRotate();
+        UpdateRotatePlus();
+        UpdateRotateMinus();
         PlayRotateSounds();
     }
 
     private void UpdateKillRotV()
     {
-        if (!inKillRotVTap)
-        {
-            if (Input.GetKeyDown(KeyCode.Keypad5))
-            {
-                inKillRotVTap = true;
-                doubleTapKillRotVTimer = DoubleTapInterval;
-            }
-        }
-        else // user tapped before
-        {
-            if (doubleTapKillRotVTimer <= 0) // double tap time has passed, do killrot
-            {
-                autopilot.KillRot();
-                inKillRotVTap = false;
-                doubleTapKillRotVTimer = 0;
-            }
-            else // still waiting to see if user double tapped
-            {
-                if (Input.GetKeyDown(KeyCode.Keypad5)) // user doubletapped do killv
-                {
-                    KillVTarget();
-                    inKillRotVTap = false;
-                    doubleTapKillRotVTimer = 0;
-                }
-                else // continue countdown
-                {
-                    doubleTapKillRotVTimer -= Time.deltaTime;
-                }
-            }
-        }
+        UpdateDoubleTap(KeyCode.Keypad5, ref doubleTapKillRotVTimer, KillRot, KillVTarget);
+    }
 
+    private delegate void TapFunc();
+    private void UpdateDoubleTap(KeyCode keyCode, ref float timer, TapFunc singleTapFunc, TapFunc doubleTapFunc)
+    {
+        if (Input.GetKeyDown(keyCode))
+        {
+            if (timer > 0)
+            {
+                // it's a double tap
+                doubleTapFunc();
+                timer = -1;
+            }
+            else
+            {
+                // start single tap time
+                timer = DoubleTapInterval;
+            }
+        }
+        else if (timer > 0)
+        {
+            // still waiting for double or single time to elapse
+            timer -= Time.deltaTime;
+        }
+        else if (timer > -1 && timer <= 0)
+        {
+            // time has elapsed for single tap, do it
+            singleTapFunc();
+            timer = -1;
+        }
     }
 
     private void UpdateEngineInput()
     {
-        if (scheduleMeco)
+        UpdateDoubleTap(KeyCode.KeypadEnter, ref doubleTapEngineTimer, BurstEngine, ToggleEngine);
+    }
+
+    private void BurstEngine()
+    {
+        float burnTime = DoubleTapInterval;
+        ship.MainEngineBurst(burnTime);
+    }
+
+    private void ToggleEngine()
+    {
+        if (ship.IsMainEngineGo())
         {
-            if (mecoTimer > 0)
-            {
-                mecoTimer -= Time.deltaTime;
-            }
-            else
-            {
-                ship.MainEngineCutoff();
-                mecoTimer = 0;
-                scheduleMeco = false;
-            }
+            ship.MainEngineCutoff();
         }
-        if (!inEngineTap)
+        else
         {
-            if (Input.GetKeyDown(KeyCode.KeypadEnter))
-            {
-                inEngineTap = true;
-                doubleTapEngineTimer = DoubleTapInterval;
-            }
-        }
-        else // user tapped before
-        {
-            if (doubleTapEngineTimer <= 0) // double tap time has passed, do default select
-            {
-                ship.MainEngineGo();
-                mecoTimer = 0.5f;
-                scheduleMeco = true;
-                inEngineTap = false;
-                doubleTapEngineTimer = 0;
-            }
-            else // still waiting to see if user double tapped
-            {
-                if (Input.GetKeyDown(KeyCode.KeypadEnter)) // user doubletapped
-                {
-                    if (ship.IsMainEngineGo())
-                    {
-                        ship.MainEngineCutoff();
-                    }
-                    else
-                    {
-                        ship.MainEngineGo();
-                    }
-                    inEngineTap = false;
-                    doubleTapEngineTimer = 0;
-                }
-                else // continue countdown
-                {
-                    doubleTapEngineTimer -= Time.deltaTime;
-                }
-            }
+            ship.MainEngineGo();
         }
     }
 
@@ -417,6 +383,15 @@ public class PlayerShip : MonoBehaviour
         }
     }
 
+    public void KillRot()
+    {
+        if (gameController != null)
+        {
+            autopilot.KillRot();
+            ToggleButtons(true, false, false, false);
+        }
+    }
+
     public void KillVTarget()
     {
         if (gameController != null)
@@ -426,20 +401,34 @@ public class PlayerShip : MonoBehaviour
         }
     }
 
-    void UpdateAutoRotate()
+    private void UpdateRotatePlus()
+    {
+        UpdateDoubleTap(KeyCode.KeypadPlus, ref doubleTapRotatePlusTimer, RotateToPos, APNGToTarget);
+    }
+
+    private void RotateToPos()
+    {
+    if (gameController != null)
+    {
+        autopilot.AutoRot(gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator);
+        ToggleButtons(false, false, true, false);
+    }
+}
+
+    private void APNGToTarget()
     {
         if (gameController != null)
         {
-            if (Input.GetKeyDown(KeyCode.Keypad5)) // kill rot
-            {
-                autopilot.KillRot();
-                ToggleButtons(true, false, false, false);
-            }
-            if (Input.GetKeyDown(KeyCode.KeypadPlus)) // autorot pos
-            {
-                autopilot.AutoRot(gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator);
-                ToggleButtons(false, false, true, false);
-            }
+            autopilot.APNGToTarget(gameController.GetReferenceBody());
+            ToggleButtons(false, true, false, false);
+        }
+
+    }
+
+    private void UpdateRotateMinus()
+    {
+        if (gameController != null)
+        {
             if (Input.GetKeyDown(KeyCode.KeypadMinus)) // autorot neg
             {
                 autopilot.AutoRot(gameController.GetComponent<InputController>().RelativeVelocityAntiDirectionIndicator);
