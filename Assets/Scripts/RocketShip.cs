@@ -12,10 +12,8 @@ public class RocketShip : MonoBehaviour {
     public float EngineFuelKgPerSec = 8.7f;
     public float DumpFuelRateKgPerSec = 100;
     public float RCSRadiusM = 2.5f;
-    public float minDeltaTheta = 0.2f;
-    public float minSpinDeltaDegPerSec = 10f;
+    public float minSpinDeltaDegPerSec = 0.2f;
     public float MaxRotationDegPerSec = 720;
-    public float RotationSpeedFactor = 2;
 
     private NBody nbody;
     private float currentFuelKg;
@@ -54,7 +52,12 @@ public class RocketShip : MonoBehaviour {
 
     public float CurrentRCSAccelerationPerSec()
     {
-        return RCSThrustPerSec / currentTotalMassKg;
+        return RCSThrustPerSec;
+    }
+
+    public float CurrentMainEngineAccPerSec()
+    {
+        return EngineThrustPerSec;
     }
 
     public float CurrentRCSAngularDegPerSec()
@@ -158,7 +161,7 @@ public class RocketShip : MonoBehaviour {
 
     public bool ApplyRCSSpin(Quaternion unitQuaternion)
     {
-        Quaternion q = Quaternion.Lerp(currentSpinPerSec, currentSpinPerSec * unitQuaternion, RotationSpeedFactor * RCSAngularDegPerSec * Time.deltaTime);
+        Quaternion q = Quaternion.LerpUnclamped(currentSpinPerSec, currentSpinPerSec * unitQuaternion, RCSAngularDegPerSec * Time.deltaTime);
         currentSpinPerSec = q;
         return unitQuaternion != Quaternion.identity;
     }
@@ -169,23 +172,47 @@ public class RocketShip : MonoBehaviour {
         transform.rotation = timeQ;
     }
 
-    public bool ConvergeSpin(Quaternion targetQ)
-    {
-        Quaternion deltaQ = Quaternion.Inverse(transform.rotation) * targetQ;
-        return ConvergeSpin(deltaQ, targetQ);
-    }
-
-    public bool ConvergeSpin(Quaternion deltaQ, Quaternion targetQ)
+    public bool KillRotation()
     {
         bool converged;
-        float angle = Mathf.Abs(Quaternion.Angle(currentSpinPerSec, deltaQ));
-        //float speed = RCSAngularDegPerSec;
-        float speed = Mathf.Max(RCSAngularDegPerSec / angle, 1);
-        currentSpinPerSec = Quaternion.Slerp(currentSpinPerSec, deltaQ, RotationSpeedFactor * speed * Time.deltaTime);
-        bool convergedSpin = Mathf.Abs(Quaternion.Angle(currentSpinPerSec, Quaternion.identity)) < minDeltaTheta;
-        bool convergedRotation = targetQ == Quaternion.identity || Mathf.Abs(Quaternion.Angle(transform.rotation, targetQ)) < minDeltaTheta;
-        if (convergedSpin && convergedRotation)
+        currentSpinPerSec = Quaternion.RotateTowards(currentSpinPerSec, Quaternion.identity, RCSAngularDegPerSec * Time.deltaTime);
+        bool convergedSpin = Mathf.Abs(Quaternion.Angle(currentSpinPerSec, Quaternion.identity)) < minSpinDeltaDegPerSec;
+        if (convergedSpin)
         {
+            currentSpinPerSec = Quaternion.identity;
+            converged = true;
+        }
+        else
+        {
+            converged = false;
+        }
+        return converged;
+    }
+
+    public bool ConvergeSpin(Quaternion targetQ, float minDTheta)
+    {
+        Quaternion deltaQ = Quaternion.Inverse(transform.rotation) * targetQ;
+        bool converged;
+
+        float angleLeft = Mathf.Abs(Quaternion.Angle(transform.rotation, targetQ));
+        float spinSpeed = Mathf.Abs(Quaternion.Angle(currentSpinPerSec, Quaternion.identity));
+
+        float secToCoast = angleLeft / spinSpeed;
+        float secToStop = Mathf.Sqrt(2 * spinSpeed / RCSAngularDegPerSec);
+
+        float maxDeg = RCSAngularDegPerSec;
+        if (secToStop < secToCoast) // speedup
+        {
+            currentSpinPerSec = Quaternion.RotateTowards(currentSpinPerSec, deltaQ, RCSAngularDegPerSec * Time.deltaTime);
+        }
+        else // stop
+        {
+            currentSpinPerSec = Quaternion.RotateTowards(currentSpinPerSec, Quaternion.identity, RCSAngularDegPerSec * Time.deltaTime);
+        }
+        bool convergedSpin = Mathf.Abs(Quaternion.Angle(currentSpinPerSec, Quaternion.identity)) < minDTheta;
+        bool convergedRotation = targetQ == Quaternion.identity || Mathf.Abs(Quaternion.Angle(transform.rotation, targetQ)) < minDTheta;
+        if (convergedSpin && convergedRotation)
+            {
             currentSpinPerSec = Quaternion.identity;
             converged = true;
         }

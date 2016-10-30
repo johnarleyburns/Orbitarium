@@ -8,15 +8,12 @@ public class Autopilot : MonoBehaviour
     public float MaxRCSAutoBurnSec = 10;
     public float MinDeltaVforBurn = 0.1f;
     public float InterceptDeltaV = 30;
-    public float AutoRotationSpeedFactor = 20;
     public float NavigationalConstant = 3;
+    public float MinRotToTargetDeltaTheta = 0.2f;
+    public float MinAPNGDeltaTheta = 1f;
     public bool APNG = true;
 
     private RocketShip ship;
-    private Vector3 previousLos;
-    private Vector3 los;
-    private Vector3 losDelta;
-    private Vector3 desiredRotation;
     private List<AutopilotCommand> currentProgram = new List<AutopilotCommand>()
     {
         new AutopilotCommand(AutopilotInstruction.NOOP, null, 0)
@@ -42,8 +39,10 @@ public class Autopilot : MonoBehaviour
         ROT_TO_TARGET,
         ROT_TO_TARGET_APNG,
         BURN_GO,
+        BURN_SEC,
         BURN_TO_ZERO_RELV,
-        BURN_TO_INTER_RELV
+        BURN_TO_INTER_RELV,
+        BURN_APNG
     };
 
     void Start()
@@ -150,8 +149,8 @@ public class Autopilot : MonoBehaviour
         Vector3 relVelUnit;
         PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
         LoadProgram(
-            new AutopilotCommand(AutopilotInstruction.BURN_GO, null, 1),
-            new AutopilotCommand(AutopilotInstruction.ROT_TO_TARGET_APNG, target, 1)
+            new AutopilotCommand(AutopilotInstruction.ROT_TO_TARGET_APNG, target, 1),
+            new AutopilotCommand(AutopilotInstruction.BURN_APNG, target, 0)
         );
     }
 
@@ -183,11 +182,17 @@ public class Autopilot : MonoBehaviour
             case AutopilotInstruction.BURN_GO:
                 ExecuteBurnGo();
                 break;
+            case AutopilotInstruction.BURN_SEC:
+                ExecuteBurnSec();
+                break;
             case AutopilotInstruction.BURN_TO_ZERO_RELV:
                 ExecuteBurnToV(0f);
                 break;
             case AutopilotInstruction.BURN_TO_INTER_RELV:
                 ExecuteBurnToV(InterceptDeltaV);
+                break;
+            case AutopilotInstruction.BURN_APNG:
+                ExecuteBurnAPNG();
                 break;
         }
     }
@@ -199,7 +204,7 @@ public class Autopilot : MonoBehaviour
 
     private void ExecuteKillRot()
     {
-        bool convergedSpin = ship.ConvergeSpin(Quaternion.identity, Quaternion.identity);
+        bool convergedSpin = ship.KillRotation();
         if (convergedSpin)
         {
             JumpToNextInstruction();
@@ -248,63 +253,98 @@ public class Autopilot : MonoBehaviour
         {
             Quaternion q = Quaternion.LookRotation(b);
             q = Quaternion.Euler(q.eulerAngles.x, q.eulerAngles.y, transform.rotation.eulerAngles.z);
-            /*
-            float angle = Mathf.Abs(Quaternion.Angle(transform.rotation, q));
-            float secToTurn = Mathf.Max(Mathf.Sqrt(2 * angle / ship.CurrentRCSAngularDegPerSec()), 1);
-            Quaternion desiredQ = Quaternion.Lerp(transform.rotation, q, ship.RotationSpeedFactor * 1 / secToTurn);
-            Quaternion deltaQ = Quaternion.Inverse(transform.rotation) * desiredQ;
-            converged = ship.ConvergeSpin(deltaQ, q);
-*/
-            converged = ship.ConvergeSpin(q);
+            converged = ship.ConvergeSpin(q, MinRotToTargetDeltaTheta);
         }
         if (converged)
         {
             JumpToNextInstruction();
         }
+    }
+
+    private Vector3 CalcAPNG(Transform source, GameObject targetNBody)
+    {
+        float dist;
+        float relv;
+        Vector3 relVelUnit;
+        PhysicsUtils.CalcRelV(source, targetNBody, out dist, out relv, out relVelUnit);
+        float N = NavigationalConstant;
+
+        Vector3 vr = relv * -relVelUnit;
+        Vector3 r = targetNBody.transform.position - source.position;
+        Vector3 o = Vector3.Cross(r, vr) / Vector3.Dot(r, r);
+        Vector3 a = Vector3.Cross(-N * Mathf.Abs(vr.magnitude) * r.normalized, o);
+
+        return a;
     }
 
     private void ExecuteRotToTargetAPNG()
     {
-        GameObject targetObj = CurrentCommand().parameter as GameObject;
-        Transform target = targetObj.transform;
-        Vector3 b = target.position;
-        previousLos = los;
-        los = b - transform.position;
-        losDelta = los - previousLos;
-        losDelta = losDelta - Vector3.Project(losDelta, los);
-
-        if (APNG)
-            desiredRotation = (Time.deltaTime * los) + (losDelta * NavigationalConstant) + (Time.deltaTime * desiredRotation * NavigationalConstant * 0.5f); // Augmented version of proportional navigation.
-        else
-            desiredRotation = (Time.deltaTime * los) + (losDelta * NavigationalConstant); // Plain proportional navigation.
-
-        bool converged;
-        if (b == Vector3.zero)
-        {
-            converged = true;
-        }
-        else
-        {
-            //            Quaternion q = Quaternion.LookRotation(b);
-            Quaternion q = Quaternion.LookRotation(desiredRotation);
-//            q = Quaternion.Euler(q.eulerAngles.x, q.eulerAngles.y, transform.rotation.eulerAngles.z);
-//            float angle = Mathf.Abs(Quaternion.Angle(transform.rotation, q));
-//            float secToTurn = Mathf.Max(Mathf.Sqrt(2 * angle / ship.CurrentRCSAngularDegPerSec()), 1);
-//            Quaternion desiredQ = Quaternion.Lerp(transform.rotation, q, ship.RotationSpeedFactor * 1 / secToTurn);
-//            Quaternion desiredQ = Quaternion.Lerp(transform.rotation, q, AutoRotationSpeedFactor * 1 / secToTurn);
-            Quaternion desiredQ = q;
-            Quaternion deltaQ = Quaternion.Inverse(transform.rotation) * desiredQ;
-
-//            converged = ship.ConvergeSpin(deltaQ, q);
-            converged = ship.ConvergeSpin(q);
-        }
+        GameObject target = CurrentCommand().parameter as GameObject;
+        Vector3 a = CalcAPNG(transform.parent.transform, target);
+        Quaternion q = Quaternion.LookRotation(a);
+        bool converged = ship.ConvergeSpin(q, MinAPNGDeltaTheta * 4);
         if (converged)
         {
             JumpToNextInstruction();
         }
-
-        //controller.Rotate(Quaternion.LookRotation(desiredRotation, transform.up)); // Use the Rotate function of the controller, instead of the transforms, to consider the rotation rate of the missile.
     }
+
+    private float minRCSBurnTimeSec = 0.1f;
+    private float minMainBurnTimeSec = 0.5f;
+    private float burnTimerAPNG = -1;
+    private bool isRCSGo = false;
+
+    private void ExecuteBurnAPNG()
+    {
+        GameObject target = CurrentCommand().parameter as GameObject;
+        Vector3 a = CalcAPNG(transform.parent.transform, target);
+        bool shouldBurnRCS = a.magnitude > ship.CurrentRCSAccelerationPerSec() * minRCSBurnTimeSec && a.magnitude < ship.CurrentMainEngineAccPerSec() * minMainBurnTimeSec;
+        bool shouldBurnMain = !shouldBurnRCS && a.magnitude > MinDeltaVforBurn;
+
+        if (shouldBurnMain) // takes priority
+        {
+            if (!ship.IsMainEngineGo())
+            {
+                ship.MainEngineGo();
+                burnTimerAPNG = minMainBurnTimeSec; // reset timer
+            }
+        }
+        else if (shouldBurnRCS)
+        {
+            if (!isRCSGo)
+            {
+                ship.ApplyRCSImpulse(transform.forward);
+                isRCSGo = true;
+                burnTimerAPNG = minRCSBurnTimeSec;
+            }
+        }
+
+        if (ship.IsMainEngineGo() || isRCSGo)
+        {
+            if (isRCSGo)
+            {
+                ship.ApplyRCSImpulse(transform.forward);
+            }
+        }
+
+        if (burnTimerAPNG != -1)
+        {
+            burnTimerAPNG -= Time.deltaTime;
+        }
+
+        if (burnTimerAPNG > -1 && burnTimerAPNG < 0)
+        {
+            isRCSGo = false;
+            ship.MainEngineCutoff();
+            burnTimerAPNG = -1;
+        }
+
+        if (!ship.IsMainEngineGo() && !isRCSGo)
+        {
+            JumpToNextInstruction();
+        }
+    }
+
 
     private void ExecuteBurnGo()
     {
@@ -313,6 +353,30 @@ public class Autopilot : MonoBehaviour
             ship.MainEngineGo();
         }
         JumpToNextInstruction();
+    }
+
+    private float burnTimer = -1;
+
+    private void ExecuteBurnSec()
+    {
+        if (burnTimer == -1)
+        {
+            float? sec = CurrentCommand().parameter as float?;
+            if (sec.HasValue)
+            {
+                ship.MainEngineBurst(sec.Value);
+                burnTimer = sec.Value;
+            }
+        }
+        else if (burnTimer <= 0)
+        {
+            burnTimer = -1;
+            JumpToNextInstruction();
+        }
+        else
+        {
+            burnTimer -= Time.deltaTime;
+        }
     }
 
     private void ExecuteBurnToV(float desiredDeltaV)

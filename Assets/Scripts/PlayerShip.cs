@@ -24,6 +24,8 @@ public class PlayerShip : MonoBehaviour
     private float doubleTapEngineTimer;
     private float doubleTapKillRotVTimer;
     private float doubleTapRotatePlusTimer;
+    private float doubleTapRotateMinusTimer;
+    private float doubleTapTargetSelTimer;
 
     public void StartShip()
     {
@@ -37,6 +39,9 @@ public class PlayerShip : MonoBehaviour
         currentCameraMode = CameraMode.FPS;
         doubleTapEngineTimer = -1;
         doubleTapKillRotVTimer = -1;
+        doubleTapRotatePlusTimer = -1;
+        doubleTapRotateMinusTimer = -1;
+        doubleTapTargetSelTimer = -1;
         health = healthMax;
         rotInput = false;
 
@@ -53,6 +58,7 @@ public class PlayerShip : MonoBehaviour
         UpdateEngineUI();
         UpdateSpinUI();
         UpdateDumpFuel();
+        UpdateTargetSelection();
     }
 
     private void HaltAudio()
@@ -230,7 +236,27 @@ public class PlayerShip : MonoBehaviour
         UpdateKillRotV();
         UpdateRotatePlus();
         UpdateRotateMinus();
+        UpdateRotateNormals();
         PlayRotateSounds();
+    }
+
+    private void UpdateRotateNormals()
+    {
+        if (Input.GetKey(KeyCode.Keypad7))
+        {
+            autopilot.AutoRot(gameController.GetComponent<InputController>().RelativeVelocityNormalMinusDirectionIndicator);
+            ToggleButtons(false, false, false, true);
+        }
+        if (Input.GetKey(KeyCode.Keypad9))
+        {
+            autopilot.AutoRot(gameController.GetComponent<InputController>().RelativeVelocityNormalPlusDirectionIndicator);
+            ToggleButtons(false, false, true, false);
+        }
+    }
+
+    private void UpdateTargetSelection()
+    {
+        UpdateDoubleTap(KeyCode.KeypadMultiply, ref doubleTapTargetSelTimer, gameController.GetHUD().SelectNextTarget, RotateTowardsTarget);
     }
 
     private void UpdateKillRotV()
@@ -378,7 +404,7 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            autopilot.AutoRot(gameController.GetReferenceBody());
+            autopilot.AutoRot(gameController.GetHUD().GetReferenceBody());
             ToggleButtons(false, true, false, false);
         }
     }
@@ -396,7 +422,7 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            autopilot.KillRelV(gameController.GetReferenceBody());
+            autopilot.KillRelV(gameController.GetHUD().GetReferenceBody());
             ToggleButtons(false, true, false, false);
         }
     }
@@ -408,34 +434,35 @@ public class PlayerShip : MonoBehaviour
 
     private void RotateToPos()
     {
-    if (gameController != null)
-    {
-        autopilot.AutoRot(gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator);
-        ToggleButtons(false, false, true, false);
+        if (gameController != null)
+        {
+            autopilot.AutoRot(gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator);
+            ToggleButtons(false, false, true, false);
+        }
     }
-}
+
+    private void UpdateRotateMinus()
+    {
+        UpdateDoubleTap(KeyCode.KeypadMinus, ref doubleTapRotateMinusTimer, RotateToMinus, RotateToMinus);
+    }
+
+    private void RotateToMinus()
+    {
+        if (gameController != null)
+        {
+            autopilot.AutoRot(gameController.GetComponent<InputController>().RelativeVelocityAntiDirectionIndicator);
+            ToggleButtons(false, false, false, true);
+        }
+    }
 
     private void APNGToTarget()
     {
         if (gameController != null)
         {
-            autopilot.APNGToTarget(gameController.GetReferenceBody());
+            autopilot.APNGToTarget(gameController.GetHUD().GetReferenceBody());
             ToggleButtons(false, true, false, false);
         }
 
-    }
-
-    private void UpdateRotateMinus()
-    {
-        if (gameController != null)
-        {
-            if (Input.GetKeyDown(KeyCode.KeypadMinus)) // autorot neg
-            {
-                autopilot.AutoRot(gameController.GetComponent<InputController>().RelativeVelocityAntiDirectionIndicator);
-                ToggleButtons(false, false, false, true);
-            }
-
-        }
     }
 
     private void ToggleButtons(bool kill, bool target, bool pos, bool neg)
@@ -481,7 +508,7 @@ public class PlayerShip : MonoBehaviour
                     gameController.GetComponent<InputController>().POSToggleButton.isToggled = true;
                     gameController.GetComponent<InputController>().NEGToggleButton.isToggled = false;
                 }
-                else if (autopilot.CurrentTarget() == gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator)
+                else if (autopilot.CurrentTarget() == gameController.GetComponent<InputController>().RelativeVelocityAntiDirectionIndicator)
                 {
                     gameController.GetComponent<InputController>().TargetToggleButton.isToggled = false;
                     gameController.GetComponent<InputController>().POSToggleButton.isToggled = false;

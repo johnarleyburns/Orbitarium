@@ -20,5 +20,7 @@ public class InputController : MonoBehaviour
     public GameObject HUDLogic;
     public GameObject RelativeVelocityDirectionIndicator;
     public GameObject RelativeVelocityAntiDirectionIndicator;
+    public GameObject RelativeVelocityNormalPlusDirectionIndicator;
+    public GameObject RelativeVelocityNormalMinusDirectionIndicator;
     public GameObject TargetDirectionIndicator;
 }
