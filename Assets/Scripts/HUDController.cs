@@ -97,15 +97,51 @@ public class HUDController : MonoBehaviour
             }
             if (isSelectedTarget)
             {
-                UpdateSelectedTargetIndicator(targetRelV);
+                UpdateSelectedTargetIndicator(targetDist, targetRelV);
             }
         }
     }
 
     public void UpdateTargetDistance(int indicatorId, string name, float dist)
     {
-        string targetString = string.Format("{0}\n{1:0,0} m", name, dist);
+        string targetString = string.Format("{0}\n{1}", name, DistanceText(dist));
         OffscreenIndicator.UpdateIndicatorText(indicatorId, targetString);
+    }
+
+    private void UpdateSelectedTargetIndicator(float dist, float relV)
+    {
+        string relvText = RelvText(relV);
+        inputController.TargetDirectionIndicator.transform.position = selectedTarget.transform.position;
+        if (OffscreenIndicator.indicators[HUD_INDICATOR_TARGET_DIRECTION].hasOnScreenText)
+        {
+            string targetString = relvText;
+            OffscreenIndicator.UpdateIndicatorText(HUD_INDICATOR_TARGET_DIRECTION, targetString);
+        }
+        inputController.DistanceText.text = DistanceText(dist);
+        inputController.RelvText.text = relvText;
+    }
+
+    private string DistanceText(float dist)
+    {
+        float adist = Mathf.Abs(dist);
+        string distText = adist > 100000 ? string.Format("{0:,0} km", dist / 1000)
+            : (adist > 10000 ? string.Format("{0:,0.0} km", dist / 1000)
+            : (adist > 1000 ? string.Format("{0:,0.00} km", dist / 1000)
+                : (adist > 100 ? string.Format("{0:,0} m", dist)
+                : string.Format("{0:,0.0} m", dist))));
+        return distText;
+    }
+
+    private string RelvText(float relV)
+    {
+        float arelV = Mathf.Abs(relV);
+        string relvText = arelV > 10000 ? string.Format("{0:,0} km/s", relV / 1000)
+            : (arelV > 1000 ? string.Format("{0:,0.0} m/s", relV / 1000)
+            : (arelV > 100 ? string.Format("{0:,0} m/s", relV)
+            : (arelV > 10 ? string.Format("{0:,0} m/s", relV)
+            : (arelV > 1 ? string.Format("{0:,0.0} m/s", relV)
+            : string.Format("{0:,0.00} m/s", relV)))));
+        return relvText;
     }
 
     public void UpdateRelativeVelocityIndicators(Vector3 relVUnitVec)
@@ -120,53 +156,51 @@ public class HUDController : MonoBehaviour
         inputController.RelativeVelocityNormalMinusDirectionIndicator.transform.position = myPos + rotNormalMinus * relVIndicatorScaled;
     }
 
-    private void UpdateSelectedTargetIndicator(float relV)
+    private void SelectTarget(GameObject target, int targetIndex)
     {
-        inputController.TargetDirectionIndicator.transform.position = selectedTarget.transform.position;
-        if (OffscreenIndicator.indicators[HUD_INDICATOR_TARGET_DIRECTION].hasOnScreenText)
+        selectedTargetIndex = targetIndex;
+        selectedTarget = target;
+        if (target != null)
         {
-            string targetString = string.Format("{0:0,0.0} m/s", relV);
-            OffscreenIndicator.UpdateIndicatorText(HUD_INDICATOR_TARGET_DIRECTION, targetString);
+            inputController.TargetText.text = selectedTarget.name;
+            ShowTargetIndicator();
+            SelectNextReferenceBody(selectedTarget);
+        }
+        else {
+            inputController.TargetText.text = "NONE";
+            HideTargetIndicator();
+            SelectNextReferenceBody();
         }
     }
 
     public void SelectNextTarget(int offset)
     {
         // prefer enemy targets
+        int index = selectedTargetIndex;
         if (gameController.EnemyCount() > 0)
         {
-            selectedTargetIndex = (selectedTargetIndex + offset) % gameController.EnemyCount();
-            if (selectedTargetIndex < 0)
+            index = (index + offset) % gameController.EnemyCount();
+            if (index < 0)
             {
-                selectedTargetIndex = gameController.EnemyCount() + selectedTargetIndex;
+                index = gameController.EnemyCount() - 1;
             }
-            selectedTarget = gameController.GetEnemy(selectedTargetIndex);
-            inputController.TargetToggleText.text = selectedTarget.name;
-            ShowTargetIndicator();
-            SelectNextReferenceBody(selectedTarget);
+            SelectTarget(gameController.GetEnemy(index), index);
         }
         else if (gameController.TargetCount() > 0)
         {
-            if (selectedTargetIndex < 0)
+            if (index < 0)
             {
-                selectedTargetIndex = gameController.TargetCount() + selectedTargetIndex;
+                index = gameController.TargetCount() - 1;
             }
             else
             {
-                selectedTargetIndex = (selectedTargetIndex + offset) % gameController.TargetCount();
+                index = (index + offset) % gameController.TargetCount();
             }
-            selectedTarget = gameController.GetTarget(selectedTargetIndex);
-            inputController.TargetToggleText.text = selectedTarget.name;
-            ShowTargetIndicator();
-            SelectNextReferenceBody(selectedTarget);
+            SelectTarget(gameController.GetTarget(index), index);
         }
         else
         {
-            selectedTargetIndex = -1;
-            selectedTarget = null;
-            inputController.TargetToggleText.text = "NONE";
-            HideTargetIndicator();
-            SelectNextReferenceBody();
+            SelectTarget(null, -1);
         }
     }
 

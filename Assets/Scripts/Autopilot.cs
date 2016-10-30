@@ -39,6 +39,7 @@ public class Autopilot : MonoBehaviour
         ROT_TO_TARGET,
         ROT_TO_TARGET_APNG,
         BURN_GO,
+        BURN_STOP,
         BURN_SEC,
         BURN_TO_ZERO_RELV,
         BURN_TO_INTER_RELV,
@@ -115,16 +116,18 @@ public class Autopilot : MonoBehaviour
     public void KillRot()
     {
         LoadProgram(
-            new AutopilotCommand(AutopilotInstruction.KILL_ROT, null, 1),
-            new AutopilotCommand(AutopilotInstruction.NOOP, null, 1)
+            new AutopilotCommand(AutopilotInstruction.BURN_STOP, null, 1),
+            new AutopilotCommand(AutopilotInstruction.KILL_ROT, null, 2),
+            new AutopilotCommand(AutopilotInstruction.NOOP, null, 2)
         );
     }
 
     public void AutoRot(GameObject target)
     {
         LoadProgram(
-            new AutopilotCommand(AutopilotInstruction.ROT_TO_TARGET, target, 1),
-            new AutopilotCommand(AutopilotInstruction.NOOP, null, 1)
+            new AutopilotCommand(AutopilotInstruction.BURN_STOP, null, 1),
+            new AutopilotCommand(AutopilotInstruction.ROT_TO_TARGET, target, 2),
+            new AutopilotCommand(AutopilotInstruction.NOOP, null, 2)
         );
     }
 
@@ -135,10 +138,26 @@ public class Autopilot : MonoBehaviour
         Vector3 relVelUnit;
         PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
         LoadProgram(
-            new AutopilotCommand(AutopilotInstruction.ROT_TO_UNITVEC, -relVelUnit, 1),
-            new AutopilotCommand(AutopilotInstruction.BURN_TO_ZERO_RELV, target, 2),
-            new AutopilotCommand(AutopilotInstruction.ROT_TO_TARGET, target, 3),
-            new AutopilotCommand(AutopilotInstruction.NOOP, null, 3)
+            new AutopilotCommand(AutopilotInstruction.BURN_STOP, null, 1),
+            new AutopilotCommand(AutopilotInstruction.ROT_TO_UNITVEC, -relVelUnit, 2),
+            new AutopilotCommand(AutopilotInstruction.BURN_TO_ZERO_RELV, target, 3),
+            new AutopilotCommand(AutopilotInstruction.ROT_TO_TARGET, target, 4),
+            new AutopilotCommand(AutopilotInstruction.NOOP, null, 4)
+        );
+    }
+
+    public void Rendezvous(GameObject target)
+    {
+        float dist;
+        float relv;
+        Vector3 relVelUnit;
+        PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
+        LoadProgram(
+            new AutopilotCommand(AutopilotInstruction.BURN_STOP, null, 1),
+            new AutopilotCommand(AutopilotInstruction.ROT_TO_UNITVEC, -relVelUnit, 2),
+            new AutopilotCommand(AutopilotInstruction.BURN_TO_ZERO_RELV, target, 3),
+            new AutopilotCommand(AutopilotInstruction.ROT_TO_TARGET, target, 4),
+            new AutopilotCommand(AutopilotInstruction.NOOP, null, 4)
         );
     }
 
@@ -149,8 +168,9 @@ public class Autopilot : MonoBehaviour
         Vector3 relVelUnit;
         PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
         LoadProgram(
-            new AutopilotCommand(AutopilotInstruction.ROT_TO_TARGET_APNG, target, 1),
-            new AutopilotCommand(AutopilotInstruction.BURN_APNG, target, 0)
+            new AutopilotCommand(AutopilotInstruction.BURN_STOP, null, 1),
+            new AutopilotCommand(AutopilotInstruction.ROT_TO_TARGET_APNG, target, 2),
+            new AutopilotCommand(AutopilotInstruction.BURN_APNG, target, 1)
         );
     }
 
@@ -181,6 +201,9 @@ public class Autopilot : MonoBehaviour
                 break;
             case AutopilotInstruction.BURN_GO:
                 ExecuteBurnGo();
+                break;
+            case AutopilotInstruction.BURN_STOP:
+                ExecuteBurnStop();
                 break;
             case AutopilotInstruction.BURN_SEC:
                 ExecuteBurnSec();
@@ -351,6 +374,15 @@ public class Autopilot : MonoBehaviour
         if (!ship.IsMainEngineGo())
         {
             ship.MainEngineGo();
+        }
+        JumpToNextInstruction();
+    }
+
+    private void ExecuteBurnStop()
+    {
+        if (ship.IsMainEngineGo())
+        {
+            ship.MainEngineCutoff();
         }
         JumpToNextInstruction();
     }
