@@ -196,6 +196,7 @@
     <Compile Include="Assets\Scripts\EnemyShipController.cs" />
     <Compile Include="Assets\Scripts\FPSAudioController.cs" />
     <Compile Include="Assets\Scripts\FPSCameraController.cs" />
+    <Compile Include="Assets\Scripts\ForthInterpreter.cs" />
     <Compile Include="Assets\Scripts\GameController.cs" />
     <Compile Include="Assets\Scripts\HUDController.cs" />
     <Compile Include="Assets\Scripts\InputController.cs" />
