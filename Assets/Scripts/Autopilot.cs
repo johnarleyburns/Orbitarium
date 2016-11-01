@@ -434,8 +434,6 @@ public class Autopilot : MonoBehaviour
         }
         else
         {
-            // is RCS sufficient?
-            bool rcsSufficient = absRelVGap <= ship.RCSFuelKgPerSec;
             // if not burning and magnitude greater than RCS thrust ten sec then main engine burn
             float maxRCSDeltaV = MaxRCSAutoBurnSec * ship.CurrentRCSAccelerationPerSec();
             burnMain = absRelVGap > maxRCSDeltaV;

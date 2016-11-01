@@ -13,7 +13,9 @@ public class ForthInterpreter : MonoBehaviour
     private InterpreterState state;
     private Queue<object> inputBuffer;
     private Stack<object> dataStack;
+    private Stack<object> compilationStack;
     private Dictionary<string, List<object>> wordDictionary;
+    private Dictionary<string, List<object>> wordCompilationDictionary;
     private Primitives primitives;
     private Queue<string> errors;
     private Queue<string> outputBuffer;
@@ -36,7 +38,9 @@ public class ForthInterpreter : MonoBehaviour
         state = InterpreterState.INTERPRETING;
         inputBuffer = new Queue<object>();
         dataStack = new Stack<object>();
+        compilationStack = new Stack<object>();
         wordDictionary = new Dictionary<string, List<object>>();
+        wordCompilationDictionary = new Dictionary<string, List<object>>();
         outputBuffer = new Queue<string>();
         errors = new Queue<string>();
         primitives = new Primitives(this);
@@ -98,10 +102,7 @@ public class ForthInterpreter : MonoBehaviour
                 tokens.Enqueue(inputBuffer.Dequeue());
             }
         }
-        while (tokens.Count > 0)
-        {
-            ProcessToken(tokens.Dequeue());
-        }
+        ProcessTokens(tokens);
         Queue<string> errs = new Queue<string>();
         lock (errors)
         {
@@ -121,6 +122,14 @@ public class ForthInterpreter : MonoBehaviour
             {
                 outputBuffer.Enqueue("ok");
             }
+        }
+    }
+
+    private void ProcessTokens(Queue<object> tokens)
+    {
+        while (tokens.Count > 0)
+        {
+            ProcessToken(tokens.Dequeue());
         }
     }
 
@@ -145,6 +154,19 @@ public class ForthInterpreter : MonoBehaviour
 
     private void ProcessToken(object token)
     {
+        switch (state)
+        {
+            case InterpreterState.INTERPRETING:
+                ProcessTokenInterpreting(token);
+                break;
+            case InterpreterState.COMPILING:
+                ProcessTokenCompiling(token);
+                break;
+        }
+    }
+
+    private void ProcessTokenInterpreting(object token)
+    {
         if (token is string)
         {
             ProcessStringToken(token as string);
@@ -153,6 +175,35 @@ public class ForthInterpreter : MonoBehaviour
         {
             ProcessObjectToken(token);
         }
+    }
+
+    private void ProcessTokenCompiling(object token)
+    {
+        if (token is string)
+        {
+            ProcessStringTokenCompiling(token as string);
+        }
+        else
+        {
+            ProcessObjectTokenCompiling(token);
+        }
+    }
+
+    private void ProcessStringTokenCompiling(string token)
+    {
+        if (wordDictionary.ContainsKey(token) && wordCompilationDictionary.ContainsKey(token))
+        {
+            ProcessCompilationDictionaryToken(token);
+        }
+        else
+        {
+            compilationStack.Push(token);
+        }
+    }
+
+    private void ProcessObjectTokenCompiling(object token)
+    {
+        compilationStack.Push(token);
     }
 
     private void ProcessStringToken(string token)
@@ -186,13 +237,39 @@ public class ForthInterpreter : MonoBehaviour
                         primitives.ExecuteWord(token);
                         break;
                     case WordType.USER:
-                        errors.Enqueue("unsupported word type user for word=" + token);
+                        Queue<object> tokens = new Queue<object>(code.GetRange(1, code.Count - 1));
+                        ProcessTokens(tokens);
                         break;
                 }
             }
             else
             {
                 errors.Enqueue("null word type for word=" + token);
+            }
+        }
+    }
+
+    private void ProcessCompilationDictionaryToken(string token)
+    {
+        List<object> code;
+        if (wordCompilationDictionary.TryGetValue(token, out code))
+        {
+            WordType? wType = code[0] as WordType?;
+            if (wType != null)
+            {
+                switch (wType.Value)
+                {
+                    case WordType.PRIMITIVE:
+                        primitives.ExecuteCompilationWord(token);
+                        break;
+                    case WordType.USER:
+                        errors.Enqueue("unsupported compliation word type user for word=" + token);
+                        break;
+                }
+            }
+            else
+            {
+                errors.Enqueue("null ocmpilation word type for word=" + token);
             }
         }
     }
@@ -207,6 +284,7 @@ public class ForthInterpreter : MonoBehaviour
         private ForthInterpreter forth;
         private delegate void PrimitiveFunc();
         private Dictionary<string, PrimitiveFunc> primitiveMap;
+        private Dictionary<string, PrimitiveFunc> primitiveCompilationMap;
 
         public Primitives(ForthInterpreter instance)
         {
@@ -226,23 +304,85 @@ public class ForthInterpreter : MonoBehaviour
             }
         }
 
+        public void ExecuteCompilationWord(string word)
+        {
+            PrimitiveFunc func;
+            if (primitiveCompilationMap.TryGetValue(word, out func))
+            {
+                func();
+            }
+            else
+            {
+                forth.errors.Enqueue("no function found for primitive compilation word=" + word);
+            }
+        }
+
         public void AddToDictionary()
         {
             primitiveMap = new Dictionary<string, PrimitiveFunc>()
             {
+                { ":", colon },
+                { ";", semicolon },
                 { "*", _multiply },
                 { "+", _plus },
                 { ".s", _show },
                 { "clearstacks", clearstacks },
-                { "dup", dup }
+                { "dup", dup },
+                { "words", words }
+            };
+            primitiveCompilationMap = new Dictionary<string, PrimitiveFunc>()
+            {
+                { ";", semicolon_compilation }
             };
             foreach (string word in primitiveMap.Keys)
             {
                 forth.wordDictionary.Add(word, new List<object>() { WordType.PRIMITIVE });
             }
+            foreach (string word in primitiveCompilationMap.Keys)
+            {
+                forth.wordCompilationDictionary.Add(word, new List<object>() { WordType.PRIMITIVE });
+            }
         }
 
         #region primitives
+
+        private void colon()
+        {
+            try
+            {
+                forth.state = InterpreterState.COMPILING;
+                // def will be ended after semicolon
+            }
+            catch (Exception e)
+            {
+                forth.errors.Enqueue(":(colon) needs a string and then commands ended with a semicolon, e=" + e);
+            }
+        }
+
+        private void semicolon()
+        {
+            forth.errors.Enqueue(";(semicolon) cannot be called in interpreting mode");
+        }
+
+        private void semicolon_compilation()
+        {
+            try
+            {
+                List<object> code = new List<object>() { WordType.USER };
+                while (forth.compilationStack.Count > 1)
+                {
+                    object o = forth.compilationStack.Pop();
+                    code.Add(o);
+                }
+                string word = forth.compilationStack.Pop() as string;
+                forth.wordDictionary.Add(word, code);
+                forth.state = InterpreterState.INTERPRETING;
+            }
+            catch (Exception e)
+            {
+                forth.errors.Enqueue(";(semicolon) couldn't add word definition, e=" + e);
+            }
+        }
 
         private void _multiply()
         {
@@ -276,7 +416,7 @@ public class ForthInterpreter : MonoBehaviour
                 {
                     float c = a.Value + b.Value;
                     forth.dataStack.Push(c);
-                }               
+                }
                 else
                 {
                     throw new Exception("only two floats are supported");
@@ -314,6 +454,18 @@ public class ForthInterpreter : MonoBehaviour
             else
             {
                 forth.errors.Enqueue("dup not allowed on empty stack");
+            }
+        }
+
+        private void words()
+        {
+            int count = forth.wordDictionary.Keys.Count;
+            forth.outputBuffer.Enqueue("<" + count.ToString() + ">");
+            IEnumerable<string> words = forth.wordDictionary.Keys;
+            foreach (string word in words)
+            {
+                forth.outputBuffer.Enqueue(" ");
+                forth.outputBuffer.Enqueue(word);
             }
         }
 

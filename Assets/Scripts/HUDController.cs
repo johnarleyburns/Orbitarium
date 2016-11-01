@@ -12,8 +12,6 @@ public class HUDController : MonoBehaviour
     private GameObject selectedTarget = null;
     private int selectedTargetIndex = -1;
     private static int HUD_INDICATOR_DIDYMOS = 0;
-    private static int HUD_INDICATOR_RELV_PRO = 1;
-    private static int HUD_INDICATOR_RELV_RETR = 2;
     private static int HUD_INDICATOR_DIDYMOON = 3;
     private static int HUD_INDICATOR_ENEMY_SHIP_TEMPLATE = 4;
     private static int HUD_INDICATOR_TARGET_DIRECTION = 5;

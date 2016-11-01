@@ -200,7 +200,6 @@ public class RocketShip : MonoBehaviour {
         float secToCoast = angleLeft / spinSpeed;
         float secToStop = Mathf.Sqrt(2 * spinSpeed / RCSAngularDegPerSec);
 
-        float maxDeg = RCSAngularDegPerSec;
         if (secToStop < secToCoast) // speedup
         {
             currentSpinPerSec = Quaternion.RotateTowards(currentSpinPerSec, deltaQ, RCSAngularDegPerSec * Time.deltaTime);

@@ -30,8 +30,6 @@ public class GameController : MonoBehaviour
     private GameObject playerShip;
     private List<GameObject> enemyShips = new List<GameObject>();
     private List<GameObject> targets = new List<GameObject>();
-    private bool inTargetTap = false;
-    private float doubleTapTargetTimer = 0;
     private float gameStartInputTimer = -1;
     private float gameOverInputTimer = -1;
     private Dictionary<GameObject, float> destroyedEnemiesTimeToLive = new Dictionary<GameObject, float>();

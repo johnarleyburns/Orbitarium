@@ -22,7 +22,6 @@ public class PlayerShip : MonoBehaviour
     private int health;
     private bool rotInput = false;
     private float doubleTapEngineTimer;
-    private float doubleTapKillRotVTimer;
     private float doubleTapRotatePlusTimer;
     private float doubleTapRotateMinusTimer;
     private float doubleTapTargetSelTimer;
@@ -38,7 +37,6 @@ public class PlayerShip : MonoBehaviour
         currentRCSMode = RCSMode.Rotate;
         currentCameraMode = CameraMode.FPS;
         doubleTapEngineTimer = -1;
-        doubleTapKillRotVTimer = -1;
         doubleTapRotatePlusTimer = -1;
         doubleTapRotateMinusTimer = -1;
         doubleTapTargetSelTimer = -1;
