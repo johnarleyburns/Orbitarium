@@ -14,7 +14,12 @@ public class Autopilot : MonoBehaviour
     public bool APNG = true;
 
     private RocketShip ship;
-    private List<AutopilotCommand> currentProgram = new List<AutopilotCommand>()
+    private Stack<object> dataStack = new Stack<object>();
+    private Stack<object> errorStack = new Stack<object>();
+    private List<AutopilotCommand> programCommands = new List<AutopilotCommand>();
+    private int programCounter;
+    private CommandState commandState;
+    private enum CommandState
     {
         IDLE,
         EXECUTING
