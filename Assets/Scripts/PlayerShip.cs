@@ -482,32 +482,7 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            if (autopilot.IsKillRot())
-            {
-                // do stuff
-            }
-            else if (autopilot.IsAutoRot())
-            {
-                if (autopilot.CurrentTarget() == gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator)
-                {
-                    gameController.GetComponent<InputController>().TargetToggleButton.isToggled = false;
-                    gameController.GetComponent<InputController>().POSToggleButton.isToggled = true;
-                    gameController.GetComponent<InputController>().NEGToggleButton.isToggled = false;
-                }
-                else if (autopilot.CurrentTarget() == gameController.GetComponent<InputController>().RelativeVelocityAntiDirectionIndicator)
-                {
-                    gameController.GetComponent<InputController>().TargetToggleButton.isToggled = false;
-                    gameController.GetComponent<InputController>().POSToggleButton.isToggled = false;
-                    gameController.GetComponent<InputController>().NEGToggleButton.isToggled = true;
-                }
-                else
-                {
-                    gameController.GetComponent<InputController>().TargetToggleButton.isToggled = true;
-                    gameController.GetComponent<InputController>().POSToggleButton.isToggled = false;
-                    gameController.GetComponent<InputController>().NEGToggleButton.isToggled = false;
-                }
-            }
-            else
+            if (autopilot.IsKillRot() || !autopilot.IsAutoRot())
             {
                 gameController.GetComponent<InputController>().TargetToggleButton.isToggled = false;
                 gameController.GetComponent<InputController>().POSToggleButton.isToggled = false;

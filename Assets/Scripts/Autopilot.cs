@@ -16,7 +16,7 @@ public class Autopilot : MonoBehaviour
     private RocketShip ship;
     private Stack<object> dataStack = new Stack<object>();
     private Stack<object> errorStack = new Stack<object>();
-    private List<AutopilotCommand> programCommands = new List<AutopilotCommand>();
+    private List<object> program = new List<object>();
     private int programCounter;
     private CommandState commandState;
     private enum CommandState
@@ -24,17 +24,7 @@ public class Autopilot : MonoBehaviour
         IDLE,
         EXECUTING
     }
-    private class AutopilotCommand
-    {
-        public AutopilotCommand(AutopilotInstruction a, object b)
-        {
-            instruction = a;
-            parameter = b;
-        }
-        public AutopilotInstruction instruction;
-        public object parameter;
-    }
-    private enum AutopilotInstruction
+    private enum Instruction
     {
         NOOP,
         KILL_ROT,
@@ -49,6 +39,8 @@ public class Autopilot : MonoBehaviour
         BURN_APNG,
         JUMP
     };
+    private delegate void AutopilotFunction();
+    private Dictionary<Instruction, AutopilotFunction> autopilotInstructions;
 
     void Start()
     {
@@ -66,9 +58,10 @@ public class Autopilot : MonoBehaviour
                 case CommandState.IDLE:
                     break;
                 case CommandState.EXECUTING:
-                    if (programCounter >= 0 && programCounter < programCommands.Count)
+                    if (programCounter >= 0 && programCounter < program.Count)
                     {
-                        ExecuteCommand();
+                        object line = program[programCounter];
+                        ProcessLine(line);
                     }
                     else
                     {
@@ -86,7 +79,7 @@ public class Autopilot : MonoBehaviour
         programCounter = -1;
         dataStack.Clear();
         errorStack.Clear();
-        programCommands.Clear();
+        program.Clear();
     }
 
     public void AutopilotOff()
@@ -94,41 +87,53 @@ public class Autopilot : MonoBehaviour
         ClearProgram();
     }
 
-    private AutopilotCommand CurrentCommand()
+    private Instruction CurrentInstruction()
     {
-        AutopilotCommand command;
-        lock (programCommands)
+        Instruction inst = Instruction.NOOP;
+        lock (program)
         {
-            if (programCounter >= 0 && programCounter < programCommands.Count)
+            if (commandState == CommandState.EXECUTING && programCounter >= 0 && programCounter < program.Count)
             {
-                command = programCommands[programCounter];
+                Instruction? instP = program[programCounter] as Instruction?;
+                if (instP != null && instP.HasValue)
+                {
+                    inst = instP.Value;
+                }
+            }
+        }
+        return inst;
+    }
+
+    private void ProcessLine(object line)
+    {
+        Instruction? instructionP = line as Instruction?;
+        if (instructionP != null && instructionP.HasValue)
+        {
+            Instruction instruction = instructionP.Value;
+            AutopilotFunction func;
+            if (autopilotInstructions.TryGetValue(instruction, out func))
+            {
+                func();
             }
             else
             {
-                command = new AutopilotCommand(AutopilotInstruction.NOOP, null);
+                errorStack.Push("instruction definition not found inst=" + instruction);
+                commandState = CommandState.IDLE;
             }
         }
-        return command;
-    }
-
-    private void ExecuteCommand()
-    {
-        AutopilotCommand command = CurrentCommand();
-        AutopilotInstruction instruction = command.instruction;
-        AutopilotFunction func;
-        if (!autopilotInstructions.TryGetValue(instruction, out func))
+        else
         {
-            errorStack.Push("instruction definition not found inst=" + instruction);
+            dataStack.Push(line);
+            programCounter++;
         }
-        func();
     }
 
-    private void LoadProgram(params AutopilotCommand[] commands)
+    private void LoadProgram(params object[] programList)
     {
         lock (this)
         {
             ClearProgram();
-            programCommands = new List<AutopilotCommand>(commands);
+            program = new List<object>(programList);
             programCounter = 0;
             commandState = CommandState.EXECUTING;
         }
@@ -136,38 +141,37 @@ public class Autopilot : MonoBehaviour
 
     public bool IsRot()
     {
-        AutopilotCommand currentCommand = CurrentCommand();
-        return currentCommand.instruction == AutopilotInstruction.KILL_ROT
+        return CurrentInstruction() == Instruction.KILL_ROT
             || IsAutoRot();
     }
 
     public bool IsKillRot()
     {
-        AutopilotCommand currentCommand = CurrentCommand();
-        return currentCommand.instruction == AutopilotInstruction.KILL_ROT;
+        return CurrentInstruction() == Instruction.KILL_ROT;
     }
 
     public bool IsAutoRot()
     {
-        AutopilotCommand currentCommand = CurrentCommand();
-        return currentCommand.instruction == AutopilotInstruction.ROT_TO_TARGET
-            || currentCommand.instruction == AutopilotInstruction.ROT_TO_UNITVEC
-            || currentCommand.instruction == AutopilotInstruction.ROT_TO_TARGET_APNG;
+        Instruction inst = CurrentInstruction();
+        return inst == Instruction.ROT_TO_TARGET
+            || inst == Instruction.ROT_TO_UNITVEC
+            || inst == Instruction.ROT_TO_TARGET_APNG;
     }
 
     public void KillRot()
     {
         LoadProgram(
-            new AutopilotCommand(AutopilotInstruction.BURN_STOP, null),
-            new AutopilotCommand(AutopilotInstruction.KILL_ROT, null)
+            Instruction.BURN_STOP,
+            Instruction.KILL_ROT
         );
     }
 
     public void AutoRot(GameObject target)
     {
         LoadProgram(
-            new AutopilotCommand(AutopilotInstruction.BURN_STOP, null),
-            new AutopilotCommand(AutopilotInstruction.ROT_TO_TARGET, target)
+            Instruction.BURN_STOP,
+            target,
+            Instruction.ROT_TO_TARGET
         );
     }
 
@@ -178,10 +182,13 @@ public class Autopilot : MonoBehaviour
         Vector3 relVelUnit;
         PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
         LoadProgram(
-            new AutopilotCommand(AutopilotInstruction.BURN_STOP, null),
-            new AutopilotCommand(AutopilotInstruction.ROT_TO_UNITVEC, -relVelUnit),
-            new AutopilotCommand(AutopilotInstruction.BURN_TO_ZERO_RELV, target),
-            new AutopilotCommand(AutopilotInstruction.ROT_TO_TARGET, target)
+            Instruction.BURN_STOP,
+            -relVelUnit,
+            Instruction.ROT_TO_UNITVEC,
+            target,
+            Instruction.BURN_TO_ZERO_RELV,
+            target,
+            Instruction.ROT_TO_TARGET
         );
     }
 
@@ -192,10 +199,13 @@ public class Autopilot : MonoBehaviour
         Vector3 relVelUnit;
         PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
         LoadProgram(
-            new AutopilotCommand(AutopilotInstruction.BURN_STOP, null),
-            new AutopilotCommand(AutopilotInstruction.ROT_TO_UNITVEC, -relVelUnit),
-            new AutopilotCommand(AutopilotInstruction.BURN_TO_ZERO_RELV, target),
-            new AutopilotCommand(AutopilotInstruction.ROT_TO_TARGET, target)
+            Instruction.BURN_STOP,
+            -relVelUnit,
+            Instruction.ROT_TO_UNITVEC,
+            target,
+            Instruction.BURN_TO_ZERO_RELV,
+            target,
+            Instruction.ROT_TO_TARGET
         );
     }
 
@@ -206,49 +216,43 @@ public class Autopilot : MonoBehaviour
         Vector3 relVelUnit;
         PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
         LoadProgram(
-            new AutopilotCommand(AutopilotInstruction.BURN_STOP, null),
-            new AutopilotCommand(AutopilotInstruction.ROT_TO_TARGET_APNG, target),
-            new AutopilotCommand(AutopilotInstruction.BURN_APNG, target),
-            new AutopilotCommand(AutopilotInstruction.JUMP, 1)
+            Instruction.BURN_STOP,
+            target,
+            Instruction.ROT_TO_TARGET_APNG,
+            target,
+            Instruction.BURN_APNG,
+            1,
+            Instruction.JUMP
         );
     }
 
-    public GameObject CurrentTarget()
-    {
-        AutopilotCommand currentCommand = programCommands[programCounter];
-        return currentCommand.parameter as GameObject;
-    }
-
-    private delegate void AutopilotFunction();
-    private Dictionary<AutopilotInstruction, AutopilotFunction> autopilotInstructions;
-
     private void AddAutopilotDefinitions()
     {
-        autopilotInstructions = new Dictionary<AutopilotInstruction, AutopilotFunction>()
+        autopilotInstructions = new Dictionary<Instruction, AutopilotFunction>()
         {
-            { AutopilotInstruction.NOOP,
+            { Instruction.NOOP,
                 ExecuteNoop },
-            { AutopilotInstruction.KILL_ROT,
+            { Instruction.KILL_ROT,
                 ExecuteKillRot },
-            { AutopilotInstruction.ROT_TO_UNITVEC,
+            { Instruction.ROT_TO_UNITVEC,
                 ExecuteRotToUnitVec },
-            { AutopilotInstruction.ROT_TO_TARGET,
+            { Instruction.ROT_TO_TARGET,
                 ExecuteRotToTarget },
-            { AutopilotInstruction.ROT_TO_TARGET_APNG,
+            { Instruction.ROT_TO_TARGET_APNG,
                 ExecuteRotToTargetAPNG },
-            { AutopilotInstruction.BURN_GO,
+            { Instruction.BURN_GO,
                 ExecuteBurnGo },
-            { AutopilotInstruction.BURN_STOP,
+            { Instruction.BURN_STOP,
                 ExecuteBurnStop },
-            { AutopilotInstruction.BURN_SEC,
+            { Instruction.BURN_SEC,
                 ExecuteBurnSec },
-            { AutopilotInstruction.BURN_TO_ZERO_RELV,
+            { Instruction.BURN_TO_ZERO_RELV,
                 ExecuteBurnToZeroRelV },
-            { AutopilotInstruction.BURN_TO_INTER_RELV,
+            { Instruction.BURN_TO_INTER_RELV,
                 ExecuteBurnToInterceptRelV },
-            { AutopilotInstruction.BURN_APNG,
+            { Instruction.BURN_APNG,
                 ExecuteBurnAPNG },
-            { AutopilotInstruction.JUMP,
+            { Instruction.JUMP,
                 ExecuteJump
             }
         };
@@ -270,35 +274,47 @@ public class Autopilot : MonoBehaviour
 
     private void ExecuteRotToTarget()
     {
-        bool converged = false;
-        GameObject target = CurrentCommand().parameter as GameObject;
-        Vector3 b = (target.transform.position - transform.parent.transform.position).normalized;
-        ExecuteRotToUnitVec(b);
-    }
-
-    private void ExecuteRotToUnitVec()
-    {
-        Vector3? o = CurrentCommand().parameter as Vector3?;
-        if (o.HasValue)
+        GameObject target = dataStack.Peek() as GameObject;
+        if (target != null)
         {
-            ExecuteRotToUnitVec(o.Value);
+            Vector3 b = (target.transform.position - transform.parent.transform.position).normalized;
+            bool converged = RotToUnitVec(b);
+            if (converged)
+            {
+                MarkCompleted();
+            }
         }
         else
         {
-            errorStack.Push("Rotate to unit vec needs a target parameter");
+            errorStack.Push("Rotate to target needs a gameobject on the stack");
             commandState = CommandState.IDLE;
         }
     }
 
-    private void ExecuteRotToUnitVec(Vector3 b)
+    private void ExecuteRotToUnitVec()
+    {
+        Vector3? b = dataStack.Peek() as Vector3?;
+        if (b != null && b.HasValue)
+        {
+            bool converged = RotToUnitVec(b.Value);
+            if (converged)
+            {
+                MarkCompleted();
+            }
+        }
+        else
+        {
+            errorStack.Push("Rotate to unit vec needs a unit vector3 on the stack");
+            commandState = CommandState.IDLE;
+        }
+    }
+
+    private bool RotToUnitVec(Vector3 b)
     {
         Quaternion q = Quaternion.LookRotation(b);
         q = Quaternion.Euler(q.eulerAngles.x, q.eulerAngles.y, transform.rotation.eulerAngles.z);
         bool converged = ship.ConvergeSpin(q, MinRotToTargetDeltaTheta);
-        if (converged)
-        {
-            MarkCompleted();
-        }
+        return converged;
     }
 
     private Vector3 CalcAPNG(Transform source, GameObject targetNBody)
@@ -319,13 +335,22 @@ public class Autopilot : MonoBehaviour
 
     private void ExecuteRotToTargetAPNG()
     {
-        GameObject target = CurrentCommand().parameter as GameObject;
-        Vector3 a = CalcAPNG(transform.parent.transform, target);
-        Quaternion q = Quaternion.LookRotation(a);
-        bool converged = ship.ConvergeSpin(q, MinAPNGDeltaTheta * 4);
-        if (converged)
+        GameObject target = dataStack.Peek() as GameObject;
+        if (target != null)
         {
-            MarkCompleted();
+            Vector3 a = CalcAPNG(transform.parent.transform, target);
+            Quaternion q = Quaternion.LookRotation(a);
+            bool converged = ship.ConvergeSpin(q, MinAPNGDeltaTheta * 4);
+            if (converged)
+            {
+                dataStack.Pop();
+                MarkCompleted();
+            }
+        }
+        else
+        {
+            errorStack.Push("rotate to target APNG needs a target on the stack");
+            commandState = CommandState.IDLE;
         }
     }
 
@@ -336,7 +361,9 @@ public class Autopilot : MonoBehaviour
 
     private void ExecuteBurnAPNG()
     {
-        GameObject target = CurrentCommand().parameter as GameObject;
+        GameObject target = dataStack.Peek() as GameObject;
+        if (target != null)
+        {
         Vector3 a = CalcAPNG(transform.parent.transform, target);
         bool shouldBurnRCS = a.magnitude > ship.CurrentRCSAccelerationPerSec() * minRCSBurnTimeSec && a.magnitude < ship.CurrentMainEngineAccPerSec() * minMainBurnTimeSec;
         bool shouldBurnMain = !shouldBurnRCS && a.magnitude > MinDeltaVforBurn;
@@ -381,8 +408,17 @@ public class Autopilot : MonoBehaviour
 
         if (!ship.IsMainEngineGo() && !isRCSGo)
         {
+                dataStack.Pop();
             MarkCompleted();
         }
+        }
+        else
+        {
+            errorStack.Push("APNG burn needs a target on the stack");
+            commandState = CommandState.IDLE;
+            return;
+        }
+
     }
 
 
@@ -410,21 +446,22 @@ public class Autopilot : MonoBehaviour
     {
         if (burnTimer == -1)
         {
-            float? sec = CurrentCommand().parameter as float?;
-            if (sec.HasValue)
+            float? sec = dataStack.Peek() as float?;
+            if (sec != null && sec.HasValue)
             {
                 ship.MainEngineBurst(sec.Value);
                 burnTimer = sec.Value;
             }
         }
-        else if (burnTimer <= 0)
+        else if (burnTimer > 0)
         {
-            burnTimer = -1;
-            MarkCompleted();
+            burnTimer -= Time.deltaTime;
         }
         else
         {
-            burnTimer -= Time.deltaTime;
+            burnTimer = -1;
+            dataStack.Pop();
+            MarkCompleted();
         }
     }
 
@@ -440,54 +477,62 @@ public class Autopilot : MonoBehaviour
 
     private void ExecuteBurnToRelV(float desiredDeltaV)
     {
-        bool done = false;
-        bool burnMain = false;
-        bool burnRCS = false;
-        bool burning = ship.IsMainEngineGo();
-
         // check relv magnitude
-        GameObject target = CurrentCommand().parameter as GameObject;
-        float dist;
-        float relv;
-        Vector3 relVelUnit;
-        PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
-        float absRelVGap = Mathf.Abs(desiredDeltaV - relv);
-        if ((desiredDeltaV > 0 && relv > desiredDeltaV)
-            || absRelVGap <= MinDeltaVforBurn) // burned enough or too much
+        GameObject target = dataStack.Peek() as GameObject;
+        if (target != null)
         {
-            burnMain = false;
-            burnRCS = false;
-            done = true;
-        }
-        else
-        {
-            // if not burning and magnitude greater than RCS thrust ten sec then main engine burn
-            float maxRCSDeltaV = MaxRCSAutoBurnSec * ship.CurrentRCSAccelerationPerSec();
-            burnMain = absRelVGap > maxRCSDeltaV;
-            burnRCS = absRelVGap <= maxRCSDeltaV;
-        }
+            bool done = false;
+            bool burnMain = false;
+            bool burnRCS = false;
+            bool burning = ship.IsMainEngineGo();
 
-        if (burnMain)
-        {
-            if (!burning)
+            float dist;
+            float relv;
+            Vector3 relVelUnit;
+            PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
+            float absRelVGap = Mathf.Abs(desiredDeltaV - relv);
+            if ((desiredDeltaV > 0 && relv > desiredDeltaV)
+                || absRelVGap <= MinDeltaVforBurn) // burned enough or too much
             {
-                ship.MainEngineGo();
+                burnMain = false;
+                burnRCS = false;
+                done = true;
+            }
+            else
+            {
+                // if not burning and magnitude greater than RCS thrust ten sec then main engine burn
+                float maxRCSDeltaV = MaxRCSAutoBurnSec * ship.CurrentRCSAccelerationPerSec();
+                burnMain = absRelVGap > maxRCSDeltaV;
+                burnRCS = absRelVGap <= maxRCSDeltaV;
+            }
+
+            if (burnMain)
+            {
+                if (!burning)
+                {
+                    ship.MainEngineGo();
+                }
+            }
+            else
+            {
+                if (burning)
+                {
+                    ship.MainEngineCutoff();
+                }
+                if (burnRCS)
+                {
+                    ship.ApplyRCSImpulse(-relVelUnit);
+                }
+            }
+            if (done)
+            {
+                MarkCompleted();
             }
         }
         else
         {
-            if (burning)
-            {
-                ship.MainEngineCutoff();
-            }
-            if (burnRCS)
-            {
-                ship.ApplyRCSImpulse(-relVelUnit);
-            }
-        }
-        if (done)
-        {
-            MarkCompleted();
+            errorStack.Push("burn to relV must have a target on the stack");
+            commandState = CommandState.IDLE;
         }
     }
 
@@ -498,15 +543,16 @@ public class Autopilot : MonoBehaviour
 
     private void ExecuteJump()
     {
-        int? newPC = CurrentCommand().parameter as int?;
-        if (newPC.HasValue)
+        int? newPC = dataStack.Peek() as int?;
+        if (newPC != null && newPC.HasValue)
         {
+            dataStack.Pop();
             programCounter = newPC.Value;
         }
         else
         {
             errorStack.Push("jump parameter invalid");
-            programCounter = -1;
+            commandState = CommandState.IDLE;
         }
     }
 
