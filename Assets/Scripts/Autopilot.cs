@@ -7,6 +7,7 @@ public class Autopilot : MonoBehaviour
     public GameController gameController;
     public float MaxRCSAutoBurnSec = 10;
     public float MinDeltaVforBurn = 0.1f;
+    public float MinInterceptDeltaV = 20;
     public float InterceptDeltaV = 30;
     public float NavigationalConstant = 3;
     public float MinRotToTargetDeltaTheta = 0.2f;
@@ -14,7 +15,9 @@ public class Autopilot : MonoBehaviour
     public bool APNG = true;
 
     private RocketShip ship;
+    private float burnTimer = -1f;
     private Stack<object> dataStack = new Stack<object>();
+    private Dictionary<string, object> dataVariables = new Dictionary<string, object>();
     private Stack<object> errorStack = new Stack<object>();
     private List<object> program = new List<object>();
     private int programCounter;
@@ -27,6 +30,7 @@ public class Autopilot : MonoBehaviour
     private enum Instruction
     {
         NOOP,
+
         DUP,
         DROP,
         SWAP,
@@ -35,18 +39,32 @@ public class Autopilot : MonoBehaviour
         MINUSROT,
         NIP,
         TUCK,
+
+        STORE,
+        LOAD,
+
+        ADD,
+        MINUS,
+        ABS,
+
         VECTOR3_MAGNITUDE,
         VECTOR3_NORMALIZE,
         VECTOR3_SCALAR_MULTIPLY,
-        KILL_ROT,
+
         CALC_RELV,
         CALC_APNG,
         CALC_TARGET_VEC,
         CALC_DELTA_V_BURN_SEC,
+
+        KILL_ROT,
         ROT_TO_UNITVEC,
         BURN_GO,
         BURN_STOP,
         BURN_SEC,
+
+        EQ,
+        GTE,
+        BRANCHIF,
         JUMP
     };
     private delegate void AutopilotFunction();
@@ -87,6 +105,7 @@ public class Autopilot : MonoBehaviour
         commandState = CommandState.IDLE;
         programCounter = -1;
         dataStack.Clear();
+        dataVariables.Clear();
         errorStack.Clear();
         program.Clear();
     }
@@ -217,7 +236,7 @@ public class Autopilot : MonoBehaviour
             Instruction.BURN_SEC,
             Instruction.CALC_TARGET_VEC,
             Instruction.VECTOR3_NORMALIZE,
-            Instruction.ROT_TO_UNITVEC            
+            Instruction.ROT_TO_UNITVEC
         );
     }
 
@@ -225,16 +244,89 @@ public class Autopilot : MonoBehaviour
     {
         LoadProgram(
             target,
+            "target",
+            Instruction.STORE,
+            // ( )
             Instruction.BURN_STOP,
-            Instruction.DUP, // ( target target )
-            Instruction.CALC_RELV, // ( target target dist relv relvec )
-            Instruction.CALC_APNG, // ( target a )
-            Instruction.DUP, // ( target a a )
-            Instruction.ROT_TO_UNITVEC, // ( target a )
-            Instruction.VECTOR3_MAGNITUDE, // ( target |a| )
-            Instruction.CALC_DELTA_V_BURN_SEC, // ( target sec )
-            Instruction.BURN_SEC, // ( target )
-            2,
+            "target", // ADDR 4
+            Instruction.LOAD,
+            // ( target )
+
+            // find relv
+            Instruction.CALC_RELV,
+            // ( dist relv relvec )
+
+            // turn around?
+            // ( dist relv relvec )
+            Instruction.OVER,
+            // ( dist relv relvec relv )
+            0f,
+            Instruction.GTE,
+            20, // addr SPEEDCHECK
+            Instruction.BRANCHIF, // brach if relv >= 0
+
+            // STOP
+            // we need to stop first, relv is neg
+            // ( dist relv relvec )
+            -1f,
+            // ( dist relv relvec -1f )
+            Instruction.OVER,
+            // ( dist relv relvec -1f relvec )
+            Instruction.VECTOR3_SCALAR_MULTIPLY,
+            // ( dist relv relvec -relvec )
+            Instruction.ROT_TO_UNITVEC,
+            // ( dist relv relvec )
+            Instruction.OVER,
+            // ( dist relv relvec relv )
+            Instruction.ABS,
+            // ( dist relv relvec |relv| )
+            Instruction.CALC_DELTA_V_BURN_SEC,
+            Instruction.BURN_SEC,
+            // ( dist relv relvec )
+
+            // SPEEDCHECK
+            // moving towards target, are we fast enough?
+            // ( dist relv relvec )
+            Instruction.OVER, // ADDR 20
+            // ( dist relv relvec relv )
+            MinInterceptDeltaV,
+            // ( dist relv relvec relv INTCPdV )
+            Instruction.GTE,
+            36, // APNG
+            Instruction.BRANCHIF,
+
+            // SPEEDUP
+            // ( dist relv relvec )
+            "target",
+            Instruction.LOAD,
+            Instruction.CALC_TARGET_VEC,
+            Instruction.VECTOR3_NORMALIZE,
+            Instruction.ROT_TO_UNITVEC,
+            // ( dist relv relvec )
+            Instruction.OVER,
+            // ( dist relv relvec relv )
+            InterceptDeltaV,
+            Instruction.SWAP,
+            Instruction.MINUS,
+            // ( dist relv relvec deltaV )
+            Instruction.CALC_DELTA_V_BURN_SEC,
+            Instruction.BURN_SEC,
+
+            // APNG
+            // ( dist relv relvec )
+            "target", // ADDR 36
+            Instruction.LOAD,
+            Instruction.CALC_TARGET_VEC,
+            // ( dist relv relvec tgtvec )
+            Instruction.CALC_APNG, // ( a )
+            Instruction.DUP, // ( a a )
+            Instruction.ROT_TO_UNITVEC, // ( a )
+            Instruction.VECTOR3_MAGNITUDE, // ( |a| )
+            Instruction.CALC_DELTA_V_BURN_SEC, // ( sec )
+            Instruction.BURN_SEC, // ( )
+
+            // GO BACK TO BEGINNING
+            4,
             Instruction.JUMP
         );
     }
@@ -252,26 +344,43 @@ public class Autopilot : MonoBehaviour
             { Instruction.MINUSROT, ExecuteMinusRot },
             { Instruction.NIP, ExecuteNip },
             { Instruction.TUCK, ExecuteTuck },
-            { Instruction.KILL_ROT, ExecuteKillRot },
+
+            { Instruction.STORE, ExecuteStore },
+            { Instruction.LOAD, ExecuteLoad },
+
+            { Instruction.ADD, ExecuteAdd },
+            { Instruction.MINUS, ExecuteMinus },
+            { Instruction.ABS, ExecuteAbs },
+
             { Instruction.VECTOR3_MAGNITUDE, ExecuteVector3Magnitude },
             { Instruction.VECTOR3_NORMALIZE, ExecuteVector3Normalize },
             { Instruction.VECTOR3_SCALAR_MULTIPLY, ExecuteVector3ScalarMultiply },
+
             { Instruction.CALC_RELV, ExecuteCalcRelv },
             { Instruction.CALC_APNG, ExecuteCalcAPNG },
             { Instruction.CALC_TARGET_VEC, ExecuteCalcTargetVec },
             { Instruction.CALC_DELTA_V_BURN_SEC, ExecuteCalcDeltaVBurnSec },
+
+            { Instruction.KILL_ROT, ExecuteKillRot },
             { Instruction.ROT_TO_UNITVEC, ExecuteRotToUnitVec },
             { Instruction.BURN_GO, ExecuteBurnGo },
             { Instruction.BURN_STOP, ExecuteBurnStop },
             { Instruction.BURN_SEC, ExecuteBurnSec },
-            { Instruction.JUMP, ExecuteJump }
+
+            { Instruction.JUMP, ExecuteJump },
+            { Instruction.BRANCHIF, ExecuteBranchIf },
+            { Instruction.EQ, ExecuteEqualTo },
+            { Instruction.GTE, ExecuteGreaterThanEqualTo }
         };
     }
+
 
     private void ExecuteNoop()
     {
         MarkExecuted();
     }
+
+    #region stack operations
 
     private void ExecuteDup()
     {
@@ -407,6 +516,126 @@ public class Autopilot : MonoBehaviour
         }
     }
 
+    #endregion
+
+    #region Variable Operations
+
+    // ( a b -- )
+    private void ExecuteStore()
+    {
+        bool good = false;
+        if (dataStack.Count >= 2)
+        {
+            string b = dataStack.Pop() as string;
+            object a = dataStack.Pop() as object;
+            if (b != null)
+            {
+                good = true;
+                dataVariables[b] = a;
+                MarkExecuted();
+            }
+        }
+        if (!good)
+        {
+            MarkIdle("Store needs a variable name string and a value object on the stack");
+        }
+    }
+
+    // ( a -- b )
+    private void ExecuteLoad()
+    {
+        bool good = false;
+        if (dataStack.Count >= 1)
+        {
+            string a = dataStack.Pop() as string;
+            if (a != null && dataVariables.ContainsKey(a))
+            {
+                good = true;
+                object b = dataVariables[a];
+                dataStack.Push(b);
+                MarkExecuted();
+            }
+        }
+        if (!good)
+        {
+            MarkIdle("Load needs a variable name string currently in the variable dictionary on the stack");
+        }
+    }
+
+    #endregion
+
+    #region Arithmetic Operations
+
+    // ( a b -- c )
+    private void ExecuteAdd()
+    {
+        bool good = false;
+        if (dataStack.Count >= 2)
+        {
+            float? b = dataStack.Pop() as float?;
+            float? a = dataStack.Pop() as float?;
+            if (a != null && b != null)
+            {
+                good = true;
+                float c = a.Value + b.Value;
+                dataStack.Push(c);
+                MarkExecuted();
+            }
+        }
+        if (!good)
+        {
+            MarkIdle("add needs two floats on the stack");
+        }
+    }
+
+    // ( a b -- c )
+    private void ExecuteMinus()
+    {
+        bool good = false;
+        if (dataStack.Count >= 2)
+        {
+            float? b = dataStack.Pop() as float?;
+            float? a = dataStack.Pop() as float?;
+            if (a != null && b != null)
+            {
+                good = true;
+                float c = a.Value - b.Value;
+                dataStack.Push(c);
+                MarkExecuted();
+            }
+        }
+        if (!good)
+        {
+            MarkIdle("minus needs two floats on the stack");
+        }
+    }
+
+    // ( a -- a )
+    private void ExecuteAbs()
+    {
+        bool good = false;
+        if (dataStack.Count >= 1)
+        {
+            float? a = dataStack.Pop() as float?;
+            if (a != null)
+            {
+                good = true;
+                float c = Mathf.Abs(a.Value);
+                dataStack.Push(c);
+                MarkExecuted();
+            }
+        }
+        if (!good)
+        {
+            MarkIdle("Abs needs one float on the stack");
+        }
+    }
+
+    #endregion
+
+    #region vector operations
+
+    // ( a -- |a| )
     private void ExecuteVector3Magnitude()
     {
         bool good = false;
@@ -427,6 +656,7 @@ public class Autopilot : MonoBehaviour
         }
     }
 
+    // ( a -- a.Normalized )
     private void ExecuteVector3Normalize()
     {
         bool good = false;
@@ -447,6 +677,7 @@ public class Autopilot : MonoBehaviour
         }
     }
 
+    // ( a b -- a*b )
     private void ExecuteVector3ScalarMultiply()
     {
         bool good = false;
@@ -468,6 +699,9 @@ public class Autopilot : MonoBehaviour
         }
     }
 
+    #endregion
+
+    #region command operations
     private void ExecuteKillRot()
     {
         bool convergedSpin = ship.KillRotation();
@@ -476,6 +710,90 @@ public class Autopilot : MonoBehaviour
             MarkExecuted();
         }
     }
+
+    private void ExecuteRotToUnitVec()
+    {
+        bool good = false;
+        if (dataStack.Count >= 1)
+        {
+            Vector3? b = dataStack.Pop() as Vector3?;
+            if (b != null)
+            {
+                good = true;
+                Quaternion q = Quaternion.LookRotation(b.Value);
+                q = Quaternion.Euler(q.eulerAngles.x, q.eulerAngles.y, transform.rotation.eulerAngles.z);
+                bool converged = ship.ConvergeSpin(q, MinRotToTargetDeltaTheta);
+                if (converged)
+                {
+                    MarkExecuted();
+                }
+                else
+                {
+                    dataStack.Push(b);
+                }
+            }
+        }
+        if (!good)
+        {
+            MarkIdle("Rotate to unit vec needs a unit vector3 on the stack");
+        }
+    }
+
+    private void ExecuteBurnGo()
+    {
+        if (!ship.IsMainEngineGo())
+        {
+            ship.MainEngineGo();
+        }
+        MarkExecuted();
+    }
+
+    private void ExecuteBurnStop()
+    {
+        if (ship.IsMainEngineGo())
+        {
+            ship.MainEngineCutoff();
+        }
+        MarkExecuted();
+    }
+
+    private void ExecuteBurnSec()
+    {
+        // ( a -- )
+        if (burnTimer == -1)
+        {
+            bool good = false;
+            if (dataStack.Count >= 1)
+            {
+                float? sec = dataStack.Pop() as float?;
+                if (sec != null)
+                {
+                    good = true;
+                    ship.MainEngineBurst(sec.Value);
+                    burnTimer = sec.Value;
+                }
+            }
+            if (!good)
+            {
+                MarkIdle("Execute Burn Sec must have time in seconds on the stack");
+                good = true;
+            }
+        }
+        else if (burnTimer > 0)
+        {
+            burnTimer -= Time.deltaTime;
+        }
+        else
+        {
+            burnTimer = -1;
+            MarkExecuted();
+        }
+    }
+
+    #endregion
+
+
+    #region calcation operations
 
     private void ExecuteCalcRelv()
     {
@@ -522,49 +840,21 @@ public class Autopilot : MonoBehaviour
         }
     }
 
-    private void ExecuteRotToUnitVec()
-    {
-        bool good = false;
-        if (dataStack.Count >= 1)
-        {
-            Vector3? b = dataStack.Pop() as Vector3?;
-            if (b != null)
-            {
-                good = true;
-                Quaternion q = Quaternion.LookRotation(b.Value);
-                q = Quaternion.Euler(q.eulerAngles.x, q.eulerAngles.y, transform.rotation.eulerAngles.z);
-                bool converged = ship.ConvergeSpin(q, MinRotToTargetDeltaTheta);
-                if (converged)
-                {
-                    MarkExecuted();
-                }
-                else
-                {
-                    dataStack.Push(b);
-                }
-            }
-        }
-        if (!good)
-        {
-            MarkIdle("Rotate to unit vec needs a unit vector3 on the stack");
-        }
-    }
-
-    // ( target dist relv relVelUnit -- accVec )
+    // ( dist relv relVelUnit tgtVec -- accVec )
     private void ExecuteCalcAPNG()
     {
         bool good = false;
         if (dataStack.Count >= 4)
         {
+            Vector3? targetVec = dataStack.Pop() as Vector3?;
             Vector3? relVelUnit = dataStack.Pop() as Vector3?;
             float? relv = dataStack.Pop() as float?;
             float? dist = dataStack.Pop() as float?;
-            GameObject target = dataStack.Pop() as GameObject;
-            if (relVelUnit != null && relv != null && dist != null && target != null)
+            if (relVelUnit != null && relv != null && dist != null && targetVec != null)
             {
                 float N = NavigationalConstant;
                 Vector3 vr = relv.Value * -relVelUnit.Value;
-                Vector3 r = target.transform.position - transform.position;
+                Vector3 r = targetVec.Value;
                 Vector3 o = Vector3.Cross(r, vr) / Vector3.Dot(r, r);
                 Vector3 a = Vector3.Cross(-N * Mathf.Abs(vr.magnitude) * r.normalized, o);
                 dataStack.Push(a);
@@ -601,202 +891,55 @@ public class Autopilot : MonoBehaviour
         }
     }
 
-    /*
-    private float minRCSBurnTimeSec = 0.1f;
-    private float minMainBurnTimeSec = 0.5f;
-    private float burnTimerAPNG = -1;
-    private bool isRCSGo = false;
+    #endregion
 
-    private void ExecuteBurnAPNG()
-    {
-        bool good = false;
-        if (dataStack.Count >= 1)
-        {
-            Vector3? aP = dataStack.Pop() as Vector3?;
-            if (aP != null)
-            {
-                good = true;
-                Vector3 a = aP.Value;
-                bool shouldBurnRCS = a.magnitude > ship.CurrentRCSAccelerationPerSec() * minRCSBurnTimeSec && a.magnitude < ship.CurrentMainEngineAccPerSec() * minMainBurnTimeSec;
-                bool shouldBurnMain = !shouldBurnRCS && a.magnitude > MinDeltaVforBurn;
+    #region control operators   
 
-                if (shouldBurnMain) // takes priority
-                {
-                    if (!ship.IsMainEngineGo())
-                    {
-                        ship.MainEngineGo();
-                        burnTimerAPNG = minMainBurnTimeSec; // reset timer
-                    }
-                }
-                else if (shouldBurnRCS)
-                {
-                    if (!isRCSGo)
-                    {
-                        ship.ApplyRCSImpulse(transform.forward);
-                        isRCSGo = true;
-                        burnTimerAPNG = minRCSBurnTimeSec;
-                    }
-                }
-
-                if (ship.IsMainEngineGo() || isRCSGo)
-                {
-                    if (isRCSGo)
-                    {
-                        ship.ApplyRCSImpulse(transform.forward);
-                    }
-                }
-
-                if (burnTimerAPNG != -1)
-                {
-                    burnTimerAPNG -= Time.deltaTime;
-                }
-
-                if (burnTimerAPNG > -1 && burnTimerAPNG < 0)
-                {
-                    isRCSGo = false;
-                    ship.MainEngineCutoff();
-                    burnTimerAPNG = -1;
-                }
-
-                if (!ship.IsMainEngineGo() && !isRCSGo)
-                {
-                    dataStack.Pop();
-                    MarkExecuted();
-                }
-            }
-        }
-        if (!good)
-        {
-            MarkIdle("APNG burn needs an acceleration Vector3 on the stack");
-            return;
-        }
-    }
-    */
-
-    private void ExecuteBurnGo()
-    {
-        if (!ship.IsMainEngineGo())
-        {
-            ship.MainEngineGo();
-        }
-        MarkExecuted();
-    }
-
-    private void ExecuteBurnStop()
-    {
-        if (ship.IsMainEngineGo())
-        {
-            ship.MainEngineCutoff();
-        }
-        MarkExecuted();
-    }
-
-    private float burnTimer = -1;
-
-    private void ExecuteBurnSec()
-    {
-        if (burnTimer == -1)
-        {
-            bool good = false;
-            if (dataStack.Count >= 1)
-            {
-                float? sec = dataStack.Pop() as float?;
-                if (sec != null)
-                {
-                    good = true;
-                    ship.MainEngineBurst(sec.Value);
-                    burnTimer = sec.Value;
-                }
-            }
-            if (!good)
-            {
-                MarkIdle("Execute Burn Sec must have time in seconds on the stack");
-            }
-        }
-        else if (burnTimer > 0)
-        {
-            burnTimer -= Time.deltaTime;
-        }
-        else
-        {
-            burnTimer = -1;
-            MarkExecuted();
-        }
-    }
-
-    /*
-    private void ExecuteBurnDeltaV()
+    // ( a b -- c )
+    private void ExecuteEqualTo()
     {
         bool good = false;
         if (dataStack.Count >= 2)
         {
-            float? desiredDeltaVP = dataStack.Pop() as float?;
-            GameObject target = dataStack.Pop() as GameObject;
-            if (desiredDeltaVP != null && target != null)
+            float? b = dataStack.Pop() as float?;
+            float? a = dataStack.Pop() as float?;
+            if (a != null && b != null)
             {
                 good = true;
-                float desiredDeltaV = desiredDeltaVP.Value;
-                bool done = false;
-                bool burnMain = false;
-                bool burnRCS = false;
-                bool burning = ship.IsMainEngineGo();
-
-                float dist;
-                float relv;
-                Vector3 relVelUnit;
-                PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
-                float absRelVGap = Mathf.Abs(desiredDeltaV - relv);
-                if ((desiredDeltaV > 0 && relv > desiredDeltaV)
-                    || absRelVGap <= MinDeltaVforBurn) // burned enough or too much
-                {
-                    burnMain = false;
-                    burnRCS = false;
-                    done = true;
-                }
-                else
-                {
-                    // if not burning and magnitude greater than RCS thrust ten sec then main engine burn
-                    float maxRCSDeltaV = MaxRCSAutoBurnSec * ship.CurrentRCSAccelerationPerSec();
-                    burnMain = absRelVGap > maxRCSDeltaV;
-                    burnRCS = absRelVGap <= maxRCSDeltaV;
-                }
-
-                if (burnMain)
-                {
-                    if (!burning)
-                    {
-                        ship.MainEngineGo();
-                    }
-                }
-                else
-                {
-                    if (burning)
-                    {
-                        ship.MainEngineCutoff();
-                    }
-                    if (burnRCS)
-                    {
-                        ship.ApplyRCSImpulse(-relVelUnit);
-                    }
-                }
-                if (done)
-                {
-                    MarkExecuted();
-                }
-                else
-                {
-                    dataStack.Push(target);
-                    dataStack.Push(desiredDeltaVP);
-                }
+                bool c = a.Value == b.Value;
+                dataStack.Push(c);
+                MarkExecuted();
             }
         }
         if (!good)
         {
-            MarkIdle("burn to relV must have a target on the stack");
+            MarkIdle("EQ requires two floats on the stack");
         }
     }
-    */
 
+    // ( a b -- c )
+    private void ExecuteGreaterThanEqualTo()
+    {
+        bool good = false;
+        if (dataStack.Count >= 2)
+        {
+            float? b = dataStack.Pop() as float?;
+            float? a = dataStack.Pop() as float?;
+            if (a != null && b != null)
+            {
+                good = true;
+                bool c = a.Value >= b.Value;
+                dataStack.Push(c);
+                MarkExecuted();
+            }
+        }
+        if (!good)
+        {
+            MarkIdle("GTE requires two floats on the stack");
+        }
+    }
+
+    // ( a -- )
     private void ExecuteJump()
     {
         bool good = false;
@@ -811,9 +954,39 @@ public class Autopilot : MonoBehaviour
         }
         if (!good)
         {
-            MarkIdle("jump parameter invalid");
+            MarkIdle("jump requires one integer address on the stack");
         }
     }
+
+    // ( a b -- )
+    private void ExecuteBranchIf()
+    {
+        bool good = false;
+        if (dataStack.Count >= 2)
+        {
+            int? b = dataStack.Pop() as int?;
+            bool? a = dataStack.Pop() as bool?;
+            if (a != null && b != null)
+            {
+                good = true;
+                if (a.Value)
+                {
+                    programCounter = b.Value;
+                }
+                else
+                {
+                    programCounter++;
+                }
+            }
+        }
+        if (!good)
+        {
+            MarkIdle("BranchIf requires one bool and one integer address on the stack");
+        }
+    }
+
+
+    #endregion
 
     private void MarkExecuted()
     {
