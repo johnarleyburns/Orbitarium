@@ -18,9 +18,15 @@ public class Autopilot : MonoBehaviour
     private float burnTimer = -1f;
     private Stack<object> dataStack = new Stack<object>();
     private Dictionary<string, object> dataVariables = new Dictionary<string, object>();
+    private Dictionary<string, List<object>> codeLibrary = new Dictionary<string, List<object>>();
     private Stack<object> errorStack = new Stack<object>();
-    private List<object> program = new List<object>();
-    private int programCounter;
+    private Stack<ProgramContext> callStack = new Stack<ProgramContext>();
+    private ProgramContext currentContext;
+    private class ProgramContext
+    {
+        public int programCounter;
+        public List<object> program;
+    }
     private CommandState commandState;
     private enum CommandState
     {
@@ -65,7 +71,8 @@ public class Autopilot : MonoBehaviour
         EQ,
         GTE,
         BRANCHIF,
-        JUMP
+        JUMP,
+        CALL
     };
     private delegate void AutopilotFunction();
     private Dictionary<Instruction, AutopilotFunction> autopilotInstructions;
@@ -74,6 +81,7 @@ public class Autopilot : MonoBehaviour
     {
         ship = GetComponent<RocketShip>();
         AddAutopilotDefinitions();
+        LoadCodeLibrary();
         ClearProgram();
     }
 
@@ -86,14 +94,19 @@ public class Autopilot : MonoBehaviour
                 case CommandState.IDLE:
                     break;
                 case CommandState.EXECUTING:
-                    if (programCounter >= 0 && programCounter < program.Count)
+                    if (currentContext.programCounter >= 0 && currentContext.programCounter < currentContext.program.Count)
                     {
-                        object line = program[programCounter];
+                        object line = currentContext.program[currentContext.programCounter];
                         ProcessLine(line);
+                    }
+                    else if (currentContext.programCounter == currentContext.program.Count && callStack.Count > 0)
+                    {
+                        currentContext = callStack.Pop();
+                        currentContext.programCounter++;
                     }
                     else
                     {
-                        MarkIdle("programCounter invalid pc=" + programCounter);
+                        MarkIdle("programCounter invalid pc=" + currentContext.programCounter);
                     }
                     break;
             }
@@ -103,11 +116,13 @@ public class Autopilot : MonoBehaviour
     private void ClearProgram()
     {
         commandState = CommandState.IDLE;
-        programCounter = -1;
+        currentContext = new ProgramContext();
+        currentContext.programCounter = -1;
+        currentContext.program = new List<object>();
+        callStack.Clear();
         dataStack.Clear();
         dataVariables.Clear();
         errorStack.Clear();
-        program.Clear();
     }
 
     public void AutopilotOff()
@@ -118,11 +133,11 @@ public class Autopilot : MonoBehaviour
     private Instruction CurrentInstruction()
     {
         Instruction inst = Instruction.NOOP;
-        lock (program)
+        lock (currentContext)
         {
-            if (commandState == CommandState.EXECUTING && programCounter >= 0 && programCounter < program.Count)
+            if (commandState == CommandState.EXECUTING && currentContext.programCounter >= 0 && currentContext.programCounter < currentContext.program.Count)
             {
-                Instruction? instP = program[programCounter] as Instruction?;
+                Instruction? instP = currentContext.program[currentContext.programCounter] as Instruction?;
                 if (instP != null)
                 {
                     inst = instP.Value;
@@ -151,7 +166,7 @@ public class Autopilot : MonoBehaviour
         else
         {
             dataStack.Push(line);
-            programCounter++;
+            currentContext.programCounter++;
         }
     }
 
@@ -160,8 +175,8 @@ public class Autopilot : MonoBehaviour
         lock (this)
         {
             ClearProgram();
-            program = new List<object>(programList);
-            programCounter = 0;
+            currentContext.program = new List<object>(programList);
+            currentContext.programCounter = 0;
             commandState = CommandState.EXECUTING;
         }
     }
@@ -183,72 +198,66 @@ public class Autopilot : MonoBehaviour
         return inst == Instruction.ROT_TO_UNITVEC;
     }
 
-    public void KillRot()
+    public void LoadCodeLibrary()
     {
-        LoadProgram(
-            Instruction.BURN_STOP,
-            Instruction.KILL_ROT
-        );
-    }
+        codeLibrary = new Dictionary<string, List<object>>()
+        {
+            {
+                "KillRot", // ( -- )
+                new List<object>()
+                {
+                    Instruction.BURN_STOP,
+                    Instruction.KILL_ROT
+                }
+            },
+            {
+                "AutoRot", // ( target -- )
+                new List<object>()
+                {
+                    Instruction.BURN_STOP,
+                    Instruction.CALC_TARGET_VEC,
+                    Instruction.VECTOR3_NORMALIZE,
+                    Instruction.ROT_TO_UNITVEC
+                }
 
-    public void AutoRot(GameObject target)
-    {
-        LoadProgram(
-            target,
-            Instruction.BURN_STOP,
-            Instruction.CALC_TARGET_VEC,
-            Instruction.VECTOR3_NORMALIZE,
-            Instruction.ROT_TO_UNITVEC
-        );
-    }
-
-    public void KillRelV(GameObject target)
-    {
-        LoadProgram(
-            target,
-            Instruction.BURN_STOP,
-            Instruction.CALC_RELV, // ( relv relvec )
-            Instruction.ROT, // ( a b c -- b c a ) // ( target dist relv relvec -- target relv relvec dist ) 
-            Instruction.DROP, // ( relv relvec )
-            -1.0f, // ( relv relvec -1.0f )
-            Instruction.SWAP, // ( relv -1.0f relvec )
-            Instruction.VECTOR3_SCALAR_MULTIPLY, // ( relv -relvec )
-            Instruction.ROT_TO_UNITVEC, // ( relv )
-            Instruction.CALC_DELTA_V_BURN_SEC, // ( sec )
-            Instruction.BURN_SEC
-        );
-    }
-
-    public void Rendezvous(GameObject target)
-    {
-        LoadProgram(
-            target,
-            Instruction.DUP,
-            Instruction.BURN_STOP,
-            Instruction.CALC_RELV, // ( dist relv relvec )
-            Instruction.ROT, // ( a b c -- b c a ) // ( target dist relv relvec -- target relv relvec dist ) 
-            Instruction.DROP, // ( relv relvec )
-            -1.0f, // ( relv relvec -1.0f )
-            Instruction.SWAP, // ( relv -1.0f relvec )
-            Instruction.VECTOR3_SCALAR_MULTIPLY, // ( relv -relvec )
-            Instruction.ROT_TO_UNITVEC, // ( relv )
-            Instruction.CALC_DELTA_V_BURN_SEC, // ( sec )
-            Instruction.BURN_SEC,
-            Instruction.CALC_TARGET_VEC,
-            Instruction.VECTOR3_NORMALIZE,
-            Instruction.ROT_TO_UNITVEC
-        );
-    }
-
-    public void APNGToTarget(GameObject target)
-    {
-        LoadProgram(
-            target,
-            "target",
+            },
+            {
+                "KillRelV", // ( target -- )
+                new List<object>()
+                {
+                    Instruction.BURN_STOP,
+                    Instruction.CALC_RELV, // ( relv relvec )
+                    Instruction.ROT, // ( a b c -- b c a ) // ( target dist relv relvec -- target relv relvec dist ) 
+                    Instruction.DROP, // ( relv relvec )
+                    -1.0f, // ( relv relvec -1.0f )
+                    Instruction.SWAP, // ( relv -1.0f relvec )
+                    Instruction.VECTOR3_SCALAR_MULTIPLY, // ( relv -relvec )
+                    Instruction.ROT_TO_UNITVEC, // ( relv )
+                    Instruction.CALC_DELTA_V_BURN_SEC, // ( sec )
+                    Instruction.BURN_SEC
+                }
+            },
+            {
+                "Rendezvous", // ( target -- )
+                new List<object>()
+                {
+                    Instruction.DUP,
+                    "KillRelV",
+                    Instruction.CALL,
+                    Instruction.CALC_TARGET_VEC,
+                    Instruction.VECTOR3_NORMALIZE,
+                    Instruction.ROT_TO_UNITVEC
+                }
+            },
+            {
+                "APNGToTarget", // ( target -- )
+                new List<object>()
+                {
+           "target",
             Instruction.STORE,
             // ( )
             Instruction.BURN_STOP,
-            "target", // ADDR 4
+            "target",
             Instruction.LOAD,
             // ( target )
 
@@ -262,7 +271,7 @@ public class Autopilot : MonoBehaviour
             // ( dist relv relvec relv )
             0f,
             Instruction.GTE,
-            20, // addr SPEEDCHECK
+            9, // goto SPEEDCHECK
             Instruction.BRANCHIF, // brach if relv >= 0
 
             // STOP
@@ -287,12 +296,12 @@ public class Autopilot : MonoBehaviour
             // SPEEDCHECK
             // moving towards target, are we fast enough?
             // ( dist relv relvec )
-            Instruction.OVER, // ADDR 20
+            Instruction.OVER,
             // ( dist relv relvec relv )
             MinInterceptDeltaV,
             // ( dist relv relvec relv INTCPdV )
             Instruction.GTE,
-            36, // APNG
+            12, // APNG
             Instruction.BRANCHIF,
 
             // SPEEDUP
@@ -314,7 +323,7 @@ public class Autopilot : MonoBehaviour
 
             // APNG
             // ( dist relv relvec )
-            "target", // ADDR 36
+            "target",
             Instruction.LOAD,
             Instruction.CALC_TARGET_VEC,
             // ( dist relv relvec tgtvec )
@@ -326,8 +335,54 @@ public class Autopilot : MonoBehaviour
             Instruction.BURN_SEC, // ( )
 
             // GO BACK TO BEGINNING
-            4,
+            -42,
             Instruction.JUMP
+                }
+            }
+        };
+    }
+
+    public void KillRot()
+    {
+        LoadProgram(
+            "KillRot",
+            Instruction.CALL
+        );
+    }
+
+    public void AutoRot(GameObject target)
+    {
+        LoadProgram(
+            target,
+            "AutoRot",
+            Instruction.CALL
+        );
+    }
+
+    public void KillRelV(GameObject target)
+    {
+        LoadProgram(
+            target,
+            "KillRelV",
+            Instruction.CALL
+        );
+    }
+
+    public void Rendezvous(GameObject target)
+    {
+        LoadProgram(
+            target,
+            "Rendezvous",
+            Instruction.CALL
+        );
+    }
+
+    public void APNGToTarget(GameObject target)
+    {
+        LoadProgram(
+            target,
+            "APNGToTarget",
+            Instruction.CALL
         );
     }
 
@@ -370,7 +425,8 @@ public class Autopilot : MonoBehaviour
             { Instruction.JUMP, ExecuteJump },
             { Instruction.BRANCHIF, ExecuteBranchIf },
             { Instruction.EQ, ExecuteEqualTo },
-            { Instruction.GTE, ExecuteGreaterThanEqualTo }
+            { Instruction.GTE, ExecuteGreaterThanEqualTo },
+            { Instruction.CALL, ExecuteCall }
         };
     }
 
@@ -488,7 +544,7 @@ public class Autopilot : MonoBehaviour
         if (dataStack.Count >= 2)
         {
             object b = dataStack.Pop();
-            object a = dataStack.Pop();
+            dataStack.Pop();
             dataStack.Push(b);
             MarkExecuted();
         }
@@ -945,16 +1001,16 @@ public class Autopilot : MonoBehaviour
         bool good = false;
         if (dataStack.Count >= 1)
         {
-            int? newPC = dataStack.Pop() as int?;
-            if (newPC != null)
+            int? offset = dataStack.Pop() as int?;
+            if (offset != null)
             {
                 good = true;
-                programCounter = newPC.Value;
+                currentContext.programCounter += offset.Value;
             }
         }
         if (!good)
         {
-            MarkIdle("jump requires one integer address on the stack");
+            MarkIdle("jump requires one integer address offset on the stack");
         }
     }
 
@@ -971,26 +1027,48 @@ public class Autopilot : MonoBehaviour
                 good = true;
                 if (a.Value)
                 {
-                    programCounter = b.Value;
+                    currentContext.programCounter += b.Value;
                 }
                 else
                 {
-                    programCounter++;
+                    currentContext.programCounter++;
                 }
             }
         }
         if (!good)
         {
-            MarkIdle("BranchIf requires one bool and one integer address on the stack");
+            MarkIdle("BranchIf requires one bool and one integer offset address on the stack");
         }
     }
 
+    // ( a -- )
+    private void ExecuteCall()
+    {
+        bool good = false;
+        if (dataStack.Count >= 1)
+        {
+            string a = dataStack.Pop() as string;
+            if (a != null && codeLibrary.ContainsKey(a))
+            {
+                good = true;
+                List<object> code = codeLibrary[a];
+                callStack.Push(currentContext);
+                currentContext.program = code;
+                currentContext.programCounter = 0;
+            }
+        }
+        if (!good)
+        {
+            MarkIdle("Call requires one string library name on the stack");
+        }
+
+    }
 
     #endregion
 
     private void MarkExecuted()
     {
-        programCounter++;
+        currentContext.programCounter++;
     }
 
     private void MarkIdle(string error)
