@@ -12,6 +12,8 @@ public class Autopilot : MonoBehaviour
     public float NavigationalConstant = 3;
     public float MinRotToTargetDeltaTheta = 0.2f;
     public float MinAPNGDeltaTheta = 1f;
+    public float RendevousDistToVFactor = 0.01f;
+    public float RendevousMarginVPct = 0.5f;
     public bool APNG = true;
 
     private RocketShip ship;
@@ -51,6 +53,9 @@ public class Autopilot : MonoBehaviour
 
         ADD,
         MINUS,
+        MULTIPLY,
+        DIVIDE,
+        SIGN,
         ABS,
 
         VECTOR3_MAGNITUDE,
@@ -69,6 +74,7 @@ public class Autopilot : MonoBehaviour
         BURN_SEC,
 
         EQ,
+        LTE,
         GTE,
         BRANCHIF,
         JUMP,
@@ -133,7 +139,7 @@ public class Autopilot : MonoBehaviour
     private Instruction CurrentInstruction()
     {
         Instruction inst = Instruction.NOOP;
-        lock (currentContext)
+        lock (this)
         {
             if (commandState == CommandState.EXECUTING && currentContext.programCounter >= 0 && currentContext.programCounter < currentContext.program.Count)
             {
@@ -226,7 +232,7 @@ public class Autopilot : MonoBehaviour
                 new List<object>()
                 {
                     Instruction.BURN_STOP,
-                    Instruction.CALC_RELV, // ( relv relvec )
+                    Instruction.CALC_RELV, // ( target dist relv relvec )
                     Instruction.ROT, // ( a b c -- b c a ) // ( target dist relv relvec -- target relv relvec dist ) 
                     Instruction.DROP, // ( relv relvec )
                     -1.0f, // ( relv relvec -1.0f )
@@ -238,105 +244,158 @@ public class Autopilot : MonoBehaviour
                 }
             },
             {
-                "Rendezvous", // ( target -- )
+                "KillRelVTo", // ( target relvDesired -- )
                 new List<object>()
                 {
-                    Instruction.DUP,
-                    "KillRelV",
-                    Instruction.CALL,
-                    Instruction.CALC_TARGET_VEC,
-                    Instruction.VECTOR3_NORMALIZE,
-                    Instruction.ROT_TO_UNITVEC
+                    Instruction.SWAP, // ( relvDes target )
+                    Instruction.BURN_STOP, // ( relvDes target)
+                    Instruction.CALC_RELV, // ( relvDes dist relv relvec )
+                    Instruction.ROT, // ( a b c -- b c a ) // ( relvDes relv relvec dist ) 
+                    Instruction.DROP, // ( relvDes relv relvec )
+                    Instruction.MINUSROT, // ( relvec relvDes relv )
+                    Instruction.MINUS, // ( relvec deltaV )
+                    Instruction.DUP, // ( relvec deltaV deltaV )
+                    0f, // ( relvec deltaV deltaV 0f )
+                    Instruction.GTE, // ( relvec deltaV deltaVGT0? )
+                    18, // clearstack2
+                    Instruction.BRANCHIF, // ( relvec deltaV )
+                    Instruction.DUP, // ( relvec deltaV deltaV )
+                    Instruction.ABS, // ( relvec deltaV deltaVMag )
+                    Instruction.CALC_DELTA_V_BURN_SEC, // ( relvec deltaV deltaVAbsSec )
+                    Instruction.DUP, // ( relvec deltaV deltaVAbsSec deltaVAbsSec)
+                    0.5f, // ( relvec deltaV deltaVAbsSec deltaVAbsSec 0.5f)
+                    Instruction.LTE,  // ( relvec deltaV deltaVAbsSec smallEnough? )
+                    9, // clearstack
+                    Instruction.BRANCHIF, // ( relvec deltaV deltaVAbsSec )
+                    Instruction.SWAP, // ( relvec deltaVAbsSec deltaV )                    
+                    Instruction.SIGN, // ( relvec deltaVAbsSec deltaVSign )
+                    Instruction.ROT, // ( deltaVAbsSec deltaVSign relvec )
+                    Instruction.VECTOR3_SCALAR_MULTIPLY, // ( deltaVAbsSec relVecDir )
+                    Instruction.ROT_TO_UNITVEC, // ( deltaVAbsSec )
+                    Instruction.BURN_SEC, // ( )
+                    4,
+                    Instruction.JUMP,
+                    Instruction.DROP, // clearstack
+                    Instruction.DROP, // clearstack2
+                    Instruction.DROP,
+                    Instruction.NOOP
                 }
             },
             {
-                "APNGToTarget", // ( target -- )
+                "APNGToTarget", // ( target minInterceptV interceptDist -- )
                 new List<object>()
                 {
-           "target",
-            Instruction.STORE,
-            // ( )
-            Instruction.BURN_STOP,
-            "target",
-            Instruction.LOAD,
-            // ( target )
+                    "interceptDist",
+                    Instruction.STORE,
+                    "minInterceptV",
+                    Instruction.STORE,
+                    "target",
+                    Instruction.STORE,
+                    // ( )
+                    Instruction.BURN_STOP,
 
-            // find relv
-            Instruction.CALC_RELV,
-            // ( dist relv relvec )
+                    // CALCRELV
+                    "target",
+                    Instruction.LOAD,
+                    // ( target )
+                    Instruction.CALC_RELV,
+                    // ( dist relv relvec )
 
-            // turn around?
-            // ( dist relv relvec )
-            Instruction.OVER,
-            // ( dist relv relvec relv )
-            0f,
-            Instruction.GTE,
-            9, // goto SPEEDCHECK
-            Instruction.BRANCHIF, // brach if relv >= 0
+                    // check if we're close enough to quit APNG
+                    Instruction.ROT,
+                    // ( relv relvec dist )
+                    Instruction.DUP,
+                    // ( relv relvec dist dist )
+                    "interceptDist",
+                    Instruction.LOAD,
+                    // ( relv relvec dist dist interceptDist )
+                    Instruction.LTE,
+                    43, // DONE
+                    Instruction.BRANCHIF,
+                    // ( relv relvec dist )
 
-            // STOP
-            // we need to stop first, relv is neg
-            // ( dist relv relvec )
-            -1f,
-            // ( dist relv relvec -1f )
-            Instruction.OVER,
-            // ( dist relv relvec -1f relvec )
-            Instruction.VECTOR3_SCALAR_MULTIPLY,
-            // ( dist relv relvec -relvec )
-            Instruction.ROT_TO_UNITVEC,
-            // ( dist relv relvec )
-            Instruction.OVER,
-            // ( dist relv relvec relv )
-            Instruction.ABS,
-            // ( dist relv relvec |relv| )
-            Instruction.CALC_DELTA_V_BURN_SEC,
-            Instruction.BURN_SEC,
-            // ( dist relv relvec )
+                    // turn around?
+                    // ( relv relvec dist )
+                    Instruction.MINUSROT,
+                    // ( dist relv relvec )
+                    Instruction.OVER,
+                    // ( dist relv relvec relv )
+                    0f,
+                    Instruction.GTE,
+                    9, // goto SPEEDCHECK
+                    Instruction.BRANCHIF, // brach if relv >= 0
 
-            // SPEEDCHECK
-            // moving towards target, are we fast enough?
-            // ( dist relv relvec )
-            Instruction.OVER,
-            // ( dist relv relvec relv )
-            MinInterceptDeltaV,
-            // ( dist relv relvec relv INTCPdV )
-            Instruction.GTE,
-            12, // APNG
-            Instruction.BRANCHIF,
+                    // STOP
+                    // we need to stop first, relv is neg
+                    // ( dist relv relvec )
+                    -1f,
+                    // ( dist relv relvec -1f )
+                    Instruction.OVER,
+                    // ( dist relv relvec -1f relvec )
+                    Instruction.VECTOR3_SCALAR_MULTIPLY,
+                    // ( dist relv relvec -relvec )
+                    Instruction.ROT_TO_UNITVEC,
+                    // ( dist relv relvec )
+                    Instruction.OVER,
+                    // ( dist relv relvec relv )
+                    Instruction.ABS,
+                    // ( dist relv relvec |relv| )
+                    Instruction.CALC_DELTA_V_BURN_SEC,
+                    Instruction.BURN_SEC,
+                    // ( dist relv relvec )
 
-            // SPEEDUP
-            // ( dist relv relvec )
-            "target",
-            Instruction.LOAD,
-            Instruction.CALC_TARGET_VEC,
-            Instruction.VECTOR3_NORMALIZE,
-            Instruction.ROT_TO_UNITVEC,
-            // ( dist relv relvec )
-            Instruction.OVER,
-            // ( dist relv relvec relv )
-            InterceptDeltaV,
-            Instruction.SWAP,
-            Instruction.MINUS,
-            // ( dist relv relvec deltaV )
-            Instruction.CALC_DELTA_V_BURN_SEC,
-            Instruction.BURN_SEC,
+                    // SPEEDCHECK
+                    // moving towards target, are we fast enough?
+                    // ( dist relv relvec )
+                    Instruction.OVER,
+                    // ( dist relv relvec relv )
+                    "minInterceptV",
+                    Instruction.LOAD,
+                    // ( dist relv relvec relv INTCPdV )
+                    Instruction.GTE,
+                    12, // APNG
+                    Instruction.BRANCHIF,
 
-            // APNG
-            // ( dist relv relvec )
-            "target",
-            Instruction.LOAD,
-            Instruction.CALC_TARGET_VEC,
-            // ( dist relv relvec tgtvec )
-            Instruction.CALC_APNG, // ( a )
-            Instruction.DUP, // ( a a )
-            Instruction.ROT_TO_UNITVEC, // ( a )
-            Instruction.VECTOR3_MAGNITUDE, // ( |a| )
-            Instruction.CALC_DELTA_V_BURN_SEC, // ( sec )
-            Instruction.BURN_SEC, // ( )
+                    // SPEEDUP
+                    // ( dist relv relvec )
+                    "target",
+                    Instruction.LOAD,
+                    Instruction.CALC_TARGET_VEC,
+                    Instruction.VECTOR3_NORMALIZE,
+                    Instruction.ROT_TO_UNITVEC,
+                    // ( dist relv relvec )
+                    Instruction.OVER,
+                    // ( dist relv relvec relv )
+                    InterceptDeltaV,
+                    Instruction.SWAP,
+                    Instruction.MINUS,
+                    // ( dist relv relvec deltaV )
+                    Instruction.CALC_DELTA_V_BURN_SEC,
+                    Instruction.BURN_SEC,
 
-            // GO BACK TO BEGINNING
-            -42,
-            Instruction.JUMP
+                    // APNG
+                    // ( dist relv relvec )
+                    "target",
+                    Instruction.LOAD,
+                    Instruction.CALC_TARGET_VEC,
+                    // ( dist relv relvec tgtvec )
+                    Instruction.CALC_APNG, // ( a )
+                    Instruction.DUP, // ( a a )
+                    Instruction.ROT_TO_UNITVEC, // ( a )
+                    Instruction.VECTOR3_MAGNITUDE, // ( |a| )
+                    Instruction.CALC_DELTA_V_BURN_SEC, // ( sec )
+                    Instruction.BURN_SEC, // ( )
+
+                    // GO BACK TO CALCRELV
+                    -51,
+                    Instruction.JUMP,
+
+                    // DONE
+                    // ( relv relvec dist )
+                    Instruction.DROP,
+                    Instruction.DROP,
+                    Instruction.DROP,
+                    Instruction.NOOP
                 }
             }
         };
@@ -363,7 +422,8 @@ public class Autopilot : MonoBehaviour
     {
         LoadProgram(
             target,
-            "KillRelV",
+            0f,
+            "KillRelVTo",
             Instruction.CALL
         );
     }
@@ -371,8 +431,61 @@ public class Autopilot : MonoBehaviour
     public void Rendezvous(GameObject target)
     {
         LoadProgram(
+
+            // initial variables
             target,
-            "Rendezvous",
+            "target",
+            Instruction.STORE,
+            100f,
+            "intcV",
+            Instruction.STORE,
+            10000f,
+            "intcD",
+            Instruction.STORE,
+
+            // APNG to target
+            "target",
+            Instruction.LOAD,
+            "intcV",
+            Instruction.LOAD,
+            "intcD",
+            Instruction.LOAD,
+            "APNGToTarget",
+            Instruction.CALL,
+
+            // slow if necessary
+            "target",
+            Instruction.LOAD,
+            "intcV",
+            Instruction.LOAD,
+            "KillRelVTo",
+            Instruction.CALL,
+
+            // divide V and D by half
+            "intcV",
+            Instruction.LOAD,
+            2f,
+            Instruction.DIVIDE,
+            "intcV",
+            Instruction.STORE,
+            "intcD",
+            Instruction.LOAD,
+            2f,
+            Instruction.DIVIDE,
+            "intcD",
+            Instruction.STORE,
+
+            // loop if continuing
+            "intcD",
+            Instruction.LOAD,
+            50f,
+            Instruction.GTE,
+            -31, // loop
+            Instruction.BRANCHIF,
+
+            // done
+            target,
+            "AutoRot",
             Instruction.CALL
         );
     }
@@ -381,6 +494,8 @@ public class Autopilot : MonoBehaviour
     {
         LoadProgram(
             target,
+            MinInterceptDeltaV,
+            0f,
             "APNGToTarget",
             Instruction.CALL
         );
@@ -405,6 +520,9 @@ public class Autopilot : MonoBehaviour
 
             { Instruction.ADD, ExecuteAdd },
             { Instruction.MINUS, ExecuteMinus },
+            { Instruction.MULTIPLY, ExecuteMultiply },
+            { Instruction.DIVIDE, ExecuteDivide },
+            { Instruction.SIGN, ExecuteSign },
             { Instruction.ABS, ExecuteAbs },
 
             { Instruction.VECTOR3_MAGNITUDE, ExecuteVector3Magnitude },
@@ -425,6 +543,7 @@ public class Autopilot : MonoBehaviour
             { Instruction.JUMP, ExecuteJump },
             { Instruction.BRANCHIF, ExecuteBranchIf },
             { Instruction.EQ, ExecuteEqualTo },
+            { Instruction.LTE, ExecuteLessThanEqualTo },
             { Instruction.GTE, ExecuteGreaterThanEqualTo },
             { Instruction.CALL, ExecuteCall }
         };
@@ -666,6 +785,50 @@ public class Autopilot : MonoBehaviour
         }
     }
 
+    // ( a b -- c )
+    private void ExecuteMultiply()
+    {
+        bool good = false;
+        if (dataStack.Count >= 2)
+        {
+            float? b = dataStack.Pop() as float?;
+            float? a = dataStack.Pop() as float?;
+            if (a != null && b != null)
+            {
+                good = true;
+                float c = a.Value * b.Value;
+                dataStack.Push(c);
+                MarkExecuted();
+            }
+        }
+        if (!good)
+        {
+            MarkIdle("multiply needs two floats on the stack");
+        }
+    }
+
+    // ( a b -- c )
+    private void ExecuteDivide()
+    {
+        bool good = false;
+        if (dataStack.Count >= 2)
+        {
+            float? b = dataStack.Pop() as float?;
+            float? a = dataStack.Pop() as float?;
+            if (a != null && b != null)
+            {
+                good = true;
+                float c = a.Value / b.Value;
+                dataStack.Push(c);
+                MarkExecuted();
+            }
+        }
+        if (!good)
+        {
+            MarkIdle("divide needs two floats on the stack");
+        }
+    }
+
     // ( a -- a )
     private void ExecuteAbs()
     {
@@ -684,6 +847,27 @@ public class Autopilot : MonoBehaviour
         if (!good)
         {
             MarkIdle("Abs needs one float on the stack");
+        }
+    }
+
+    // ( a -- a )
+    private void ExecuteSign()
+    {
+        bool good = false;
+        if (dataStack.Count >= 1)
+        {
+            float? a = dataStack.Pop() as float?;
+            if (a != null)
+            {
+                good = true;
+                float c = Mathf.Sign(a.Value);
+                dataStack.Push(c);
+                MarkExecuted();
+            }
+        }
+        if (!good)
+        {
+            MarkIdle("Sign needs one float on the stack");
         }
     }
 
@@ -937,6 +1121,7 @@ public class Autopilot : MonoBehaviour
                 float deltaV = deltaVP.Value;
                 float mainEngineA = ship.CurrentMainEngineAccPerSec();
                 float sec = deltaV / mainEngineA;
+                sec = sec > 0 ? sec : 0;
                 dataStack.Push(sec);
                 MarkExecuted();
             }
@@ -970,6 +1155,28 @@ public class Autopilot : MonoBehaviour
         if (!good)
         {
             MarkIdle("EQ requires two floats on the stack");
+        }
+    }
+
+    // ( a b -- c )
+    private void ExecuteLessThanEqualTo()
+    {
+        bool good = false;
+        if (dataStack.Count >= 2)
+        {
+            float? b = dataStack.Pop() as float?;
+            float? a = dataStack.Pop() as float?;
+            if (a != null && b != null)
+            {
+                good = true;
+                bool c = a.Value <= b.Value;
+                dataStack.Push(c);
+                MarkExecuted();
+            }
+        }
+        if (!good)
+        {
+            MarkIdle("LT requires two floats on the stack");
         }
     }
 
@@ -1053,6 +1260,7 @@ public class Autopilot : MonoBehaviour
                 good = true;
                 List<object> code = codeLibrary[a];
                 callStack.Push(currentContext);
+                currentContext = new ProgramContext();
                 currentContext.program = code;
                 currentContext.programCounter = 0;
             }
