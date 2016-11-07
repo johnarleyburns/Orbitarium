@@ -173,8 +173,9 @@ public class HUDController : MonoBehaviour
 
     public void SelectNextTarget(int offset)
     {
-        // prefer enemy targets
         int index = selectedTargetIndex;
+        // prefer enemy targets
+        /*
         if (gameController.EnemyCount() > 0)
         {
             index = (index + offset) % gameController.EnemyCount();
@@ -184,7 +185,9 @@ public class HUDController : MonoBehaviour
             }
             SelectTarget(gameController.GetEnemy(index), index);
         }
-        else if (gameController.TargetCount() > 0)
+        else
+        */    
+        if (gameController.TargetCount() > 0)
         {
             if (index < 0)
             {
