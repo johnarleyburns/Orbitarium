@@ -368,13 +368,13 @@ public class PlayerShip : MonoBehaviour
             }
             if (Input.GetKey(KeyCode.Keypad7))
             {
-                autopilot.AutoRot(gameController.GetComponent<InputController>().RelativeVelocityNormalMinusDirectionIndicator);
+                autopilot.TrackTarget(gameController.GetComponent<InputController>().RelativeVelocityNormalMinusDirectionIndicator);
                 ToggleButtons(false, false, false, true);
                 rotInput = false;
             }
             if (Input.GetKey(KeyCode.Keypad9))
             {
-                autopilot.AutoRot(gameController.GetComponent<InputController>().RelativeVelocityNormalPlusDirectionIndicator);
+                autopilot.TrackTarget(gameController.GetComponent<InputController>().RelativeVelocityNormalPlusDirectionIndicator);
                 ToggleButtons(false, false, true, false);
                 rotInput = false;
             }
@@ -390,7 +390,7 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            autopilot.AutoRot(gameController.GetHUD().GetReferenceBody());
+            autopilot.TrackTarget(gameController.GetHUD().GetReferenceBody());
             ToggleButtons(false, true, false, false);
         }
     }
@@ -422,7 +422,7 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            autopilot.AutoRot(gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator);
+            autopilot.TrackTarget(gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator);
             ToggleButtons(false, false, true, false);
         }
     }
@@ -436,7 +436,7 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            autopilot.AutoRot(gameController.GetComponent<InputController>().RelativeVelocityAntiDirectionIndicator);
+            autopilot.TrackTarget(gameController.GetComponent<InputController>().RelativeVelocityAntiDirectionIndicator);
             ToggleButtons(false, false, false, true);
         }
     }
