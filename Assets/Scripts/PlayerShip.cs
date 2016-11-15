@@ -453,10 +453,10 @@ public class PlayerShip : MonoBehaviour
 
     private void ToggleButtons(bool kill, bool target, bool pos, bool neg)
     {
-        gameController.GetComponent<InputController>().KILLToggleButton.isToggled = kill;
-        gameController.GetComponent<InputController>().TargetToggleButton.isToggled = target;
-        gameController.GetComponent<InputController>().POSToggleButton.isToggled = pos;
-        gameController.GetComponent<InputController>().NEGToggleButton.isToggled = neg;
+//        gameController.GetComponent<InputController>().KILLToggleButton.isToggled = kill;
+  //      gameController.GetComponent<InputController>().TargetToggleButton.isToggled = target;
+    //    gameController.GetComponent<InputController>().POSToggleButton.isToggled = pos;
+      //  gameController.GetComponent<InputController>().NEGToggleButton.isToggled = neg;
     }
 
     void PlayRotateSounds()
@@ -484,9 +484,9 @@ public class PlayerShip : MonoBehaviour
         {
             if (autopilot.IsKillRot() || !autopilot.IsAutoRot())
             {
-                gameController.GetComponent<InputController>().TargetToggleButton.isToggled = false;
-                gameController.GetComponent<InputController>().POSToggleButton.isToggled = false;
-                gameController.GetComponent<InputController>().NEGToggleButton.isToggled = false;
+//                gameController.GetComponent<InputController>().TargetToggleButton.isToggled = false;
+  //              gameController.GetComponent<InputController>().POSToggleButton.isToggled = false;
+    //            gameController.GetComponent<InputController>().NEGToggleButton.isToggled = false;
             }
         }
     }

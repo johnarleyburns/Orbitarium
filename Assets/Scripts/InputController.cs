@@ -3,6 +3,7 @@ using UnityEngine.UI;
 
 public class InputController : MonoBehaviour
 {
+
     public ToggleButton RotateButton;
     public ToggleButton TranslateButton;
     public ToggleButton GoThrustButton;
