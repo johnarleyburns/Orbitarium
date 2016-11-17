@@ -75,9 +75,10 @@ public class HUDController : MonoBehaviour
 
     private void UpdateTargetIndicator(int indicatorId, GameObject target)
     {
-        bool hasText = OffscreenIndicator.indicators[indicatorId].hasOnScreenText;
+        //        bool hasText = OffscreenIndicator.indicators[indicatorId].hasOnScreenText;
         bool isRefBody = target == referenceBody;
         bool isSelectedTarget = target == selectedTarget;
+        bool hasText = isSelectedTarget;
         bool calcRelV = hasText || isRefBody || isSelectedTarget;
         if (calcRelV)
         {
@@ -115,8 +116,8 @@ public class HUDController : MonoBehaviour
             string targetString = relvText;
             OffscreenIndicator.UpdateIndicatorText(HUD_INDICATOR_TARGET_DIRECTION, targetString);
         }
-        inputController.DistanceText.text = DistanceText(dist);
-        inputController.RelvText.text = relvText;
+        inputController.PropertyChanged("DistanceText", DistanceText(dist));
+        inputController.PropertyChanged("RelvText", relvText);
     }
 
     private string DistanceText(float dist)
@@ -158,17 +159,19 @@ public class HUDController : MonoBehaviour
     {
         selectedTargetIndex = targetIndex;
         selectedTarget = target;
+        string tgtText;
         if (target != null)
         {
-            inputController.TargetText.text = selectedTarget.name;
+            tgtText = selectedTarget.name;
             ShowTargetIndicator();
             SelectNextReferenceBody(selectedTarget);
         }
         else {
-            inputController.TargetText.text = "NONE";
+            tgtText = "NONE";
             HideTargetIndicator();
             SelectNextReferenceBody();
         }
+        inputController.PropertyChanged("TargetText", tgtText);
     }
 
     public void SelectNextTarget(int offset)

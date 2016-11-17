@@ -151,7 +151,7 @@ public class Autopilot : MonoBehaviour
         for (;;)
         {
             Quaternion q = Quaternion.LookRotation(b);
-            q = Quaternion.Euler(q.eulerAngles.x, q.eulerAngles.y, transform.rotation.eulerAngles.z);
+            //q = Quaternion.Euler(q.eulerAngles.x, q.eulerAngles.y, transform.rotation.eulerAngles.z);
             bool converged = ship.ConvergeSpin(q, MinRotToTargetDeltaTheta);
             if (converged)
             {
@@ -186,7 +186,7 @@ public class Autopilot : MonoBehaviour
             Vector3 deltaB = (tVec - prevTVec)/UpdateTrackTime;
             Vector3 b = tVec + TrackNavigationFactor * deltaB;
             Quaternion q = Quaternion.LookRotation(b);
-            q = Quaternion.Euler(q.eulerAngles.x, q.eulerAngles.y, transform.rotation.eulerAngles.z);
+            //q = Quaternion.Euler(q.eulerAngles.x, q.eulerAngles.y, transform.rotation.eulerAngles.z);
             bool converged = ship.ConvergeSpin(q, MinRotToTargetDeltaTheta);
             if (converged)
             {
@@ -211,7 +211,7 @@ public class Autopilot : MonoBehaviour
         {
             Vector3 b = CalcVectorToTarget(target).normalized;
             Quaternion q = Quaternion.LookRotation(b);
-            q = Quaternion.Euler(q.eulerAngles.x, q.eulerAngles.y, transform.rotation.eulerAngles.z);
+            //q = Quaternion.Euler(q.eulerAngles.x, q.eulerAngles.y, transform.rotation.eulerAngles.z);
             bool converged = ship.ConvergeSpin(q, MinRotToTargetDeltaTheta);
             if (converged)
             {

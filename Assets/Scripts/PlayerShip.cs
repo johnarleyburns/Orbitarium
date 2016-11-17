@@ -90,11 +90,11 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
+            InputController input = gameController.GetComponent<InputController>();
             switch (currentRCSMode)
             {
                 case RCSMode.Rotate:
-                    gameController.GetComponent<InputController>().RotateButton.isToggled = true;
-                    gameController.GetComponent<InputController>().TranslateButton.isToggled = false;
+                    input.PropertyChanged("RotateButton", true);
                     if (gameController.FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCS))
                     {
                         gameController.FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
@@ -102,8 +102,7 @@ public class PlayerShip : MonoBehaviour
                     break;
                 case RCSMode.Translate:
                 default:
-                    gameController.GetComponent<InputController>().RotateButton.isToggled = false;
-                    gameController.GetComponent<InputController>().TranslateButton.isToggled = true;
+                    input.PropertyChanged("RotateButton", false);
                     break;
             }
         }
@@ -171,23 +170,23 @@ public class PlayerShip : MonoBehaviour
                 {
                     gameController.FPSCamera.GetComponent<FPSAudioController>().Play(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE);
                 }
-                gameController.GetComponent<InputController>().GoThrustButton.isToggled = true;
             }
             else
             {
                 gameController.FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE);
                 gameController.FPSCamera.GetComponent<FPSCameraController>().StopShake();
-                gameController.GetComponent<InputController>().GoThrustButton.isToggled = false;
             }
+            gameController.GetComponent<InputController>().PropertyChanged("GoThrustButton", stillRunning);
         }
     }
 
     private void UpdateFuelUI()
     {
+        InputController input = gameController.GetComponent<InputController>();
         if (gameController != null)
         {
-            //gameController.GetComponent<InputController>().FuelRemainingText.text = string.Format("{0:0}", ship.CurrentFuelKg());
-            gameController.GetComponent<InputController>().FuelSlider.value = ship.NormalizedFuel();
+            input.PropertyChanged("FuelRemainingText", string.Format("{0:0}", ship.CurrentFuelKg()));
+            input.PropertyChanged("FuelSlider", ship.NormalizedFuel());
         }
     }
 
