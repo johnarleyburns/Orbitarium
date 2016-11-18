@@ -193,16 +193,6 @@
     <Compile Include="Assets\Scripts\IPropertyChangeObserver.cs" />
     <Compile Include="Assets\Scripts\InputController.cs" />
     <Compile Include="Assets\Scripts\MFDController.cs" />
-    <Compile Include="Assets\Scripts\OffScreenIndicator\Scripts\ArrowIndicator.cs" />
-    <Compile Include="Assets\Scripts\OffScreenIndicator\Scripts\ArrowIndicatorCanvas.cs" />
-    <Compile Include="Assets\Scripts\OffScreenIndicator\Scripts\ArrowIndicatorVR.cs" />
-    <Compile Include="Assets\Scripts\OffScreenIndicator\Scripts\FirstPersonVRCharacter\FirstPersonVRController.cs" />
-    <Compile Include="Assets\Scripts\OffScreenIndicator\Scripts\FirstPersonVRCharacter\MouseLookVR.cs" />
-    <Compile Include="Assets\Scripts\OffScreenIndicator\Scripts\Helpers\Utils.cs" />
-    <Compile Include="Assets\Scripts\OffScreenIndicator\Scripts\OffScreenIndicator.cs" />
-    <Compile Include="Assets\Scripts\OffScreenIndicator\Scripts\OffScreenIndicatorManager.cs" />
-    <Compile Include="Assets\Scripts\OffScreenIndicator\Scripts\OffScreenIndicatorManagerCanvas.cs" />
-    <Compile Include="Assets\Scripts\OffScreenIndicator\Scripts\OffScreenIndicatorManagerVR.cs" />
     <Compile Include="Assets\Scripts\PerlinShake.cs" />
     <Compile Include="Assets\Scripts\PhysicsUtils.cs" />
     <Compile Include="Assets\Scripts\PlayerShip.cs" />
@@ -274,8 +264,6 @@
     <None Include="Assets\Missile Behaviours\Scenes\Demo02\In case the demo doesn&apos;t work.txt" />
     <None Include="Assets\Models\Soyuz\ReadMe.TXT" />
     <None Include="Assets\Models\salyut7model\install.txt" />
-    <None Include="Assets\Scripts\OffScreenIndicator\Scripts\FirstPersonVRCharacter\readme.txt" />
-    <None Include="Assets\Scripts\OffScreenIndicator\readme.txt" />
     <None Include="Assets\SolarSystem\Resources\Deimos.txt" />
     <None Include="Assets\SolarSystem\Resources\Earth.txt" />
     <None Include="Assets\SolarSystem\Resources\Europa.txt" />
