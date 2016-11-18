@@ -86,10 +86,10 @@ public class HUDController : MonoBehaviour
             float targetRelV;
             Vector3 targetRelVUnitVec;
             PhysicsUtils.CalcRelV(gameController.GetPlayer().transform, target, out targetDist, out targetRelV, out targetRelVUnitVec);
-            if (hasText)
-            {
-                UpdateTargetDistance(indicatorId, target.name, targetDist);
-            }
+            //if (hasText)
+            //{
+            //    UpdateTargetDistance(indicatorId, target.name, targetDist);
+            //}
             if (isRefBody)
             {
                 UpdateRelativeVelocityIndicators(targetRelVUnitVec);
@@ -109,14 +109,15 @@ public class HUDController : MonoBehaviour
 
     private void UpdateSelectedTargetIndicator(float dist, float relV)
     {
+        string distText = DistanceText(dist);
         string relvText = RelvText(relV);
         inputController.TargetDirectionIndicator.transform.position = selectedTarget.transform.position;
         if (OffscreenIndicator.indicators[HUD_INDICATOR_TARGET_DIRECTION].hasOnScreenText)
         {
-            string targetString = relvText;
+            string targetString = string.Format("{0}\n{1}", distText, relvText);
             OffscreenIndicator.UpdateIndicatorText(HUD_INDICATOR_TARGET_DIRECTION, targetString);
         }
-        inputController.PropertyChanged("DistanceText", DistanceText(dist));
+        inputController.PropertyChanged("DistanceText", distText);
         inputController.PropertyChanged("RelvText", relvText);
     }
 
