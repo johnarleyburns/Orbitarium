@@ -15,6 +15,9 @@ public class PlayerShip : MonoBehaviour
     //! Thrust scale
     private RocketShip ship;
     private Autopilot autopilot;
+    private InputController inputController;
+    private FPSAudioController audioController;
+    private FPSCameraController cameraController;
     private enum RCSMode { Rotate, Translate };
     private RCSMode currentRCSMode;
     private enum CameraMode { FPS, ThirdParty };
@@ -30,6 +33,9 @@ public class PlayerShip : MonoBehaviour
     {
         ship = GetComponent<RocketShip>();
         autopilot = GetComponent<Autopilot>();
+        inputController = gameController.GetComponent<InputController>();
+        audioController = gameController.FPSCamera.GetComponent<FPSAudioController>();
+        cameraController = gameController.FPSCamera.GetComponent<FPSCameraController>();
         transform.position = Vector3.zero;
         transform.rotation = Quaternion.identity;
         transform.parent.transform.position = Vector3.zero;
@@ -44,6 +50,7 @@ public class PlayerShip : MonoBehaviour
         rotInput = false;
 
     }
+
 
     public void UpdateShip()
     {
@@ -60,17 +67,17 @@ public class PlayerShip : MonoBehaviour
 
     private void HaltAudio()
     {
-        if (gameController.FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE))
+        if (audioController.IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE))
         {
-            gameController.FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE);
+            audioController.Stop(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE);
         }
-        if (gameController.FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCS))
+        if (audioController.IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCS))
         {
-            gameController.FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
+            audioController.Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
         }
-        if (gameController.FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG))
+        if (audioController.IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG))
         {
-            gameController.FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG);
+            audioController.Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG);
         }
     }
 
@@ -90,22 +97,27 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            InputController input = gameController.GetComponent<InputController>();
             switch (currentRCSMode)
             {
                 case RCSMode.Rotate:
-                    input.PropertyChanged("RotateButton", true);
-                    if (gameController.FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCS))
+                    inputController.PropertyChanged("RotateButton", true);
+                    if (audioController.IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCS))
                     {
-                        gameController.FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
+                        audioController.Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
                     }
                     break;
                 case RCSMode.Translate:
                 default:
-                    input.PropertyChanged("RotateButton", false);
+                    inputController.PropertyChanged("RotateButton", false);
                     break;
             }
         }
+    }
+
+    public void ExecuteAutopilotCommand(Autopilot.Command command)
+    {
+        autopilot.ExecuteCommand(command, gameController.GetHUD().GetReferenceBody());
+        inputController.PropertyChanged("CommandExecuted", command);
     }
 
     void ToggleRCSMode()
@@ -165,28 +177,27 @@ public class PlayerShip : MonoBehaviour
             if (stillRunning)
             {
                 UpdateFuelUI();
-                gameController.FPSCamera.GetComponent<FPSCameraController>().StartContinuousShake();
-                if (!gameController.FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE))
+                cameraController.StartContinuousShake();
+                if (!audioController.IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE))
                 {
-                    gameController.FPSCamera.GetComponent<FPSAudioController>().Play(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE);
+                    audioController.Play(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE);
                 }
             }
             else
             {
-                gameController.FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE);
-                gameController.FPSCamera.GetComponent<FPSCameraController>().StopShake();
+                audioController.Stop(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE);
+                cameraController.StopShake();
             }
-            gameController.GetComponent<InputController>().PropertyChanged("GoThrustButton", stillRunning);
+            inputController.PropertyChanged("GoThrustButton", stillRunning);
         }
     }
 
     private void UpdateFuelUI()
     {
-        InputController input = gameController.GetComponent<InputController>();
         if (gameController != null)
         {
-            input.PropertyChanged("FuelRemainingText", string.Format("{0:0}", ship.CurrentFuelKg()));
-            input.PropertyChanged("FuelSlider", ship.NormalizedFuel());
+            inputController.PropertyChanged("FuelRemainingText", string.Format("{0:0}", ship.CurrentFuelKg()));
+            inputController.PropertyChanged("FuelSlider", ship.NormalizedFuel());
         }
     }
 
@@ -287,7 +298,8 @@ public class PlayerShip : MonoBehaviour
 
     private void Rendezvous()
     {
-        autopilot.Rendezvous(gameController.GetHUD().GetReferenceBody());
+        autopilot.ExecuteCommand(Autopilot.Command.RENDEZVOUS, gameController.GetHUD().GetReferenceBody());
+        inputController.PropertyChanged("CommandExecuted", Autopilot.Command.RENDEZVOUS);
     }
 
     void OnTriggerEnter(Collider collider)
@@ -298,7 +310,7 @@ public class PlayerShip : MonoBehaviour
             float relVel;
             if (PhysicsUtils.ShouldBounce(gameObject, otherBody, out relVel))
             {
-                gameController.FPSCamera.GetComponent<FPSCameraController>().PlayShake();
+                cameraController.PlayShake();
                 if (relVel >= minRelVtoDamage)
                 {
                     health--;
@@ -367,19 +379,22 @@ public class PlayerShip : MonoBehaviour
             }
             if (Input.GetKey(KeyCode.Keypad7))
             {
-                autopilot.ActiveTrackTarget(gameController.GetComponent<InputController>().RelativeVelocityNormalMinusDirectionIndicator);
+                autopilot.ExecuteCommand(Autopilot.Command.ACTIVE_TRACK, gameController.GetComponent<InputController>().RelativeVelocityNormalMinusDirectionIndicator);
+                inputController.PropertyChanged("CommandExecuted", Autopilot.Command.ACTIVE_TRACK);
                 ToggleButtons(false, false, false, true);
                 rotInput = false;
             }
             if (Input.GetKey(KeyCode.Keypad9))
             {
-                autopilot.ActiveTrackTarget(gameController.GetComponent<InputController>().RelativeVelocityNormalPlusDirectionIndicator);
+                autopilot.ExecuteCommand(Autopilot.Command.ACTIVE_TRACK, gameController.GetComponent<InputController>().RelativeVelocityNormalPlusDirectionIndicator);
+                inputController.PropertyChanged("CommandExecuted", Autopilot.Command.ACTIVE_TRACK);
                 ToggleButtons(false, false, true, false);
                 rotInput = false;
             }
             if (rotInput)
             {
-                autopilot.AutopilotOff();
+                autopilot.ExecuteCommand(Autopilot.Command.OFF, null);
+                inputController.PropertyChanged("CommandExecuted", Autopilot.Command.OFF);
                 ToggleButtons(false, false, false, false);
             }
         }
@@ -389,7 +404,8 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            autopilot.ActiveTrackTarget(gameController.GetHUD().GetReferenceBody());
+            autopilot.ExecuteCommand(Autopilot.Command.ACTIVE_TRACK, gameController.GetHUD().GetReferenceBody());
+            inputController.PropertyChanged("CommandExecuted", Autopilot.Command.ACTIVE_TRACK);
             ToggleButtons(false, true, false, false);
         }
     }
@@ -398,7 +414,8 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            autopilot.KillRot();
+            autopilot.ExecuteCommand(Autopilot.Command.KILL_ROTATION, null);
+            inputController.PropertyChanged("CommandExecuted", Autopilot.Command.KILL_ROTATION);
             ToggleButtons(true, false, false, false);
         }
     }
@@ -407,7 +424,8 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            autopilot.KillRelV(gameController.GetHUD().GetReferenceBody());
+            autopilot.ExecuteCommand(Autopilot.Command.KILL_REL_V, gameController.GetHUD().GetReferenceBody());
+            inputController.PropertyChanged("CommandExecuted", Autopilot.Command.KILL_REL_V);
             ToggleButtons(false, true, false, false);
         }
     }
@@ -421,7 +439,8 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            autopilot.ActiveTrackTarget(gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator);
+            autopilot.ExecuteCommand(Autopilot.Command.FACE_TARGET, gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator);
+            inputController.PropertyChanged("CommandExecuted", Autopilot.Command.FACE_TARGET);
             ToggleButtons(false, false, true, false);
         }
     }
@@ -435,7 +454,8 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            autopilot.ActiveTrackTarget(gameController.GetComponent<InputController>().RelativeVelocityAntiDirectionIndicator);
+            autopilot.ExecuteCommand(Autopilot.Command.FACE_TARGET, gameController.GetComponent<InputController>().RelativeVelocityAntiDirectionIndicator);
+            inputController.PropertyChanged("CommandExecuted", Autopilot.Command.FACE_TARGET);
             ToggleButtons(false, false, false, true);
         }
     }
@@ -444,7 +464,8 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            autopilot.APNGToTarget(gameController.GetHUD().GetReferenceBody());
+            autopilot.ExecuteCommand(Autopilot.Command.INTERCEPT, gameController.GetHUD().GetReferenceBody());
+            inputController.PropertyChanged("CommandExecuted", Autopilot.Command.INTERCEPT);
             ToggleButtons(false, true, false, false);
         }
 
@@ -464,15 +485,15 @@ public class PlayerShip : MonoBehaviour
         {
             if (rotInput || autopilot.IsRot())
             {
-                if (!gameController.FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG))
+                if (!audioController.IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG))
                 {
-                    gameController.FPSCamera.GetComponent<FPSAudioController>().Play(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG);
+                    audioController.Play(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG);
                 }
                 rotInput = false;
             }
             else
             {
-                gameController.FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG);
+                audioController.Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG);
             }
         }
     }
@@ -481,7 +502,7 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            if (autopilot.IsKillRot() || !autopilot.IsAutoRot())
+            if (autopilot.IsRot())
             {
 //                gameController.GetComponent<InputController>().TargetToggleButton.isToggled = false;
   //              gameController.GetComponent<InputController>().POSToggleButton.isToggled = false;
@@ -523,14 +544,14 @@ public class PlayerShip : MonoBehaviour
             if (v != Vector3.zero)
             {
                 ship.ApplyRCSImpulse(v);
-                if (!gameController.FPSCamera.GetComponent<FPSAudioController>().IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCS))
+                if (!audioController.IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCS))
                 {
-                    gameController.FPSCamera.GetComponent<FPSAudioController>().Play(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
+                    audioController.Play(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
                 }
             }
             else
             {
-                gameController.FPSCamera.GetComponent<FPSAudioController>().Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
+                audioController.Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
             }
         }
     }

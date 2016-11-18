@@ -2,7 +2,7 @@
 using Greyman;
 using System.Collections.Generic;
 
-public class HUDController : MonoBehaviour
+public class HUDController : MonoBehaviour, IPropertyChangeObserver
 {
 
     private GameController gameController;
@@ -11,6 +11,9 @@ public class HUDController : MonoBehaviour
     private GameObject referenceBody = null;
     private GameObject selectedTarget = null;
     private int selectedTargetIndex = -1;
+    private int selectedTargetType = TARGET_TYPE_ALL;
+    private static int TARGET_TYPE_ALL = 0;
+    private static int TARGET_TYPE_ENEMY_SHIP = 1;
     private static int HUD_INDICATOR_DIDYMOS = 0;
     private static int HUD_INDICATOR_DIDYMOON = 3;
     private static int HUD_INDICATOR_ENEMY_SHIP_TEMPLATE = 4;
@@ -24,6 +27,7 @@ public class HUDController : MonoBehaviour
         gameController = GetComponent<GameController>();
         inputController = GetComponent<InputController>();
         OffscreenIndicator = inputController.HUDLogic.GetComponent<Greyman.OffScreenIndicator>();
+        inputController.AddObserver("SelectTargetFromDropdown", this);
     }
 
     // Update is called once per frame
@@ -33,6 +37,18 @@ public class HUDController : MonoBehaviour
         {
             case GameController.GameState.RUNNING:
                 UpdateHUD();
+                break;
+        }
+    }
+
+    public void PropertyChanged(string name, object value)
+    {
+        switch (name)
+        {
+            case "SelectTargetFromDropdown":
+                int? valueP = value as int?;
+                int index = valueP == null ? -1 : valueP.Value;
+                SelectTarget(index);
                 break;
         }
     }
@@ -154,30 +170,38 @@ public class HUDController : MonoBehaviour
     {
         selectedTargetIndex = targetIndex;
         selectedTarget = target;
-        int tgtType;
         if (target != null)
         {
             ShowTargetIndicator();
             SelectNextReferenceBody(selectedTarget);
-            tgtType = 0;
+        }
+        else {
+            HideTargetIndicator();
+            SelectNextReferenceBody();
+        }
+        inputController.PropertyChanged("SelectTarget", selectedTargetIndex);
+        UpdateTargetType();
+    }
+
+    private void UpdateTargetType()
+    {
+        if (selectedTarget != null)
+        {
+            selectedTargetType = TARGET_TYPE_ALL;
             for (int i = 0; i < gameController.EnemyCount(); i++)
             {
                 GameObject e = gameController.GetEnemy(i);
-                if (e == target)
+                if (e == selectedTarget)
                 {
-                    tgtType = 1;
+                    selectedTargetType = TARGET_TYPE_ENEMY_SHIP;
                     break;
                 }
             }
         }
         else {
-            HideTargetIndicator();
-            SelectNextReferenceBody();
-            tgtType = 0;
+            selectedTargetType = TARGET_TYPE_ALL;
         }
-        inputController.PropertyChanged("SelectTarget", selectedTargetIndex);
-        inputController.PropertyChanged("SelectedTargetType", tgtType);
-
+        inputController.PropertyChanged("SelectedTargetType", selectedTargetType);
     }
 
     public void SelectNextTarget(int offset)
@@ -206,6 +230,18 @@ public class HUDController : MonoBehaviour
             {
                 index = (index + offset) % gameController.TargetCount();
             }
+        }
+        else
+        {
+            index = -1;
+        }
+        SelectTarget(index);
+    }
+
+    public void SelectTarget(int index)
+    {
+        if (index >= 0 && index < gameController.TargetCount())
+        {
             SelectTarget(gameController.GetTarget(index), index);
         }
         else

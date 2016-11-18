@@ -29,7 +29,7 @@ public class MFDController : MonoBehaviour
     private MFDAutopilotController MFDAutopilotPanelController2;
     private MFDWeaponsController MFDWeaponsPanelController2;
 
-    private GameController gameController;
+    protected GameController gameController;
     protected InputController inputController;
 
     // Use this for initialization
@@ -58,13 +58,13 @@ public class MFDController : MonoBehaviour
         MFDControlPanelController = new MFDControlController();
         MFDControlPanelController.Connect(MFDControlPanel, inputController);
         MFDAutopilotPanelController = new MFDAutopilotController();
-        MFDAutopilotPanelController.Connect(MFDAutopilotPanel, inputController);
+        MFDAutopilotPanelController.Connect(MFDAutopilotPanel, inputController, gameController);
         MFDWeaponsPanelController = new MFDWeaponsController();
         MFDWeaponsPanelController.Connect(MFDWeaponsPanel, inputController);
         MFDControlPanelController2 = new MFDControlController();
         MFDControlPanelController2.Connect(MFDControlPanel2, inputController);
         MFDAutopilotPanelController2 = new MFDAutopilotController();
-        MFDAutopilotPanelController2.Connect(MFDAutopilotPanel2, inputController);
+        MFDAutopilotPanelController2.Connect(MFDAutopilotPanel2, inputController, gameController);
         MFDWeaponsPanelController2 = new MFDWeaponsController();
         MFDWeaponsPanelController2.Connect(MFDWeaponsPanel2, inputController);
 
@@ -133,24 +133,39 @@ public class MFDController : MonoBehaviour
 
     public class MFDAutopilotController : IPropertyChangeObserver
     {
+        private InputController inputController;
+        private GameController gameController;
         private GameObject panel;
         private Dropdown TargetSelectorDropdown;
         private Dropdown TargetTypeDropdown;
         private Text DistanceText;
         private Text RelvText;
+        private Dropdown CommandDropdown;
+        private Button CommandButton;
 
-        public void Connect(GameObject autoPanel, InputController inputController)
+        public void Connect(GameObject autoPanel, InputController input, GameController game)
         {
+            inputController = input;
+            gameController = game;
             panel = autoPanel;
+
             TargetSelectorDropdown = panel.transform.Search("TargetSelectorDropdown").GetComponent<Dropdown>();
             TargetTypeDropdown = panel.transform.Search("TargetTypeDropdown").GetComponent<Dropdown>();
             DistanceText = panel.transform.Search("DistanceText").GetComponent<Text>();
             RelvText = panel.transform.Search("RelvText").GetComponent<Text>();
+            CommandDropdown = panel.transform.Search("CommandDropdown").GetComponent<Dropdown>();
+            CommandButton = panel.transform.Search("CommandButton").GetComponent<Button>();
+
             inputController.AddObserver("TargetList", this);
             inputController.AddObserver("SelectTarget", this);
             inputController.AddObserver("SelectedTargetType", this);
             inputController.AddObserver("DistanceText", this);
             inputController.AddObserver("RelvText", this);
+            inputController.AddObserver("CommandExecuted", this);
+
+            TargetSelectorDropdown.onValueChanged.AddListener(delegate { TargetSelectorDropdownOnValueChanged(); });
+            TargetSelectorDropdown.value = 0;
+            CommandButton.onClick.AddListener(delegate { CommandButtonClicked(); });
         }
 
         public void PropertyChanged(string name, object value)
@@ -176,11 +191,19 @@ public class MFDController : MonoBehaviour
                     break;
                 case "SelectTarget":
                     int? tgt = value as int?;
-                    TargetSelectorDropdown.value = tgt == null ? 0 : tgt.Value + 1;
+                    int tgtVal = tgt == null ? 0 : tgt.Value + 1;
+                    if (TargetSelectorDropdown.value != tgtVal)
+                    {
+                        TargetSelectorDropdown.value = tgtVal;
+                    }
                     break;
                 case "SelectedTargetType":
                     int? tType = value as int?;
-                    TargetTypeDropdown.value = tType == null ? 0 : tType.Value;
+                    int typeVal = tType == null ? 0 : tType.Value;
+                    if (TargetTypeDropdown.value != typeVal)
+                    {
+                        TargetTypeDropdown.value = typeVal;
+                    }
                     break;
                 case "DistanceText":
                     DistanceText.text = value as string;
@@ -188,9 +211,30 @@ public class MFDController : MonoBehaviour
                 case "RelvText":
                     RelvText.text = value as string;
                     break;
+                case "CommandExecuted":
+                    Autopilot.Command? commandP = value as Autopilot.Command?;
+                    Autopilot.Command command = commandP == null ? Autopilot.Command.OFF : commandP.Value;
+                    int commandIdx = Autopilot.Commands.IndexOf(command);
+                    if (CommandDropdown.value != commandIdx)
+                    {
+                        CommandDropdown.value = commandIdx;
+                    }
+                    break;
             }
         }
 
+        private void TargetSelectorDropdownOnValueChanged()
+        {
+            int val = TargetSelectorDropdown.value - 1;
+            inputController.PropertyChanged("SelectTargetFromDropdown", val);
+        }
+
+        private void CommandButtonClicked()
+        {
+            int index = CommandDropdown.value;
+            Autopilot.Command command = Autopilot.CommandFromInt(index);
+            gameController.GetPlayerShip().ExecuteAutopilotCommand(command);
+        }
     }
 
     public class MFDWeaponsController : IPropertyChangeObserver

@@ -23,6 +23,45 @@ public class Autopilot : MonoBehaviour
 
     private RocketShip ship;
     private bool cmgActive = false;
+    public static readonly List<Command> Commands = new List<Command>()
+    {
+        Command.OFF,
+        Command.KILL_ROTATION,
+        Command.FACE_TARGET,
+        Command.ACTIVE_TRACK,
+        Command.KILL_REL_V,
+        Command.INTERCEPT,
+        Command.STANDOFF,
+        Command.RENDEZVOUS,
+        Command.DOCK
+    };
+
+    public enum Command
+    {
+        OFF,
+        KILL_ROTATION,
+        FACE_TARGET,
+        ACTIVE_TRACK,
+        KILL_REL_V,
+        INTERCEPT,
+        STANDOFF,
+        RENDEZVOUS,
+        DOCK
+    }
+
+    public static Command CommandFromInt(int index)
+    {
+        Command command;
+        if (index >= 0 && index < Commands.Count)
+        {
+            command = Commands[index];
+        }
+        else
+        {
+            command = Command.OFF;
+        }
+        return command;
+    }
 
     Stack<IEnumerator> callStack = new Stack<IEnumerator>();
 
@@ -36,14 +75,14 @@ public class Autopilot : MonoBehaviour
 
     }
 
-    public void KillRot()
+    private void KillRot()
     {
         AutopilotOff();
         ship.MainEngineCutoff();
         PushAndStartCoroutine(KillRotCo());
     }
 
-    public void AutopilotOff()
+    private void AutopilotOff()
     {
         StopAll();
         ship.MainEngineCutoff();
@@ -55,44 +94,83 @@ public class Autopilot : MonoBehaviour
         return cmgActive;
     }
 
-    public bool IsKillRot()
+    public void ExecuteCommand(Command command)
     {
-        return cmgActive;
+        ExecuteCommand(command, gameController.GetHUD().GetReferenceBody());
+
+    }
+    public void ExecuteCommand(Command command, GameObject target)
+    {
+        switch (command)
+        {
+            case Command.OFF:
+                AutopilotOff();
+                break;
+            case Command.KILL_ROTATION:
+                KillRot();
+                break;
+            case Command.FACE_TARGET:
+                TurnToTarget(target);
+                break;
+            case Command.ACTIVE_TRACK:
+                ActiveTrackTarget(target);
+                break;
+            case Command.KILL_REL_V:
+                KillRelV(target);
+                break;
+            case Command.INTERCEPT:
+                APNGToTarget(target);
+                break;
+            case Command.STANDOFF:
+                Standoff(target);
+                break;
+            case Command.RENDEZVOUS:
+                Rendezvous(target);
+                break;
+            case Command.DOCK:
+                Dock(target);
+                break;
+        }
     }
 
-    public bool IsAutoRot()
-    {
-        return cmgActive;
-    }
-
-    public void ActiveTrackTarget(GameObject target)
+    private void ActiveTrackTarget(GameObject target)
     {
         AutopilotOff();
         PushAndStartCoroutine(RotTrackTarget(target, false));
     }
 
-    public void TurnToTarget(GameObject target)
+    private void TurnToTarget(GameObject target)
     {
         AutopilotOff();
         PushAndStartCoroutine(RotTrackTarget(target, true));
     }
 
-    public void KillRelV(GameObject target)
+    private void KillRelV(GameObject target)
     {
         AutopilotOff();
         PushAndStartCoroutine(KillRelVCo(target));
     }
 
-    public void APNGToTarget(GameObject target)
+    private void APNGToTarget(GameObject target)
     {
         AutopilotOff();
         PushAndStartCoroutine(APNGToTargetCo(target));
     }
 
-    public void Rendezvous(GameObject target)
+    private void Standoff(GameObject target)
+    {
+        AutopilotOff();
+    }
+
+    private void Rendezvous(GameObject target)
     {
         AutopilotOff();
         PushAndStartCoroutine(RendezvousCo(target));
+    }
+
+    private void Dock(GameObject target)
+    {
+        AutopilotOff();
     }
 
     #region CoroutineHandlers
@@ -153,6 +231,11 @@ public class Autopilot : MonoBehaviour
 
     IEnumerator RotToUnitVec(Vector3 b)
     {
+        return RotToUnitVec(b, MinRotToTargetDeltaTheta);
+    }
+
+    IEnumerator RotToUnitVec(Vector3 b, float deltaTheta)
+    {
         for (;;)
         {
             Quaternion q = Quaternion.LookRotation(b);
@@ -173,6 +256,16 @@ public class Autopilot : MonoBehaviour
     }
 
     IEnumerator RotTrackTarget(GameObject target, bool breakable)
+    {
+        return RotTrackTarget(target, breakable, MinRotToTargetDeltaTheta);
+    }
+
+    IEnumerator RotTrackTargetAPNG(GameObject target)
+    {
+        return RotTrackTarget(target, true, MinAPNGDeltaTheta);
+    }
+
+    IEnumerator RotTrackTarget(GameObject target, bool breakable, float deltaTheta)
     {
         Vector3 prevTVec = (target.transform.position - transform.parent.transform.position).normalized;
         float prevTimer = UpdateTrackTime;
@@ -238,6 +331,12 @@ public class Autopilot : MonoBehaviour
         yield return PushAndStartCoroutine(MainEngineBurnSec(sec));
     }
 
+    IEnumerator RotThenBurnAPNG(Vector3 b, float sec)
+    {
+        yield return PushAndStartCoroutine(RotToUnitVec(b, MinAPNGDeltaTheta));
+        yield return PushAndStartCoroutine(MainEngineBurnSec(sec));
+    }
+
     IEnumerator MainEngineBurnSec(float sec)
     {
         float burnTimer = sec;
@@ -276,6 +375,26 @@ public class Autopilot : MonoBehaviour
             yield break;
         }
     }
+    
+    IEnumerator KillRelVCoAPNG(GameObject target)
+    {
+        float dist;
+        float relv;
+        Vector3 relVelUnit;
+        PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
+        Vector3 negVec = -1 * relVelUnit;
+        float sec = CalcDeltaVBurnSec(relv);
+        sec = Mathf.Min(sec, 5);
+        if (sec >= MinMainEngineBurnSec)
+        {
+            yield return PushAndStartCoroutine(RotThenBurnAPNG(negVec, sec));
+        }
+        else
+        {
+            PopCoroutine();
+            yield break;
+        }
+    }
 
     IEnumerator APNGKillRelVCo(GameObject target)
     {
@@ -285,7 +404,7 @@ public class Autopilot : MonoBehaviour
         PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
         if (relv < 0)
         {
-            yield return PushAndStartCoroutine(KillRelVCo(target));
+            yield return PushAndStartCoroutine(KillRelVCoAPNG(target));
         }
         else
         {
@@ -302,9 +421,10 @@ public class Autopilot : MonoBehaviour
         PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
         float neededDeltaV = MinInterceptDeltaV - relv;
         float sec = CalcDeltaVBurnSec(neededDeltaV);
+        sec = Mathf.Min(sec, 5);
         if (sec > 0)
         {
-            yield return PushAndStartCoroutine(RotTrackTarget(target, true));
+            yield return PushAndStartCoroutine(RotTrackTargetAPNG(target));
             yield return PushAndStartCoroutine(MainEngineBurnSec(sec));
         }
         else
@@ -319,9 +439,10 @@ public class Autopilot : MonoBehaviour
         Vector3 a = CalcAPNG(target);
         float deltaV = a.magnitude;
         float sec = CalcDeltaVBurnSec(deltaV);
+        sec = Mathf.Min(sec, 5);
         if (sec > 0)
         {
-            yield return PushAndStartCoroutine(RotThenBurn(a, sec));
+            yield return PushAndStartCoroutine(RotThenBurnAPNG(a, sec));
         }
         else
         {

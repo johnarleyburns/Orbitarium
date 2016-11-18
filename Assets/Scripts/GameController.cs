@@ -287,7 +287,7 @@ public class GameController : MonoBehaviour
 
     private void UpdateShip()
     {
-        playerShip.GetComponent<PlayerShipController>().GetShipModel().GetComponent<PlayerShip>().UpdateShip();
+        GetPlayerShip().UpdateShip();
     }
 
     private void UpdateCheckForGamePause()
@@ -394,6 +394,11 @@ public class GameController : MonoBehaviour
     public GameObject GetPlayer()
     {
         return playerShip;
+    }
+
+    public PlayerShip GetPlayerShip()
+    {
+        return playerShip.GetComponent<PlayerShipController>().GetShipModel().GetComponent<PlayerShip>();
     }
 
     public int EnemyCount()
