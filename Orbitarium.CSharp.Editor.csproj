@@ -85,6 +85,9 @@
     <Reference Include="UnityEditor.Graphs">
       <HintPath>Library\UnityAssemblies\UnityEditor.Graphs.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEditor.WebGL.Extensions">
+      <HintPath>Library\UnityAssemblies\UnityEditor.WebGL.Extensions.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEditor.WindowsStandalone.Extensions">
       <HintPath>Library\UnityAssemblies\UnityEditor.WindowsStandalone.Extensions.dll</HintPath>
     </Reference>
@@ -163,6 +166,8 @@
     <None Include="Assets\Missile Behaviours\Scenes\Demo02\In case the demo doesn&apos;t work.txt" />
     <None Include="Assets\Models\Soyuz\ReadMe.TXT" />
     <None Include="Assets\Models\salyut7model\install.txt" />
+    <None Include="Assets\Scripts\OffScreenIndicator\Scripts\FirstPersonVRCharacter\readme.txt" />
+    <None Include="Assets\Scripts\OffScreenIndicator\readme.txt" />
     <None Include="Assets\SolarSystem\Resources\Deimos.txt" />
     <None Include="Assets\SolarSystem\Resources\Earth.txt" />
     <None Include="Assets\SolarSystem\Resources\Europa.txt" />
