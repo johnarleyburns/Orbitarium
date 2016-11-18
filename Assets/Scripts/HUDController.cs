@@ -75,21 +75,15 @@ public class HUDController : MonoBehaviour
 
     private void UpdateTargetIndicator(int indicatorId, GameObject target)
     {
-        //        bool hasText = OffscreenIndicator.indicators[indicatorId].hasOnScreenText;
         bool isRefBody = target == referenceBody;
         bool isSelectedTarget = target == selectedTarget;
-        bool hasText = isSelectedTarget;
-        bool calcRelV = hasText || isRefBody || isSelectedTarget;
+        bool calcRelV = isRefBody || isSelectedTarget;
         if (calcRelV)
         {
             float targetDist;
             float targetRelV;
             Vector3 targetRelVUnitVec;
             PhysicsUtils.CalcRelV(gameController.GetPlayer().transform, target, out targetDist, out targetRelV, out targetRelVUnitVec);
-            //if (hasText)
-            //{
-            //    UpdateTargetDistance(indicatorId, target.name, targetDist);
-            //}
             if (isRefBody)
             {
                 UpdateRelativeVelocityIndicators(targetRelVUnitVec);
@@ -160,19 +154,30 @@ public class HUDController : MonoBehaviour
     {
         selectedTargetIndex = targetIndex;
         selectedTarget = target;
-        string tgtText;
+        int tgtType;
         if (target != null)
         {
-            tgtText = selectedTarget.name;
             ShowTargetIndicator();
             SelectNextReferenceBody(selectedTarget);
+            tgtType = 0;
+            for (int i = 0; i < gameController.EnemyCount(); i++)
+            {
+                GameObject e = gameController.GetEnemy(i);
+                if (e == target)
+                {
+                    tgtType = 1;
+                    break;
+                }
+            }
         }
         else {
-            tgtText = "NONE";
             HideTargetIndicator();
             SelectNextReferenceBody();
+            tgtType = 0;
         }
-        inputController.PropertyChanged("TargetText", tgtText);
+        inputController.PropertyChanged("SelectTarget", selectedTargetIndex);
+        inputController.PropertyChanged("SelectedTargetType", tgtType);
+
     }
 
     public void SelectNextTarget(int offset)

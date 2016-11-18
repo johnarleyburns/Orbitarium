@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -133,17 +134,21 @@ public class MFDController : MonoBehaviour
     public class MFDAutopilotController : IPropertyChangeObserver
     {
         private GameObject panel;
-        private Text targetText;
-        private Text distanceText;
-        private Text relvText;
+        private Dropdown TargetSelectorDropdown;
+        private Dropdown TargetTypeDropdown;
+        private Text DistanceText;
+        private Text RelvText;
 
         public void Connect(GameObject autoPanel, InputController inputController)
         {
             panel = autoPanel;
-            targetText = panel.transform.Search("TargetText").GetComponent<Text>();
-            distanceText = panel.transform.Search("DistanceText").GetComponent<Text>();
-            relvText = panel.transform.Search("RelvText").GetComponent<Text>();
-            inputController.AddObserver("TargetText", this);
+            TargetSelectorDropdown = panel.transform.Search("TargetSelectorDropdown").GetComponent<Dropdown>();
+            TargetTypeDropdown = panel.transform.Search("TargetTypeDropdown").GetComponent<Dropdown>();
+            DistanceText = panel.transform.Search("DistanceText").GetComponent<Text>();
+            RelvText = panel.transform.Search("RelvText").GetComponent<Text>();
+            inputController.AddObserver("TargetList", this);
+            inputController.AddObserver("SelectTarget", this);
+            inputController.AddObserver("SelectedTargetType", this);
             inputController.AddObserver("DistanceText", this);
             inputController.AddObserver("RelvText", this);
         }
@@ -152,14 +157,36 @@ public class MFDController : MonoBehaviour
         {
             switch (name)
             {
-                case "TargetText":
-                    targetText.text = value as string;
+                case "TargetList":
+                    List<GameObject> targets = value as List<GameObject>;
+                    if (targets != null)
+                    {
+                        List<string> names = new List<string>();
+                        names.Add("No Target");
+                        foreach (GameObject g in targets)
+                        {
+                            names.Add(g.name);
+                        }
+                        TargetSelectorDropdown.ClearOptions();
+                        TargetSelectorDropdown.AddOptions(names);
+                        //this swith from 1 to 0 is only to refresh the visual DdMenu
+                        //TargetSelectorDropdown.value = 0;
+                        //TargetSelectorDropdown.value = 1;
+                    }
+                    break;
+                case "SelectTarget":
+                    int? tgt = value as int?;
+                    TargetSelectorDropdown.value = tgt == null ? 0 : tgt.Value + 1;
+                    break;
+                case "SelectedTargetType":
+                    int? tType = value as int?;
+                    TargetTypeDropdown.value = tType == null ? 0 : tType.Value;
                     break;
                 case "DistanceText":
-                    distanceText.text = value as string;
+                    DistanceText.text = value as string;
                     break;
                 case "RelvText":
-                    relvText.text = value as string;
+                    RelvText.text = value as string;
                     break;
             }
         }

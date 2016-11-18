@@ -10,7 +10,6 @@ public class Autopilot : MonoBehaviour
     public int TrackNavigationFactor = 3;
     public float UpdateTrackTime = 0.2f;
 
-
     public float MaxRCSAutoBurnSec = 10;
     public float MinDeltaVforBurn = 0.1f;
     public float MinInterceptDeltaV = 20;
@@ -66,10 +65,16 @@ public class Autopilot : MonoBehaviour
         return cmgActive;
     }
 
-    public void TrackTarget(GameObject target)
+    public void ActiveTrackTarget(GameObject target)
     {
         AutopilotOff();
         PushAndStartCoroutine(RotTrackTarget(target, false));
+    }
+
+    public void TurnToTarget(GameObject target)
+    {
+        AutopilotOff();
+        PushAndStartCoroutine(RotTrackTarget(target, true));
     }
 
     public void KillRelV(GameObject target)

@@ -380,7 +380,15 @@ public class GameController : MonoBehaviour
     private void AddTarget(GameObject target)
     {
         targets.Add(target);
+        GetComponent<InputController>().PropertyChanged("TargetList", targets);
         hudController.SelectNextReferenceBody();
+    }
+
+    private void RemoveTarget(GameObject target)
+    {
+        targets.Remove(target);
+        hudController.RemoveIndicator(target.transform);
+        GetComponent<InputController>().PropertyChanged("TargetList", targets);
     }
 
     public GameObject GetPlayer()
@@ -441,6 +449,7 @@ public class GameController : MonoBehaviour
     {
         hudController.ClearTargetIndicators();
         targets.Clear();
+        GetComponent<InputController>().PropertyChanged("TargetList", targets);
     }
 
     private void DestroyEnemies()
@@ -470,8 +479,7 @@ public class GameController : MonoBehaviour
             {
                 hudController.SelectNextTarget(1);
             }
-            targets.Remove(enemyShip);
-            hudController.RemoveIndicator(enemyShip.transform);
+            RemoveTarget(enemyShip);
             enemyShips.Remove(enemyShip);
             if (enemyShips.Count == 0)
             {

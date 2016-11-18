@@ -367,13 +367,13 @@ public class PlayerShip : MonoBehaviour
             }
             if (Input.GetKey(KeyCode.Keypad7))
             {
-                autopilot.TrackTarget(gameController.GetComponent<InputController>().RelativeVelocityNormalMinusDirectionIndicator);
+                autopilot.ActiveTrackTarget(gameController.GetComponent<InputController>().RelativeVelocityNormalMinusDirectionIndicator);
                 ToggleButtons(false, false, false, true);
                 rotInput = false;
             }
             if (Input.GetKey(KeyCode.Keypad9))
             {
-                autopilot.TrackTarget(gameController.GetComponent<InputController>().RelativeVelocityNormalPlusDirectionIndicator);
+                autopilot.ActiveTrackTarget(gameController.GetComponent<InputController>().RelativeVelocityNormalPlusDirectionIndicator);
                 ToggleButtons(false, false, true, false);
                 rotInput = false;
             }
@@ -389,7 +389,7 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            autopilot.TrackTarget(gameController.GetHUD().GetReferenceBody());
+            autopilot.ActiveTrackTarget(gameController.GetHUD().GetReferenceBody());
             ToggleButtons(false, true, false, false);
         }
     }
@@ -421,7 +421,7 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            autopilot.TrackTarget(gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator);
+            autopilot.ActiveTrackTarget(gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator);
             ToggleButtons(false, false, true, false);
         }
     }
@@ -435,7 +435,7 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            autopilot.TrackTarget(gameController.GetComponent<InputController>().RelativeVelocityAntiDirectionIndicator);
+            autopilot.ActiveTrackTarget(gameController.GetComponent<InputController>().RelativeVelocityAntiDirectionIndicator);
             ToggleButtons(false, false, false, true);
         }
     }
