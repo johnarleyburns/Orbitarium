@@ -30,7 +30,7 @@ public class Autopilot : MonoBehaviour
         Command.ACTIVE_TRACK,
         Command.KILL_REL_V,
         Command.INTERCEPT,
-        Command.STANDOFF,
+        Command.STRAFE,
         Command.RENDEZVOUS,
         Command.DOCK
     };
@@ -43,7 +43,7 @@ public class Autopilot : MonoBehaviour
         ACTIVE_TRACK,
         KILL_REL_V,
         INTERCEPT,
-        STANDOFF,
+        STRAFE,
         RENDEZVOUS,
         DOCK
     }
@@ -120,8 +120,8 @@ public class Autopilot : MonoBehaviour
             case Command.INTERCEPT:
                 APNGToTarget(target);
                 break;
-            case Command.STANDOFF:
-                Standoff(target);
+            case Command.STRAFE:
+                Strafe(target);
                 break;
             case Command.RENDEZVOUS:
                 Rendezvous(target);
@@ -156,9 +156,10 @@ public class Autopilot : MonoBehaviour
         PushAndStartCoroutine(APNGToTargetCo(target));
     }
 
-    private void Standoff(GameObject target)
+    private void Strafe(GameObject target)
     {
         AutopilotOff();
+        PushAndStartCoroutine(StrafeTargetCo(target));
     }
 
     private void Rendezvous(GameObject target)
@@ -374,110 +375,15 @@ public class Autopilot : MonoBehaviour
             yield break;
         }
     }
-
-    IEnumerator KillRelVCoAPNG(GameObject target)
-    {
-        float dist;
-        float relv;
-        Vector3 relVelUnit;
-        PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
-        Vector3 negVec = -1 * relVelUnit;
-        float sec = CalcDeltaVBurnSec(Mathf.Abs(relv));
-        if (sec >= MinMainEngineBurnSec)
-        {
-            yield return PushAndStartCoroutine(RotThenBurnAPNG(negVec, sec));
-        }
-        else
-        {
-            PopCoroutine();
-            yield break;
-        }
-    }
-
-    IEnumerator APNGKillRelVCo(GameObject target)
-    {
-        float dist;
-        float relv;
-        Vector3 relVelUnit;
-        PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
-        if (relv < 0)
-        {
-            yield return PushAndStartCoroutine(KillRelVCoAPNG(target));
-        }
-        else
-        {
-            PopCoroutine();
-            yield break;
-        }
-    }
-
-    IEnumerator APNGSpeedupCo(GameObject target)
-    {
-        float dist;
-        float relv;
-        Vector3 relVelUnit;
-        PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
-        float neededDeltaV = InterceptDeltaV - relv;
-        float sec = CalcDeltaVBurnSec(neededDeltaV);
-        Vector3 b = CalcVectorToTarget(target).normalized;
-        if (sec > 0)
-        {
-            yield return PushAndStartCoroutine(RotToUnitVec(b));
-            yield return PushAndStartCoroutine(MainEngineBurnSec(sec));
-        }
-        else
-        {
-            PopCoroutine();
-            yield break;
-        }
-    }
-
-    IEnumerator APNGRotateBurnCo2(GameObject target)
-    {
-        float dist;
-        float relv;
-        Vector3 relVelUnit;
-        PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
-        if (relv < -MinDeltaVforBurn)
-        {
-            yield return PushAndStartCoroutine(KillRelVCoAPNG(target));
-        }
-        else if (relv < (InterceptDeltaV - 2 * MinDeltaVforBurn))
-        {
-            yield return PushAndStartCoroutine(APNGSpeedupCo(target));
-        }
-        else
-        {
-            Vector3 a = CalcAPNG(target);
-            /*
-            float deltaVNormal = a.magnitude;
-            float deltaVOneBurn = ship.CurrentMainEngineAccPerSec();
-
-            float aPct = Mathf.Min(1.0f, deltaVNormal / deltaVOneBurn);
-            float relVPct = 1.0f - aPct;
-
-            Vector3 thrust = (aPct * a + relVPct * relVelUnit).normalized;
-            float sec = CalcDeltaVBurnSec(deltaVOneBurn);
-            */
-            Vector3 thrust = a.normalized;
-            float sec = CalcDeltaVBurnSec(a.magnitude);
-
-            yield return PushAndStartCoroutine(RotThenBurnAPNG(thrust, sec));
-
-        }
-    }
-
+    
     IEnumerator APNGRotateBurnCo(GameObject target)
     {
-        float deltaVMin = ship.CurrentMainEngineAccPerSec();
-        float deltaVMax = ship.CurrentMainEngineAccPerSec();
-
         float dist;
         float relv;
         Vector3 relVelUnit;
         PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
         Vector3 f = relVelUnit;
-        Vector3 a = CalcAPNG(target);
+        Vector3 a = CalcAPNG(target.transform.position, relv, relVelUnit);
         if (relv < 0)
         {
             f = -f;
@@ -485,36 +391,63 @@ public class Autopilot : MonoBehaviour
         }
         float deltaVA = a.magnitude;
         float deltaVF;
-        if (deltaVA > deltaVMax)
+        float deltaV = ship.CurrentMainEngineAccPerSec();
+        if (deltaVA >= deltaV)
         {
-            deltaVA = deltaVMax;
+            deltaVA = deltaV;
             deltaVF = 0;
-        }
-        else if (deltaVA < deltaVMin)
-        {
-            deltaVF = deltaVMin - deltaVA;
         }
         else
         {
-            deltaVF = 0;
+            deltaVF = deltaV - deltaVA;
         }
-        float deltaT = deltaVA + deltaVF;
-        Vector3 thrust = ((deltaVA / deltaT) * a.normalized + (deltaVF / deltaT) * f).normalized;
-        float deltaV = deltaT;
-        float sec = CalcDeltaVBurnSec(deltaV);
+        Vector3 thrust = ((deltaVA / deltaV) * a.normalized + (deltaVF / deltaV) * f).normalized;
         yield return PushAndStartCoroutine(RotToUnitVec(thrust, MinAPNGDeltaTheta));
-        /*
-                if (sec > MinMainEngineBurnSec)
-                {
-                    //        yield return PushAndStartCoroutine(RotThenBurnAPNG(thrust, sec));
-                    yield return PushAndStartCoroutine(RotToUnitVec(thrust, MinAPNGDeltaTheta));
-                    yield return PushAndStartCoroutine(MainEngineBurnSec(sec));
-                }
-                else
-                {
-                    yield break;
-                }
-                */
+    }
+    public float StrafeDistMXXxx = 100f;
+
+    IEnumerator StrafeCo(GameObject target)
+    {
+        float dist;
+        float relv;
+        Vector3 relVelUnit;
+        PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
+        Vector3 f = relVelUnit;
+
+        // break if close enough
+        float strafeRange = StrafeDistMXXxx * 1 / NavigationalConstant * Mathf.Abs(relv) / ship.CurrentMainEngineAccPerSec();
+        if (dist <= strafeRange)
+        {
+            ship.MainEngineCutoff();
+            yield break;
+        }
+        else
+        {
+            // target should stand off from ship
+            Quaternion normalRot = Quaternion.RotateTowards(Quaternion.identity, Quaternion.FromToRotation(relVelUnit, -relVelUnit), 90);
+            Vector3 offsetVec = StrafeDistMXXxx * (normalRot * relVelUnit);
+            Vector3 strafeTarget = target.transform.position + offsetVec;
+            Vector3 a = CalcAPNG(strafeTarget, relv, relVelUnit);
+            if (relv < 0)
+            {
+                f = -f;
+                a = Vector3.zero;
+            }
+            float deltaVA = a.magnitude;
+            float deltaVF;
+            float deltaV = ship.CurrentMainEngineAccPerSec();
+            if (deltaVA >= deltaV)
+            {
+                deltaVA = deltaV;
+                deltaVF = 0;
+            }
+            else
+            {
+                deltaVF = deltaV - deltaVA;
+            }
+            Vector3 thrust = ((deltaVA / deltaV) * a.normalized + (deltaVF / deltaV) * f).normalized;
+            yield return PushAndStartCoroutine(RotToUnitVec(thrust, MinAPNGDeltaTheta));
+        }
     }
 
     IEnumerator RendezvousCo(GameObject target)
@@ -548,6 +481,24 @@ public class Autopilot : MonoBehaviour
         }
     }
 
+    IEnumerator StrafeTargetCo(GameObject target)
+    {
+        ship.MainEngineGo();
+        for (;;)
+        {
+            if (ship.IsMainEngineGo())
+            {
+                yield return PushAndStartCoroutine(StrafeCo(target));
+                yield return new WaitForEndOfFrame();
+            }
+            else
+            {
+                yield return PushAndStartCoroutine(RotTrackTargetAPNG(target));
+                yield return new WaitForEndOfFrame();
+            }
+        }
+    }
+
 
     #endregion
 
@@ -569,7 +520,17 @@ public class Autopilot : MonoBehaviour
         return sec;
     }
 
-    private Vector3 CalcAPNG(GameObject target)
+    private Vector3 CalcAPNG(Vector3 position, float relv, Vector3 relVelUnit)
+    {
+        float N = NavigationalConstant;
+        Vector3 vr = relv * -relVelUnit;
+        Vector3 r = position - transform.parent.transform.position;
+        Vector3 o = Vector3.Cross(r, vr) / Vector3.Dot(r, r);
+        Vector3 a = Vector3.Cross(-N * Mathf.Abs(vr.magnitude) * r.normalized, o);
+        return a;
+    }
+
+    private Vector3 CalcAPNGStrafe(GameObject target)
     {
         float dist;
         float relv;
