@@ -119,7 +119,7 @@ public class PlayerShip : MonoBehaviour
         autopilot.ExecuteCommand(command, gameController.GetHUD().GetReferenceBody());
         inputController.PropertyChanged("CommandExecuted", command);
     }
-
+    
     void ToggleRCSMode()
     {
         switch (currentRCSMode)
@@ -432,7 +432,7 @@ public class PlayerShip : MonoBehaviour
 
     private void UpdateRotatePlus()
     {
-        UpdateDoubleTap(KeyCode.KeypadPlus, ref doubleTapRotatePlusTimer, RotateToPos, APNGToTarget);
+        UpdateDoubleTap(KeyCode.KeypadPlus, ref doubleTapRotatePlusTimer, RotateToPos, StrafeTarget);
     }
 
     private void RotateToPos()
@@ -466,6 +466,17 @@ public class PlayerShip : MonoBehaviour
         {
             autopilot.ExecuteCommand(Autopilot.Command.INTERCEPT, gameController.GetHUD().GetReferenceBody());
             inputController.PropertyChanged("CommandExecuted", Autopilot.Command.INTERCEPT);
+            ToggleButtons(false, true, false, false);
+        }
+
+    }
+
+    private void StrafeTarget()
+    {
+        if (gameController != null)
+        {
+            autopilot.ExecuteCommand(Autopilot.Command.STRAFE, gameController.GetHUD().GetReferenceBody());
+            inputController.PropertyChanged("CommandExecuted", Autopilot.Command.STRAFE);
             ToggleButtons(false, true, false, false);
         }
 

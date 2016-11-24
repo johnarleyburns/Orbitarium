@@ -46,4 +46,9 @@ public class PhysicsUtils : MonoBehaviour {
         relVelUnit = relVel.normalized;
     }
 
+    public static void CalcDistance(Transform source, GameObject target, out float dist)
+    {
+        dist = (target.transform.position - source.transform.position).magnitude;
+    }
+
 }

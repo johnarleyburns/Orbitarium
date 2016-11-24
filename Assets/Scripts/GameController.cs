@@ -27,7 +27,7 @@ public class GameController : MonoBehaviour
     public float DestroyedEnemyTimeToLiveSec = 5;
 
     private HUDController hudController;
-    private GameObject playerShip;
+    private GameObject player;
     private List<GameObject> enemyShips = new List<GameObject>();
     private List<GameObject> targets = new List<GameObject>();
     private float gameStartInputTimer = -1;
@@ -321,12 +321,12 @@ public class GameController : MonoBehaviour
     private void InstantiatePlayer()
     {
         DestroyPlayer();
-        playerShip = Instantiate(PlayerShipPrefab, Vector3.zero, Quaternion.identity) as GameObject;
-        playerShip.transform.position = Vector3.zero;
-        playerShip.transform.rotation = Quaternion.identity;
-        PlayerShipController controller = playerShip.GetComponent<PlayerShipController>();
+        player = Instantiate(PlayerShipPrefab, Vector3.zero, Quaternion.identity) as GameObject;
+        player.transform.position = Vector3.zero;
+        player.transform.rotation = Quaternion.identity;
+        PlayerShipController controller = player.GetComponent<PlayerShipController>();
         controller.SetGameController(this);
-        GravityEngine.instance.AddBody(playerShip);
+        GravityEngine.instance.AddBody(player);
         GameObject playerModel = controller.GetShipModel();
         SetupCameras(playerModel);
         playerModel.GetComponent<PlayerShip>().StartShip();
@@ -335,11 +335,11 @@ public class GameController : MonoBehaviour
     private void SetupInitialVelocities()
     {
         float playerImpulse = Random.Range(0, PlayerInitialImpulse);
-        GravityEngine.instance.ApplyImpulse(playerShip.GetComponent<NBody>(), playerImpulse * playerShip.transform.forward);
+        GravityEngine.instance.ApplyImpulse(player.GetComponent<NBody>(), playerImpulse * player.transform.forward);
         foreach (GameObject enemyShip in enemyShips)
         {
             float enemyImpulse = Random.Range(0, EnemyInitialImpulse);
-            GravityEngine.instance.ApplyImpulse(enemyShip.GetComponent<NBody>(), enemyImpulse * -playerShip.transform.forward);
+            GravityEngine.instance.ApplyImpulse(enemyShip.GetComponent<NBody>(), enemyImpulse * -player.transform.forward);
         }
     }
 
@@ -365,12 +365,12 @@ public class GameController : MonoBehaviour
         hudController.AddEnemyIndicator(enemyShip);
         enemyShips.Add(enemyShip);
         AddTarget(enemyShip);
-        hudController.SelectNextTarget(1);
+        hudController.SelectNextTargetPreferClosestEnemy();
     }
 
     private void EnableOverviewCamera()
     {
-        GameObject playerModel = playerShip.GetComponent<PlayerShipController>().GetShipModel();
+        GameObject playerModel = player.GetComponent<PlayerShipController>().GetShipModel();
         OverviewCamera.enabled = true;
         FPSCamera.enabled = false;
         OverShoulderCamera.enabled = false;
@@ -393,12 +393,12 @@ public class GameController : MonoBehaviour
 
     public GameObject GetPlayer()
     {
-        return playerShip;
+        return player;
     }
 
     public PlayerShip GetPlayerShip()
     {
-        return playerShip.GetComponent<PlayerShipController>().GetShipModel().GetComponent<PlayerShip>();
+        return player.GetComponent<PlayerShipController>().GetShipModel().GetComponent<PlayerShip>();
     }
 
     public int EnemyCount()
@@ -408,7 +408,7 @@ public class GameController : MonoBehaviour
 
     public GameObject GetEnemy(int i)
     {
-        if (i < enemyShips.Count)
+        if (i >= 0 && i < enemyShips.Count)
         {
             return enemyShips[i];
         }
@@ -425,7 +425,7 @@ public class GameController : MonoBehaviour
 
     public GameObject GetTarget(int i)
     {
-        if (i < targets.Count)
+        if (i >= 0 && i < targets.Count)
         {
             return targets[i];
         }
@@ -433,6 +433,45 @@ public class GameController : MonoBehaviour
         {
             return null;
         }
+    }
+
+    public int ClosestEnemy()
+    {
+        float dist = 0;
+        int index = -1;
+        for (int i = 0; i < targets.Count; i++)
+        {
+            GameObject t = targets[i];
+            if (enemyShips.Contains(t))
+            {
+                float d;
+                PhysicsUtils.CalcDistance(player.transform, t, out d);
+                if (d < dist || index == -1)
+                {
+                    dist = d;
+                    index = i;
+                }
+            }
+        }
+        return index;
+    }
+
+    public int ClosestTarget()
+    {
+        float dist = 0;
+        int index = -1;
+        for (int i = 0; i < targets.Count; i++)
+        {
+            GameObject t = targets[i];
+            float d;
+            PhysicsUtils.CalcDistance(player.transform, t, out d);
+            if (d < dist || index == -1)
+            {
+                dist = d;
+                index = i;
+            }
+        }
+        return index;
     }
 
     private void AddFixedTargets()
@@ -480,16 +519,13 @@ public class GameController : MonoBehaviour
     {
         if (enemyShip != null)
         {
-            if (enemyShip == hudController.SelectedTarget())
+            if (enemyShip == GetHUD().GetReferenceBody())
             {
-                hudController.SelectNextTarget(1);
+                GetPlayerShip().ExecuteAutopilotCommand(Autopilot.Command.OFF);
             }
             RemoveTarget(enemyShip);
             enemyShips.Remove(enemyShip);
-            if (enemyShips.Count == 0)
-            {
-                hudController.SelectNextTarget(0);
-            }
+            hudController.SelectNextTargetPreferClosestEnemy();
             //GravityEngine.instance.RemoveBody(enemyShip);     
             //Destroy(enemyShip);
             GravityEngine.instance.InactivateBody(enemyShip);
@@ -499,7 +535,7 @@ public class GameController : MonoBehaviour
 
     private void DestroyPlayer()
     {
-        if (playerShip != null)
+        if (player != null)
         {
             /*
             GameObject playerModel = playerShip.GetComponent<PlayerShipController>().GetShipModel();
@@ -508,9 +544,9 @@ public class GameController : MonoBehaviour
                 playerModel.GetComponent<PlayerShipController>().GetComponent<PlayerShip>().PrepareDestroy();
             }
             */
-            GravityEngine.instance.RemoveBody(playerShip);
-            Destroy(playerShip);
-            playerShip = null;
+            GravityEngine.instance.RemoveBody(player);
+            Destroy(player);
+            player = null;
         }
     }
 

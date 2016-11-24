@@ -91,23 +91,24 @@ public class HUDController : MonoBehaviour, IPropertyChangeObserver
 
     private void UpdateTargetIndicator(int indicatorId, GameObject target)
     {
-        bool isRefBody = target == referenceBody;
+        //bool isRefBody = target == referenceBody;
         bool isSelectedTarget = target == selectedTarget;
-        bool calcRelV = isRefBody || isSelectedTarget;
+        bool calcRelV = target.GetComponent<NBody>() != null;
         if (calcRelV)
         {
             float targetDist;
             float targetRelV;
             Vector3 targetRelVUnitVec;
             PhysicsUtils.CalcRelV(gameController.GetPlayer().transform, target, out targetDist, out targetRelV, out targetRelVUnitVec);
-            if (isRefBody)
-            {
-                UpdateRelativeVelocityIndicators(targetRelVUnitVec);
-            }
+            //if (isRefBody)
+            //{
+            //    UpdateRelativeVelocityIndicators(targetRelVUnitVec);
+            //}
             if (isSelectedTarget)
             {
                 UpdateSelectedTargetIndicator(targetDist, targetRelV);
             }
+            UpdateTargetDistance(indicatorId, target.name, targetDist);
         }
     }
 
@@ -121,14 +122,31 @@ public class HUDController : MonoBehaviour, IPropertyChangeObserver
     {
         string distText = DistanceText(dist);
         string relvText = RelvText(relV);
+        string timeToTargetText = TimeToTargetText(dist, relV);
         inputController.TargetDirectionIndicator.transform.position = selectedTarget.transform.position;
         if (OffscreenIndicator.indicators[HUD_INDICATOR_TARGET_DIRECTION].hasOnScreenText)
         {
-            string targetString = string.Format("{0}\n{1}", distText, relvText);
+            string targetString = string.Format("{0}\n{1}", relvText, timeToTargetText);
             OffscreenIndicator.UpdateIndicatorText(HUD_INDICATOR_TARGET_DIRECTION, targetString);
         }
         inputController.PropertyChanged("DistanceText", distText);
         inputController.PropertyChanged("RelvText", relvText);
+        inputController.PropertyChanged("TimeToTargetText", timeToTargetText);
+    }
+
+    private string TimeToTargetText(float dist, float relv)
+    {
+        string timeToTargetText;
+        if (relv <= 0)
+        {
+            timeToTargetText = "Inf";
+        }
+        else
+        {
+            float sec = dist / relv;
+            timeToTargetText = string.Format("{0:,0} s", sec);
+        }
+        return timeToTargetText;
     }
 
     private string DistanceText(float dist)
@@ -207,19 +225,6 @@ public class HUDController : MonoBehaviour, IPropertyChangeObserver
     public void SelectNextTarget(int offset)
     {
         int index = selectedTargetIndex;
-        // prefer enemy targets
-        /*
-        if (gameController.EnemyCount() > 0)
-        {
-            index = (index + offset) % gameController.EnemyCount();
-            if (index < 0)
-            {
-                index = gameController.EnemyCount() - 1;
-            }
-            SelectTarget(gameController.GetEnemy(index), index);
-        }
-        else
-        */    
         if (gameController.TargetCount() > 0)
         {
             if (index < 0)
@@ -234,6 +239,18 @@ public class HUDController : MonoBehaviour, IPropertyChangeObserver
         else
         {
             index = -1;
+        }
+        SelectTarget(index);
+    }
+
+    public void SelectNextTargetPreferClosestEnemy()
+    {
+        int index = selectedTargetIndex;
+        // prefer enemy targets
+        index = gameController.ClosestEnemy();
+        if (index == -1)
+        {
+            index = gameController.ClosestTarget();
         }
         SelectTarget(index);
     }

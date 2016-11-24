@@ -140,6 +140,7 @@ public class MFDController : MonoBehaviour
         private Dropdown TargetTypeDropdown;
         private Text DistanceText;
         private Text RelvText;
+        private Text TimeToTargetText;
         private Dropdown CommandDropdown;
         private Button CommandButton;
 
@@ -153,6 +154,7 @@ public class MFDController : MonoBehaviour
             TargetTypeDropdown = panel.transform.Search("TargetTypeDropdown").GetComponent<Dropdown>();
             DistanceText = panel.transform.Search("DistanceText").GetComponent<Text>();
             RelvText = panel.transform.Search("RelvText").GetComponent<Text>();
+            TimeToTargetText = panel.transform.Search("TimeToTargetText").GetComponent<Text>();
             CommandDropdown = panel.transform.Search("CommandDropdown").GetComponent<Dropdown>();
             CommandButton = panel.transform.Search("CommandButton").GetComponent<Button>();
 
@@ -161,6 +163,7 @@ public class MFDController : MonoBehaviour
             inputController.AddObserver("SelectedTargetType", this);
             inputController.AddObserver("DistanceText", this);
             inputController.AddObserver("RelvText", this);
+            inputController.AddObserver("TimeToTargetText", this);
             inputController.AddObserver("CommandExecuted", this);
 
             TargetSelectorDropdown.onValueChanged.AddListener(delegate { TargetSelectorDropdownOnValueChanged(); });
@@ -210,6 +213,9 @@ public class MFDController : MonoBehaviour
                     break;
                 case "RelvText":
                     RelvText.text = value as string;
+                    break;
+                case "TimeToTargetText":
+                    TimeToTargetText.text = value as string;
                     break;
                 case "CommandExecuted":
                     Autopilot.Command? commandP = value as Autopilot.Command?;

@@ -7,18 +7,19 @@ public class Autopilot : MonoBehaviour
 
     public GameController gameController;
 
-    public int TrackNavigationFactor = 3;
     public float UpdateTrackTime = 0.2f;
-
     public float MaxRCSAutoBurnSec = 10;
     public float MinDeltaVforBurn = 0.1f;
     public float InterceptDeltaV = 30;
-    public float NavigationalConstant = 3;
     public float MinRotToTargetDeltaTheta = 0.2f;
     public float MinAPNGDeltaTheta = 1f;
     public float MinMainEngineBurnSec = 0.5f;
     public float RendevousDistToVFactor = 0.01f;
     public float RendevousMarginVPct = 0.5f;
+    public float StrafeDistM = 100f;
+
+    private float NavigationalConstant = 3;
+    private float NavigationalConstantAPNG = 10;
 
     private RocketShip ship;
     private bool cmgActive = false;
@@ -92,12 +93,7 @@ public class Autopilot : MonoBehaviour
     {
         return cmgActive;
     }
-
-    public void ExecuteCommand(Command command)
-    {
-        ExecuteCommand(command, gameController.GetHUD().GetReferenceBody());
-
-    }
+    
     public void ExecuteCommand(Command command, GameObject target)
     {
         switch (command)
@@ -282,7 +278,7 @@ public class Autopilot : MonoBehaviour
                 prevTimer -= Time.deltaTime;
             }
             Vector3 deltaB = (tVec - prevTVec) / UpdateTrackTime;
-            Vector3 b = tVec + TrackNavigationFactor * deltaB;
+            Vector3 b = tVec + NavigationalConstant * deltaB;
             Quaternion q = Quaternion.LookRotation(b);
             //q = Quaternion.Euler(q.eulerAngles.x, q.eulerAngles.y, transform.rotation.eulerAngles.z);
             bool converged = ship.ConvergeSpin(q, MinRotToTargetDeltaTheta);
@@ -404,7 +400,6 @@ public class Autopilot : MonoBehaviour
         Vector3 thrust = ((deltaVA / deltaV) * a.normalized + (deltaVF / deltaV) * f).normalized;
         yield return PushAndStartCoroutine(RotToUnitVec(thrust, MinAPNGDeltaTheta));
     }
-    public float StrafeDistMXXxx = 100f;
 
     IEnumerator StrafeCo(GameObject target)
     {
@@ -415,8 +410,11 @@ public class Autopilot : MonoBehaviour
         Vector3 f = relVelUnit;
 
         // break if close enough
-        float strafeRange = StrafeDistMXXxx * 1 / NavigationalConstant * Mathf.Abs(relv) / ship.CurrentMainEngineAccPerSec();
-        if (dist <= strafeRange)
+        float angleToTgt = 180; // swing pass
+        float timeToRot = Mathf.Sqrt(angleToTgt / ship.CurrentRCSAngularDegPerSec());
+        float timeToTgt = dist / Mathf.Abs(relv);
+        float mecoTime = NavigationalConstant * timeToRot; // include aim
+        if (relv > 0 && mecoTime > timeToTgt)
         {
             ship.MainEngineCutoff();
             yield break;
@@ -425,7 +423,7 @@ public class Autopilot : MonoBehaviour
         {
             // target should stand off from ship
             Quaternion normalRot = Quaternion.RotateTowards(Quaternion.identity, Quaternion.FromToRotation(relVelUnit, -relVelUnit), 90);
-            Vector3 offsetVec = StrafeDistMXXxx * (normalRot * relVelUnit);
+            Vector3 offsetVec = StrafeDistM * (normalRot * relVelUnit);
             Vector3 strafeTarget = target.transform.position + offsetVec;
             Vector3 a = CalcAPNG(strafeTarget, relv, relVelUnit);
             if (relv < 0)
@@ -522,7 +520,7 @@ public class Autopilot : MonoBehaviour
 
     private Vector3 CalcAPNG(Vector3 position, float relv, Vector3 relVelUnit)
     {
-        float N = NavigationalConstant;
+        float N = NavigationalConstantAPNG;
         Vector3 vr = relv * -relVelUnit;
         Vector3 r = position - transform.parent.transform.position;
         Vector3 o = Vector3.Cross(r, vr) / Vector3.Dot(r, r);
@@ -536,7 +534,7 @@ public class Autopilot : MonoBehaviour
         float relv;
         Vector3 relVelUnit;
         PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
-        float N = NavigationalConstant;
+        float N = NavigationalConstantAPNG;
         Vector3 vr = relv * -relVelUnit;
         Vector3 r = CalcVectorToTarget(target);
         Vector3 o = Vector3.Cross(r, vr) / Vector3.Dot(r, r);
