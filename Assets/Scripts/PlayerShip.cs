@@ -8,6 +8,7 @@ public class PlayerShip : MonoBehaviour
 
     public GameController gameController;
     public GameObject ShipExplosion;
+    public Weapon MainGun;
     public int healthMax = 3;
     public float minRelVtoDamage = 1;
     public float DoubleTapInterval = 0.2f;

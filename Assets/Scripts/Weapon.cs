@@ -429,8 +429,40 @@ public class Weapon : MonoBehaviour
 		AIFiring();
 	}
 
-	// Determines when the AI can be firing
-	public void AIFiring()
+    public IEnumerator AIFiringCo()
+    {
+        // Fire if this is a raycast type weapon
+        if (type == WeaponType.Raycast)
+        {
+            if (fireTimer >= actualROF && burstCounter < burstRate && canFire)
+            {
+                yield return DelayFire();    // Fires after the amount of time specified in delayBeforeFire
+            }
+        }
+        // Launch a projectile if this is a projectile type weapon
+        if (type == WeaponType.Projectile)
+        {
+            if (fireTimer >= actualROF && canFire)
+            {
+                yield return DelayLaunch();
+            }
+        }
+        // Reset the Burst
+        if (burstCounter >= burstRate)
+        {
+            burstTimer += Time.deltaTime;
+            if (burstTimer >= burstPause)
+            {
+                burstCounter = 0;
+                burstTimer = 0.0f;
+            }
+        }
+        canFire = true;
+        yield break;
+    }
+
+    // Determines when the AI can be firing
+    public void AIFiring()
 	{
 
 		// Fire if this is a raycast type weapon

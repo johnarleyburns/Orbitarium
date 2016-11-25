@@ -16,12 +16,13 @@ public class Autopilot : MonoBehaviour
     public float MinMainEngineBurnSec = 0.5f;
     public float RendevousDistToVFactor = 0.01f;
     public float RendevousMarginVPct = 0.5f;
-    public float StrafeDistM = 100f;
+    public float StrafeDistM = 150f;
 
     private float NavigationalConstant = 3;
     private float NavigationalConstantAPNG = 10;
 
     private RocketShip ship;
+    private Weapon mainGun;
     private bool cmgActive = false;
     public static readonly List<Command> Commands = new List<Command>()
     {
@@ -68,6 +69,7 @@ public class Autopilot : MonoBehaviour
     void Start()
     {
         ship = GetComponent<RocketShip>();
+        mainGun = GetComponent<PlayerShip>().MainGun;
     }
 
     void Update()
@@ -321,6 +323,67 @@ public class Autopilot : MonoBehaviour
         }
     }
 
+    private float MainGunRangeM = 1000;
+
+    IEnumerator RotShootTargetAPNG(GameObject target)
+    {
+        bool breakable = true;
+        float deltaTheta = MinAPNGDeltaTheta;
+        Vector3 prevTVec = (target.transform.position - transform.parent.transform.position).normalized;
+        float prevTimer = UpdateTrackTime;
+        for (;;)
+        {
+            Vector3 tVec = (target.transform.position - transform.parent.transform.position).normalized;
+            if (prevTimer <= 0)
+            {
+                prevTVec = tVec;
+                prevTimer = UpdateTrackTime;
+            }
+            else
+            {
+                prevTimer -= Time.deltaTime;
+            }
+            Vector3 deltaB = (tVec - prevTVec) / UpdateTrackTime;
+            Vector3 b = tVec + NavigationalConstant * deltaB;
+            Quaternion q = Quaternion.LookRotation(b);
+            q = Quaternion.Euler(q.eulerAngles.x, q.eulerAngles.y, transform.rotation.eulerAngles.z);
+            bool converged = ship.ConvergeSpin(q, MinRotToTargetDeltaTheta);
+            float targetAngle = Quaternion.Angle(transform.rotation, q);
+            bool aligned = targetAngle <= 1;
+            float dist;
+            PhysicsUtils.CalcDistance(transform, target, out dist);
+            bool inRange = dist <= MainGunRangeM;
+            if (aligned && inRange)
+            {
+                yield return PushAndStartCoroutine(FireGunCo());
+//                mainGun.RemoteFire();
+//                yield return PushAndStartCoroutine(FireGunCo());
+//
+            }
+            if (converged)
+            {
+                cmgActive = false;
+                if (breakable)
+                {
+                    PopCoroutine();
+                    yield break;
+                }
+            }
+            else
+            {
+                cmgActive = true;
+            }
+            yield return new WaitForEndOfFrame();
+        }
+    }
+
+
+   IEnumerator FireGunCo()
+   {
+       yield return mainGun.AIFiringCo();
+       PopCoroutine();
+    }
+
     IEnumerator RotThenBurn(Vector3 b, float sec)
     {
         yield return PushAndStartCoroutine(RotToUnitVec(b));
@@ -412,7 +475,7 @@ public class Autopilot : MonoBehaviour
         // break if close enough
         float angleToTgt = 180; // swing pass
         float timeToRot = Mathf.Sqrt(angleToTgt / ship.CurrentRCSAngularDegPerSec());
-        float timeToTgt = dist / Mathf.Abs(relv);
+        float timeToTgt = (dist - StrafeDistM)/ Mathf.Abs(relv);
         float mecoTime = NavigationalConstant * timeToRot; // include aim
         if (relv > 0 && mecoTime > timeToTgt)
         {
@@ -491,7 +554,7 @@ public class Autopilot : MonoBehaviour
             }
             else
             {
-                yield return PushAndStartCoroutine(RotTrackTargetAPNG(target));
+                yield return PushAndStartCoroutine(RotShootTargetAPNG(target));
                 yield return new WaitForEndOfFrame();
             }
         }
