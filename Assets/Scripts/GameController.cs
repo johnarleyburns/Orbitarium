@@ -25,6 +25,8 @@ public class GameController : MonoBehaviour
     public float EnemyInitialCount = 3;
     public float EnemyInitialImpulse = 10;
     public float DestroyedEnemyTimeToLiveSec = 5;
+    public Material StrobeMaterial;
+    public string StrobeTag = "Strobe";
 
     private HUDController hudController;
     private GameObject player;
@@ -72,7 +74,67 @@ public class GameController : MonoBehaviour
         FPSCanvas.SetActive(false);
         GamePauseCanvas.SetActive(false);
         GameOverCanvas.SetActive(false);
+        SetupStrobes();
         gameState = GameState.START_NOT_ACCEPTING_INPUT;
+    }
+
+    private void SetupStrobes()
+    {
+        strobes = GameObject.FindGameObjectsWithTag(StrobeTag);
+        if (strobes != null && strobes.Length > 0)
+        {
+            //lightData = new SpriteLights.LightData[strobes.Length];
+            for (int i = 0; i < strobes.Length; i++)
+            {
+                lightData = new SpriteLights.LightData[1];
+                lightData[0] = new SpriteLights.LightData();
+                lightData[0].position = strobes[i].transform.position;
+                lightData[0].strobeID = i;
+                lightData[0].strobeGroupID = Random.Range(0, 1);
+                lightData[0].brightness = 1;
+                SpriteLights.CreateLights("Strobes", lightData, StrobeMaterial, strobes[i]);
+            }
+        }
+        strobePositionTimer = 0;
+        //        UpdateStrobes();
+        float SecBetweenFlash = 1;
+        float strobeTimeStep = lightData.Length == 0 ? 20 : SecBetweenFlash / lightData.Length;
+        float globalBrightnessOffset = 0;
+        float fov = Camera.main.fieldOfView;
+        float screenHeight = Screen.height;
+        SpriteLights.Init(strobeTimeStep, globalBrightnessOffset, fov, screenHeight);
+    }
+
+    private GameObject[] strobes = new GameObject[0];
+    private float strobePositionTimer = 0;
+    private float secondsBetweenStrobeUpdate = 1;
+    private SpriteLights.LightData[] lightData = new SpriteLights.LightData[0];
+
+    private void UpdateStrobes()
+    {
+        /*
+        if (strobePositionTimer > 0)
+        {
+            strobePositionTimer -= Time.deltaTime;
+        }
+        else
+        {
+            if (strobes != null && strobes.Length > 0)
+            {
+                for (int i = 0; i < strobes.Length; i++)
+                {
+                    lightData[i].position = strobes[i].transform.position;
+                }
+            }
+            float SecBetweenFlash = 1;
+            float strobeTimeStep = lightData.Length == 0 ? 20 : SecBetweenFlash / lightData.Length;
+            float globalBrightnessOffset = 0;
+            float fov = Camera.main.fieldOfView;
+            float screenHeight = Screen.height;
+            SpriteLights.Init(strobeTimeStep, globalBrightnessOffset, fov, screenHeight);
+            strobePositionTimer = secondsBetweenStrobeUpdate;
+        }
+        */
     }
 
     private void TransitionToRunning()
@@ -184,6 +246,7 @@ public class GameController : MonoBehaviour
                 break;
             case GameState.RUNNING:
                 UpdateShip();
+                UpdateStrobes();
                 UpdateCheckForDestroyedEnemies();
                 UpdateCheckForGamePause();
                 break;
