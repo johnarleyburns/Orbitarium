@@ -442,7 +442,8 @@ public class Weapon : MonoBehaviour
         // Launch a projectile if this is a projectile type weapon
         if (type == WeaponType.Projectile)
         {
-            if (fireTimer >= actualROF && canFire)
+            if (fireTimer >= actualROF && burstCounter < burstRate && canFire)
+//                if (fireTimer >= actualROF && canFire)
             {
                 yield return DelayLaunch();
             }

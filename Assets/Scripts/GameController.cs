@@ -578,6 +578,11 @@ public class GameController : MonoBehaviour
         }
     }
 
+    public bool IsEnemyActive(GameObject ship)
+    {
+        return enemyShips.Contains(ship) && !destroyedEnemiesTimeToLive.ContainsKey(ship);
+    }
+
     private void DestroyEnemy(GameObject enemyShip)
     {
         if (enemyShip != null)

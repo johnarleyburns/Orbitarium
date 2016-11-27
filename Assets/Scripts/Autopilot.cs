@@ -17,6 +17,8 @@ public class Autopilot : MonoBehaviour
     public float RendevousDistToVFactor = 0.01f;
     public float RendevousMarginVPct = 0.5f;
     public float StrafeDistM = 150f;
+    public float GunRangeM = 1000f;
+    public float MinFireTargetAngle = 0.5f;
 
     private float NavigationalConstant = 3;
     private float NavigationalConstantAPNG = 10;
@@ -349,16 +351,14 @@ public class Autopilot : MonoBehaviour
             q = Quaternion.Euler(q.eulerAngles.x, q.eulerAngles.y, transform.rotation.eulerAngles.z);
             bool converged = ship.ConvergeSpin(q, MinRotToTargetDeltaTheta);
             float targetAngle = Quaternion.Angle(transform.rotation, q);
-            bool aligned = targetAngle <= 1;
+            bool aligned = targetAngle <= MinFireTargetAngle;
             float dist;
             PhysicsUtils.CalcDistance(transform, target, out dist);
             bool inRange = dist <= MainGunRangeM;
-            if (aligned && inRange)
+            bool targetActive = gameController.IsEnemyActive(target);
+            if (aligned && inRange && targetActive)
             {
                 yield return PushAndStartCoroutine(FireGunCo());
-//                mainGun.RemoteFire();
-//                yield return PushAndStartCoroutine(FireGunCo());
-//
             }
             if (converged)
             {
@@ -477,7 +477,8 @@ public class Autopilot : MonoBehaviour
         float timeToRot = Mathf.Sqrt(angleToTgt / ship.CurrentRCSAngularDegPerSec());
         float timeToTgt = (dist - StrafeDistM)/ Mathf.Abs(relv);
         float mecoTime = NavigationalConstant * timeToRot; // include aim
-        if (relv > 0 && mecoTime > timeToTgt)
+        //if (relv > 0 && mecoTime > timeToTgt)
+        if (dist <= GunRangeM || (relv > 0 && mecoTime > timeToTgt))
         {
             ship.MainEngineCutoff();
             yield break;
