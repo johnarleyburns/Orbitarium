@@ -24,17 +24,16 @@ public class GameController : MonoBehaviour
     public float EnemyRandomSpreadMeters = 200;
     public float EnemyInitialCount = 3;
     public float EnemyInitialImpulse = 10;
-    public float DestroyedEnemyTimeToLiveSec = 5;
     public Material StrobeMaterial;
     public string StrobeTag = "Strobe";
 
     private HUDController hudController;
+    private InputController inputController;
+    private TargetDB targetDB;
+    private EnemyTracker enemyTracker;
     private GameObject player;
-    private List<GameObject> enemyShips = new List<GameObject>();
-    private List<GameObject> targets = new List<GameObject>();
     private float gameStartInputTimer = -1;
     private float gameOverInputTimer = -1;
-    private Dictionary<GameObject, float> destroyedEnemiesTimeToLive = new Dictionary<GameObject, float>();
     private GameState gameState;
     public enum GameState
     {
@@ -52,12 +51,27 @@ public class GameController : MonoBehaviour
     void Start()
     {
         hudController = GetComponent<HUDController>();
+        inputController = GetComponent<InputController>();
+        targetDB = GetComponent<TargetDB>();
+        enemyTracker = GetComponent<EnemyTracker>();
+        targetDB.gameController = this;
+        enemyTracker.gameController = this;
         TransitionToStarting();
     }
 
-    public HUDController GetHUD()
+    public HUDController HUD()
     {
         return hudController;
+    }
+
+    public InputController InputControl()
+    {
+        return inputController;
+    }
+
+    public TargetDB TargetData()
+    {
+        return targetDB;
     }
 
     #region Transitions
@@ -83,7 +97,6 @@ public class GameController : MonoBehaviour
         strobes = GameObject.FindGameObjectsWithTag(StrobeTag);
         if (strobes != null && strobes.Length > 0)
         {
-            //lightData = new SpriteLights.LightData[strobes.Length];
             for (int i = 0; i < strobes.Length; i++)
             {
                 lightData = new SpriteLights.LightData[1];
@@ -96,7 +109,6 @@ public class GameController : MonoBehaviour
             }
         }
         strobePositionTimer = 0;
-        //        UpdateStrobes();
         float SecBetweenFlash = 1;
         float strobeTimeStep = lightData.Length == 0 ? 20 : SecBetweenFlash / lightData.Length;
         float globalBrightnessOffset = 0;
@@ -109,33 +121,6 @@ public class GameController : MonoBehaviour
     private float strobePositionTimer = 0;
     private float secondsBetweenStrobeUpdate = 1;
     private SpriteLights.LightData[] lightData = new SpriteLights.LightData[0];
-
-    private void UpdateStrobes()
-    {
-        /*
-        if (strobePositionTimer > 0)
-        {
-            strobePositionTimer -= Time.deltaTime;
-        }
-        else
-        {
-            if (strobes != null && strobes.Length > 0)
-            {
-                for (int i = 0; i < strobes.Length; i++)
-                {
-                    lightData[i].position = strobes[i].transform.position;
-                }
-            }
-            float SecBetweenFlash = 1;
-            float strobeTimeStep = lightData.Length == 0 ? 20 : SecBetweenFlash / lightData.Length;
-            float globalBrightnessOffset = 0;
-            float fov = Camera.main.fieldOfView;
-            float screenHeight = Screen.height;
-            SpriteLights.Init(strobeTimeStep, globalBrightnessOffset, fov, screenHeight);
-            strobePositionTimer = secondsBetweenStrobeUpdate;
-        }
-        */
-    }
 
     private void TransitionToRunning()
     {
@@ -246,8 +231,6 @@ public class GameController : MonoBehaviour
                 break;
             case GameState.RUNNING:
                 UpdateShip();
-                UpdateStrobes();
-                UpdateCheckForDestroyedEnemies();
                 UpdateCheckForGamePause();
                 break;
             case GameState.PAUSED:
@@ -291,36 +274,6 @@ public class GameController : MonoBehaviour
         if (Input.anyKey)
         {
             TransitionToRunning();
-        }
-    }
-
-    private void UpdateCheckForDestroyedEnemies()
-    {
-        HashSet<GameObject> pruneEnemies = new HashSet<GameObject>();
-        List<GameObject> keys = new List<GameObject>(destroyedEnemiesTimeToLive.Keys);
-        foreach (GameObject enemyShip in keys)
-        {
-            float timeToLive;
-            if (destroyedEnemiesTimeToLive.TryGetValue(enemyShip, out timeToLive))
-            {
-                timeToLive -= Time.deltaTime;
-                if (timeToLive <= 0)
-                {
-                    pruneEnemies.Add(enemyShip);
-                }
-                else
-                {
-                    destroyedEnemiesTimeToLive[enemyShip] = timeToLive;
-                }
-            }
-        }
-        foreach (GameObject g in pruneEnemies)
-        {
-            destroyedEnemiesTimeToLive.Remove(g);
-        }
-        foreach (GameObject g in pruneEnemies)
-        {
-            DestroyEnemy(g);
         }
     }
 
@@ -399,7 +352,7 @@ public class GameController : MonoBehaviour
     {
         float playerImpulse = Random.Range(0, PlayerInitialImpulse);
         GravityEngine.instance.ApplyImpulse(player.GetComponent<NBody>(), playerImpulse * player.transform.forward);
-        foreach (GameObject enemyShip in enemyShips)
+        foreach (GameObject enemyShip in targetDB.GetTargets(TargetDB.TargetType.ENEMY_SHIP))
         {
             float enemyImpulse = Random.Range(0, EnemyInitialImpulse);
             GravityEngine.instance.ApplyImpulse(enemyShip.GetComponent<NBody>(), enemyImpulse * -player.transform.forward);
@@ -426,8 +379,7 @@ public class GameController : MonoBehaviour
         string nameRoot = controller.GetShipModel().GetComponent<EnemyShip>().VisibleName;
         enemyShip.name = string.Format("{0}-{1}", nameRoot, suffix);
         hudController.AddEnemyIndicator(enemyShip);
-        enemyShips.Add(enemyShip);
-        AddTarget(enemyShip);
+        targetDB.AddTarget(enemyShip, TargetDB.TargetType.ENEMY_SHIP);
         hudController.SelectNextTargetPreferClosestEnemy();
     }
 
@@ -440,20 +392,6 @@ public class GameController : MonoBehaviour
         OverviewCamera.GetComponent<CameraSpin>().UpdateTarget(playerModel);
     }
 
-    private void AddTarget(GameObject target)
-    {
-        targets.Add(target);
-        GetComponent<InputController>().PropertyChanged("TargetList", targets);
-        hudController.SelectNextReferenceBody();
-    }
-
-    private void RemoveTarget(GameObject target)
-    {
-        targets.Remove(target);
-        hudController.RemoveIndicator(target.transform);
-        GetComponent<InputController>().PropertyChanged("TargetList", targets);
-    }
-
     public GameObject GetPlayer()
     {
         return player;
@@ -464,135 +402,80 @@ public class GameController : MonoBehaviour
         return player.GetComponent<PlayerShipController>().GetShipModel().GetComponent<PlayerShip>();
     }
 
-    public int EnemyCount()
-    {
-        return enemyShips.Count;
-    }
-
-    public GameObject GetEnemy(int i)
-    {
-        if (i >= 0 && i < enemyShips.Count)
-        {
-            return enemyShips[i];
-        }
-        else
-        {
-            return null;
-        }
-    }
-
-    public int TargetCount()
-    {
-        return targets.Count;
-    }
-
-    public GameObject GetTarget(int i)
-    {
-        if (i >= 0 && i < targets.Count)
-        {
-            return targets[i];
-        }
-        else
-        {
-            return null;
-        }
-    }
-
-    public int ClosestEnemy()
+    public GameObject ClosestTarget()
     {
         float dist = 0;
-        int index = -1;
-        for (int i = 0; i < targets.Count; i++)
+        GameObject target;
+        foreach (GameObject t in targetDB.GetAllTargets())
         {
-            GameObject t = targets[i];
-            if (enemyShips.Contains(t))
-            {
-                float d;
-                PhysicsUtils.CalcDistance(player.transform, t, out d);
-                if (d < dist || index == -1)
-                {
-                    dist = d;
-                    index = i;
-                }
-            }
-        }
-        return index;
-    }
-
-    public int ClosestTarget()
-    {
-        float dist = 0;
-        int index = -1;
-        for (int i = 0; i < targets.Count; i++)
-        {
-            GameObject t = targets[i];
             float d;
             PhysicsUtils.CalcDistance(player.transform, t, out d);
-            if (d < dist || index == -1)
+            if (d < dist || dist == 0)
             {
                 dist = d;
-                index = i;
+                target = t;
             }
         }
-        return index;
+        return target = null;
+    }
+
+    public GameObject ClosestTarget(TargetDB.TargetType targetType)
+    {
+        float dist = 0;
+        GameObject target = null;
+        foreach (GameObject t in targetDB.GetTargets(targetType))
+        {
+            float d;
+            PhysicsUtils.CalcDistance(player.transform, t, out d);
+            if (d < dist || dist == 0)
+            {
+                dist = d;
+                target = t;
+            }
+        }
+        return target;
     }
 
     private void AddFixedTargets()
     {
         hudController.AddPlanetaryObjectIndicators(Didymos, Didymoon);
-        AddTarget(Didymos);
-        AddTarget(Didymoon);
+        targetDB.AddTarget(Didymos, TargetDB.TargetType.ASTEROID);
+        targetDB.AddTarget(Didymoon, TargetDB.TargetType.MOON);
         hudController.AddFixedIndicators();
     }
 
     private void CleanupScene()
     {
-        ClearTargets();
-        DestroyPlayer();
-        DestroyEnemies();
-    }
-
-    private void ClearTargets()
-    {
+        GetPlayerShip().ExecuteAutopilotCommand(Autopilot.Command.OFF);
         hudController.ClearTargetIndicators();
-        targets.Clear();
-        GetComponent<InputController>().PropertyChanged("TargetList", targets);
+        targetDB.ClearTargets();
+        enemyTracker.ClearTimeToLive();
+        DestroyPlayer();
     }
-
-    private void DestroyEnemies()
-    {
-        List<GameObject> allEnemies = new List<GameObject>(enemyShips);
-        foreach (GameObject enemyShip in allEnemies)
-        {
-            DestroyEnemy(enemyShip);
-        }
-        enemyShips.Clear();
-        destroyedEnemiesTimeToLive.Clear();
-    }
-
+    
     public void DestroyEnemyShipByCollision(GameObject enemyShip)
     {
-        if (!destroyedEnemiesTimeToLive.ContainsKey(enemyShip))
-        {
-            destroyedEnemiesTimeToLive.Add(enemyShip, DestroyedEnemyTimeToLiveSec);
-        }
+        enemyTracker.KillEnemy(enemyShip);
     }
 
-    public bool IsEnemyActive(GameObject ship)
+    public bool IsEnemyActive(GameObject target)
     {
-        return enemyShips.Contains(ship) && !destroyedEnemiesTimeToLive.ContainsKey(ship);
+        TargetDB.TargetType t = targetDB.GetTargetType(target);
+        bool isEnemy = t == TargetDB.TargetType.ENEMY_BASE || t == TargetDB.TargetType.ENEMY_SHIP;
+        bool isDying = enemyTracker.IsEnemyDying(target);
+        return isEnemy && !isDying;
     }
 
-    private void DestroyEnemy(GameObject enemyShip)
+    public void DestroyEnemy(GameObject enemyShip)
     {
         if (enemyShip != null)
         {
-            if (enemyShip == GetHUD().GetReferenceBody())
+            if (enemyShip == HUD().GetSelectedTarget())
             {
                 GetPlayerShip().ExecuteAutopilotCommand(Autopilot.Command.OFF);
             }
-            RemoveTarget(enemyShip);
-            enemyShips.Remove(enemyShip);
+            hudController.RemoveIndicator(enemyShip.transform);
+            targetDB.RemoveTarget(enemyShip);
             hudController.SelectNextTargetPreferClosestEnemy();
             //GravityEngine.instance.RemoveBody(enemyShip);     
             //Destroy(enemyShip);

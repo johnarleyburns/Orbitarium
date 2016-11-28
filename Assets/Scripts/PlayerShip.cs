@@ -117,7 +117,7 @@ public class PlayerShip : MonoBehaviour
 
     public void ExecuteAutopilotCommand(Autopilot.Command command)
     {
-        autopilot.ExecuteCommand(command, gameController.GetHUD().GetReferenceBody());
+        autopilot.ExecuteCommand(command, gameController.HUD().GetSelectedTarget());
         inputController.PropertyChanged("CommandExecuted", command);
     }
     
@@ -233,7 +233,7 @@ public class PlayerShip : MonoBehaviour
 
     private void UpdateTargetSelection()
     {
-        UpdateDoubleTap(KeyCode.KeypadMultiply, ref doubleTapTargetSelTimer, gameController.GetHUD().SelectNextTarget, RotateTowardsTarget);
+        UpdateDoubleTap(KeyCode.KeypadMultiply, ref doubleTapTargetSelTimer, gameController.HUD().SelectNextTargetPreferClosestEnemy, RotateTowardsTarget);
     }
 
     private void UpdateKillRotV()
@@ -299,7 +299,7 @@ public class PlayerShip : MonoBehaviour
 
     private void Rendezvous()
     {
-        autopilot.ExecuteCommand(Autopilot.Command.RENDEZVOUS, gameController.GetHUD().GetReferenceBody());
+        autopilot.ExecuteCommand(Autopilot.Command.RENDEZVOUS, gameController.HUD().GetSelectedTarget());
         inputController.PropertyChanged("CommandExecuted", Autopilot.Command.RENDEZVOUS);
     }
 
@@ -405,7 +405,7 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            autopilot.ExecuteCommand(Autopilot.Command.ACTIVE_TRACK, gameController.GetHUD().GetReferenceBody());
+            autopilot.ExecuteCommand(Autopilot.Command.ACTIVE_TRACK, gameController.HUD().GetSelectedTarget());
             inputController.PropertyChanged("CommandExecuted", Autopilot.Command.ACTIVE_TRACK);
             ToggleButtons(false, true, false, false);
         }
@@ -425,7 +425,7 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            autopilot.ExecuteCommand(Autopilot.Command.KILL_REL_V, gameController.GetHUD().GetReferenceBody());
+            autopilot.ExecuteCommand(Autopilot.Command.KILL_REL_V, gameController.HUD().GetSelectedTarget());
             inputController.PropertyChanged("CommandExecuted", Autopilot.Command.KILL_REL_V);
             ToggleButtons(false, true, false, false);
         }
@@ -465,7 +465,7 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            autopilot.ExecuteCommand(Autopilot.Command.INTERCEPT, gameController.GetHUD().GetReferenceBody());
+            autopilot.ExecuteCommand(Autopilot.Command.INTERCEPT, gameController.HUD().GetSelectedTarget());
             inputController.PropertyChanged("CommandExecuted", Autopilot.Command.INTERCEPT);
             ToggleButtons(false, true, false, false);
         }
@@ -476,7 +476,7 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            autopilot.ExecuteCommand(Autopilot.Command.STRAFE, gameController.GetHUD().GetReferenceBody());
+            autopilot.ExecuteCommand(Autopilot.Command.STRAFE, gameController.HUD().GetSelectedTarget());
             inputController.PropertyChanged("CommandExecuted", Autopilot.Command.STRAFE);
             ToggleButtons(false, true, false, false);
         }
