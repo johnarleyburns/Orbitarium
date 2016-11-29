@@ -21,6 +21,11 @@ public class TargetDB : MonoBehaviour {
         ENEMY_BASE
     }
 
+    public int TargetTypeIndex(TargetType t)
+    {
+        return (int)t;
+    }
+
     // Use this for initialization
     void Start () {
 	
@@ -33,19 +38,26 @@ public class TargetDB : MonoBehaviour {
 
     public void AddTarget(GameObject target, TargetType targetType)
     {
-        targets[target] = targetType;
-        if (!targetOrder.Contains(target))
+        if (target != null)
         {
-            targetOrder.Add(target);
+            targets[target] = targetType;
+            if (!targetOrder.Contains(target))
+            {
+                targetOrder.Add(target);
+            }
+            gameController.InputControl().PropertyChanged("TargetList", targetOrder);
+
         }
-        gameController.InputControl().PropertyChanged("TargetList", targetOrder);
     }
 
     public void RemoveTarget(GameObject target)
     {
-        targetOrder.Remove(target);
-        targets.Remove(target);
-        gameController.InputControl().PropertyChanged("TargetList", targetOrder);
+        if (target != null)
+        {
+            targetOrder.Remove(target);
+            targets.Remove(target);
+            gameController.InputControl().PropertyChanged("TargetList", targetOrder);
+        }
     }
 
     public void ClearTargets()
@@ -58,7 +70,7 @@ public class TargetDB : MonoBehaviour {
     public TargetType GetTargetType(GameObject target)
     {
         TargetType t;
-        if (!targets.TryGetValue(target, out t))
+        if (target == null || !targets.TryGetValue(target, out t))
         {
             t = TargetType.UNKNOWN;
         }
@@ -77,7 +89,16 @@ public class TargetDB : MonoBehaviour {
 
     public int GetTargetIndex(GameObject target)
     {
-        return targetOrder.IndexOf(target);
+        int i;
+        if (target != null)
+        {
+            i = targetOrder.IndexOf(target);
+        }
+        else
+        {
+            i = -1;
+        }
+        return i;
     }
 
     public IEnumerable<GameObject> GetAllTargets()

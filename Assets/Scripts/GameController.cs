@@ -124,7 +124,8 @@ public class GameController : MonoBehaviour
 
     private void TransitionToRunning()
     {
-        AddFixedTargets();
+        AddPlanetaryBodies();
+        AddHUDFixedIndicators();
         InstantiateEnemies();
         SetupInitialVelocities();
         FPSCanvas.SetActive(true);
@@ -378,8 +379,8 @@ public class GameController : MonoBehaviour
         controller.SetGameController(this);
         string nameRoot = controller.GetShipModel().GetComponent<EnemyShip>().VisibleName;
         enemyShip.name = string.Format("{0}-{1}", nameRoot, suffix);
-        hudController.AddEnemyIndicator(enemyShip);
         targetDB.AddTarget(enemyShip, TargetDB.TargetType.ENEMY_SHIP);
+        hudController.AddTargetIndicator(enemyShip);
         hudController.SelectNextTargetPreferClosestEnemy();
     }
 
@@ -419,28 +420,52 @@ public class GameController : MonoBehaviour
         return target = null;
     }
 
-    public GameObject ClosestTarget(TargetDB.TargetType targetType)
+    public GameObject NextClosestTarget(GameObject g, TargetDB.TargetType? targetType = null)
     {
-        float dist = 0;
         GameObject target = null;
-        foreach (GameObject t in targetDB.GetTargets(targetType))
+        List<GameObject> targets;
+        if (targetType != null)
+        {
+            targets = new List<GameObject>(targetDB.GetTargets(targetType.Value));
+        }
+        else
+        {
+            targets = new List<GameObject>(targetDB.GetAllTargets());
+        }
+        Dictionary<GameObject, float> targetDist = new Dictionary<GameObject, float>();
+        foreach (GameObject t in targets)
         {
             float d;
             PhysicsUtils.CalcDistance(player.transform, t, out d);
-            if (d < dist || dist == 0)
+            targetDist.Add(t, d);
+        }
+        targets.Sort((x, y) => targetDist[x].CompareTo(targetDist[y]));
+        if (targets.Count > 0)
+        {
+            int i = targets.IndexOf(g);
+            if (i == -1)
             {
-                dist = d;
-                target = t;
+                target = targets[0];
+            }
+            else if (targets.Count > 1)
+            {
+                int j = (i + 1) % targets.Count;
+                target = targets[j];
             }
         }
         return target;
     }
 
-    private void AddFixedTargets()
+    private void AddPlanetaryBodies()
     {
-        hudController.AddPlanetaryObjectIndicators(Didymos, Didymoon);
         targetDB.AddTarget(Didymos, TargetDB.TargetType.ASTEROID);
         targetDB.AddTarget(Didymoon, TargetDB.TargetType.MOON);
+        hudController.AddTargetIndicator(Didymos);
+        hudController.AddTargetIndicator(Didymoon);
+    }
+
+    private void AddHUDFixedIndicators()
+    {
         hudController.AddFixedIndicators();
     }
 

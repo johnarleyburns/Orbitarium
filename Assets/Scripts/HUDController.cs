@@ -9,13 +9,9 @@ public class HUDController : MonoBehaviour, IPropertyChangeObserver
     private InputController inputController;
     private OffScreenIndicator OffscreenIndicator;
     private GameObject selectedTarget = null;
-    private int selectedTargetType = TARGET_TYPE_ALL;
-    private static int TARGET_TYPE_ALL = 0;
-    private static int TARGET_TYPE_ENEMY_SHIP = 1;
-    private static int HUD_INDICATOR_DIDYMOS = 0;
-    private static int HUD_INDICATOR_DIDYMOON = 3;
-    private static int HUD_INDICATOR_ENEMY_SHIP_TEMPLATE = 4;
-    private static int HUD_INDICATOR_TARGET_DIRECTION = 5;
+    private static int HUD_INDICATOR_NONTHREAT_TEMPLATE = 0;
+    private static int HUD_INDICATOR_ENEMY_SHIP_TEMPLATE = 3;
+    private static int HUD_INDICATOR_TARGET_DIRECTION = 4;
     private static float RelativeVelocityIndicatorScale = 1000;
     private Dictionary<GameObject, int> targetIndicatorId = new Dictionary<GameObject, int>();
 
@@ -76,15 +72,15 @@ public class HUDController : MonoBehaviour, IPropertyChangeObserver
             int i = 0;
             foreach (GameObject target in gameController.TargetData().GetAllTargets())
             {
-                int indicatorId = targetIndicatorId[target];
-                UpdateTargetIndicator(indicatorId, target);
+                UpdateTargetIndicator(target);
                 i++;
             }
         }
     }
 
-    private void UpdateTargetIndicator(int indicatorId, GameObject target)
+    private void UpdateTargetIndicator(GameObject target)
     {
+        int indicatorId = targetIndicatorId[target];
         bool isSelectedTarget = target == selectedTarget;
         bool calcRelV = target.GetComponent<NBody>() != null;
         if (calcRelV)
@@ -184,39 +180,28 @@ public class HUDController : MonoBehaviour, IPropertyChangeObserver
         else {
             HideTargetIndicator();
         }
+        TargetDB.TargetType t = gameController.TargetData().GetTargetType(target);
         int i = gameController.TargetData().GetTargetIndex(target);
+        int j = gameController.TargetData().TargetTypeIndex(t);
+        UpdateTargetIndicator(target);
         inputController.PropertyChanged("SelectTarget", i);
-        UpdateTargetType();
-    }
-
-    private void UpdateTargetType()
-    {
-        selectedTargetType = TARGET_TYPE_ALL;
-        if (selectedTarget != null)
-        {
-            TargetDB.TargetType t = gameController.TargetData().GetTargetType(selectedTarget);
-            if (t == TargetDB.TargetType.ENEMY_BASE || t == TargetDB.TargetType.ENEMY_SHIP)
-            {
-                selectedTargetType = TARGET_TYPE_ENEMY_SHIP;
-            }
-        }
-        inputController.PropertyChanged("SelectedTargetType", selectedTargetType);
+        inputController.PropertyChanged("SelectedTargetType", j);
     }
     
     public void SelectNextTargetPreferClosestEnemy()
     {
-        GameObject target = gameController.ClosestTarget(TargetDB.TargetType.ENEMY_SHIP);
+        GameObject target = gameController.NextClosestTarget(selectedTarget, TargetDB.TargetType.ENEMY_SHIP);
         if (target == null)
         {
-            target = gameController.ClosestTarget(TargetDB.TargetType.ENEMY_BASE);
+            target = gameController.NextClosestTarget(selectedTarget, TargetDB.TargetType.ENEMY_BASE);
         }
         if (target == null)
         {
-            target = gameController.ClosestTarget(TargetDB.TargetType.FRIEND_BASE);
+            target = gameController.NextClosestTarget(selectedTarget, TargetDB.TargetType.FRIEND_BASE);
         }
         if (target == null)
         {
-            target = gameController.ClosestTarget();
+            target = gameController.NextClosestTarget(selectedTarget);
         }
         SelectTarget(target);
     }
@@ -227,32 +212,40 @@ public class HUDController : MonoBehaviour, IPropertyChangeObserver
         SelectTarget(target);
     }
 
-    public void AddEnemyIndicator(GameObject enemyShip)
+    public void AddFixedIndicators()
     {
-        int newIndicatorId = OffscreenIndicator.AddNewIndicatorFromClone(HUD_INDICATOR_ENEMY_SHIP_TEMPLATE, enemyShip.name);
-        OffscreenIndicator.AddIndicator(enemyShip.transform, newIndicatorId);
-        targetIndicatorId[enemyShip] = newIndicatorId;
+        OffscreenIndicator.AddFixedIndicators(); // relative direction and target highlight vectors
     }
 
-    public void AddPlanetaryObjectIndicators(GameObject didymos, GameObject didymoon)
+    public void AddTargetIndicator(GameObject target)
     {
-        targetIndicatorId[didymos] = HUD_INDICATOR_DIDYMOS;
-        targetIndicatorId[didymoon] = HUD_INDICATOR_DIDYMOON;
+        TargetDB.TargetType t = gameController.TargetData().GetTargetType(target);
+        int indicatorTemplate;
+        switch (t)
+        {
+            default:
+            case TargetDB.TargetType.PLANET:
+            case TargetDB.TargetType.ASTEROID:
+            case TargetDB.TargetType.MOON:
+                indicatorTemplate = HUD_INDICATOR_NONTHREAT_TEMPLATE;
+                break;
+            case TargetDB.TargetType.ENEMY_BASE:
+            case TargetDB.TargetType.ENEMY_SHIP:
+                indicatorTemplate = HUD_INDICATOR_ENEMY_SHIP_TEMPLATE;
+                break;
+            case TargetDB.TargetType.FRIEND_SHIP:
+            case TargetDB.TargetType.FRIEND_BASE:
+                indicatorTemplate = HUD_INDICATOR_NONTHREAT_TEMPLATE;
+                break;
+        }
+        int newIndicatorId = OffscreenIndicator.AddNewIndicatorFromClone(indicatorTemplate, target.name);
+        OffscreenIndicator.AddIndicator(target.transform, newIndicatorId);
+        targetIndicatorId[target] = newIndicatorId;
     }
 
     public void RemoveIndicators()
     {
         OffscreenIndicator.RemoveIndicators();
-    }
-
-    public void AddTargetIndicator(GameObject target, int indicatorId)
-    {
-        targetIndicatorId[target] = indicatorId;
-    }
-
-    public void AddFixedIndicators()
-    {
-        OffscreenIndicator.AddFixedIndicators();
     }
 
     public void RemoveIndicator(Transform transform)
