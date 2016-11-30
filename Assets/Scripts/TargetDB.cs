@@ -8,6 +8,7 @@ public class TargetDB : MonoBehaviour {
 
     private List<GameObject> targetOrder = new List<GameObject>();
     private Dictionary<GameObject, TargetType> targets = new Dictionary<GameObject, TargetType>();
+    private Dictionary<GameObject, float> targetRadius = new Dictionary<GameObject, float>();
 
     public enum TargetType
     {
@@ -27,20 +28,21 @@ public class TargetDB : MonoBehaviour {
     }
 
     // Use this for initialization
-    void Start () {
-	
-	}
-	
-	// Update is called once per frame
-	void Update () {
-	
-	}
+    void Start() {
 
-    public void AddTarget(GameObject target, TargetType targetType)
+    }
+
+    // Update is called once per frame
+    void Update() {
+
+    }
+
+    public void AddTarget(GameObject target, TargetType targetType, float targetRadiusM)
     {
         if (target != null)
         {
             targets[target] = targetType;
+            targetRadius[target] = targetRadiusM;
             if (!targetOrder.Contains(target))
             {
                 targetOrder.Add(target);
@@ -55,6 +57,7 @@ public class TargetDB : MonoBehaviour {
         if (target != null)
         {
             targetOrder.Remove(target);
+            targetRadius.Remove(target);
             targets.Remove(target);
             gameController.InputControl().PropertyChanged("TargetList", targetOrder);
         }
@@ -63,6 +66,7 @@ public class TargetDB : MonoBehaviour {
     public void ClearTargets()
     {
         targetOrder.Clear();
+        targetRadius.Clear();
         targets.Clear();
         gameController.InputControl().PropertyChanged("TargetList", targetOrder);
     }
@@ -75,6 +79,16 @@ public class TargetDB : MonoBehaviour {
             t = TargetType.UNKNOWN;
         }
         return t;
+    }
+
+    public float GetTargetRadius(GameObject target)
+    {
+        float r;
+        if (target == null || !targetRadius.TryGetValue(target, out r))
+        {
+            r = 0;
+        }
+        return r;
     }
 
     public IEnumerable<GameObject> GetTargets(TargetType targetType)

@@ -14,8 +14,7 @@ public class Autopilot : MonoBehaviour
     public float MinRotToTargetDeltaTheta = 0.2f;
     public float MinAPNGDeltaTheta = 1f;
     public float MinMainEngineBurnSec = 0.5f;
-    public float RendevousDistToVFactor = 0.01f;
-    public float RendevousMarginVPct = 0.5f;
+    public float RendezvousDistM = 100;
     public float StrafeDistM = 150f;
     public float GunRangeM = 1000f;
     public float MinFireTargetAngle = 0.5f;
@@ -520,16 +519,32 @@ public class Autopilot : MonoBehaviour
             float relv;
             Vector3 relVelUnit;
             PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
-            float secToTarget = dist / relv;
-            float secToStop = relv / ship.CurrentMainEngineAccPerSec() + 10; // estimated rotate time;
+            float radius = gameController.TargetData().GetTargetRadius(target);
+            float rendezvousDist = dist - (radius + RendezvousDistM);
+            float secToTarget = rendezvousDist / relv;
+            float turnAngle = 180;
+            float secToTurn = turnAngle / ship.CurrentRCSAngularDegPerSec(); // speedup * slowdown 
+            float secToZero = relv / ship.CurrentMainEngineAccPerSec(); // estimated rotate time;
+            float secToStop = secToTurn + secToZero;
             if (secToTarget < secToStop)
             {
+                if (ship.IsMainEngineGo())
+                {
+                    ship.MainEngineCutoff();
+                }
                 yield return PushAndStartCoroutine(KillRelVCo(target));
                 yield return PushAndStartCoroutine(RotToTarget(target));
                 yield break;
             }
-            yield return PushAndStartCoroutine(APNGRotateBurnCo(target));
-            yield return new WaitForEndOfFrame();
+            else
+            {
+                if (!ship.IsMainEngineGo())
+                {
+                    ship.MainEngineGo();
+                }
+                yield return PushAndStartCoroutine(APNGRotateBurnCo(target));
+                yield return new WaitForEndOfFrame();
+            }
         }
     }
 

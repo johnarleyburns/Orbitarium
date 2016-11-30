@@ -1,0 +1,627 @@
+fileFormatVersion: 2
+guid: 8ea0ddd6a20adbd4192b07695239e3db
+timeCreated: 1480463347
+licenseType: Free
+ModelImporter:
+  serializedVersion: 19
+  fileIDToRecycleName:
+    100000: cupola_open
+    100002: //RootNode
+    100004: JEM
+    100006: NODE1
+    100008: node3-ani
+    100010: pma3-ext
+    400000: cupola_open
+    400002: //RootNode
+    400004: JEM
+    400006: NODE1
+    400008: node3-ani
+    400010: pma3-ext
+    2300000: cupola_open
+    2300002: node3-ani
+    2300004: pma3-ext
+    3300000: cupola_open
+    3300002: node3-ani
+    3300004: pma3-ext
+    4300000: cupola_open
+    4300002: node3-ani
+    4300004: pma3-ext
+    7400000: ISS_PIVOT|AIRLOCK|Base Stack|DefaultLayer
+    7400002: ISS_PIVOT|al-ext:Gas1|Base Stack|DefaultLayer
+    7400004: ISS_PIVOT|al-ext:Gas2|Base Stack|DefaultLayer
+    7400006: ISS_PIVOT|al-ext:Gas3|Base Stack|DefaultLayer
+    7400008: ISS_PIVOT|al-ext:Gas4|Base Stack|DefaultLayer
+    7400010: ISS_PIVOT|al-ext:main-struct|Base Stack|DefaultLayer
+    7400012: ISS_PIVOT|al-ext:Toolbox|Base Stack|DefaultLayer
+    7400014: ISS_PIVOT|AMS2|Base Stack|DefaultLayer
+    7400016: ISS_PIVOT|armA:Boom1|Base Stack|DefaultLayer
+    7400018: ISS_PIVOT|armA:Boom2|Base Stack|DefaultLayer
+    7400020: ISS_PIVOT|armA:EndA|Base Stack|DefaultLayer
+    7400022: ISS_PIVOT|armA:EP-joint|Base Stack|DefaultLayer
+    7400024: ISS_PIVOT|armA:SP-joint|Base Stack|DefaultLayer
+    7400026: ISS_PIVOT|armA:SR-joint|Base Stack|DefaultLayer
+    7400028: ISS_PIVOT|armA:SY-joint|Base Stack|DefaultLayer
+    7400030: ISS_PIVOT|armA:WP-joint|Base Stack|DefaultLayer
+    7400032: ISS_PIVOT|armA:WR-joint|Base Stack|DefaultLayer
+    7400034: ISS_PIVOT|armA:WY-joint|Base Stack|DefaultLayer
+    7400036: ISS_PIVOT|Camera.001|Base Stack|DefaultLayer
+    7400038: ISS_PIVOT|Camera_pivot|Base Stack|DefaultLayer
+    7400040: ISS_PIVOT|columbus|Base Stack|DefaultLayer
+    7400042: ISS_PIVOT|cupola_open|Base Stack|DefaultLayer
+    7400044: ISS_PIVOT|door|Base Stack|DefaultLayer
+    7400046: ISS_PIVOT|Earth_(1)|Base Stack|DefaultLayer
+    7400048: ISS_PIVOT|Earth_(2)|Base Stack|DefaultLayer
+    7400050: ISS_PIVOT|ELC1|Base Stack|DefaultLayer
+    7400052: ISS_PIVOT|ELC2:ELC2|Base Stack|DefaultLayer
+    7400054: ISS_PIVOT|ELC3|Base Stack|DefaultLayer
+    7400056: ISS_PIVOT|ELC4|Base Stack|DefaultLayer
+    7400058: ISS_PIVOT|ESP1|Base Stack|DefaultLayer
+    7400060: ISS_PIVOT|esp2_lo|Base Stack|DefaultLayer
+    7400062: ISS_PIVOT|ESP3|Base Stack|DefaultLayer
+    7400064: ISS_PIVOT|fgb-ext_layers:core|Base Stack|DefaultLayer
+    7400066: ISS_PIVOT|fgb-ext_layers:panels_closed|Base Stack|DefaultLayer
+    7400068: ISS_PIVOT|fgb-ext_layers:panels|Base Stack|DefaultLayer
+    7400070: ISS_PIVOT|FGB|Base Stack|DefaultLayer
+    7400072: ISS_PIVOT|ISS_PIVOT|Base Stack|DefaultLayer
+    7400074: ISS_PIVOT|jem_layers:jem-ef|Base Stack|DefaultLayer
+    7400076: ISS_PIVOT|jem_layers:jem-pm|Base Stack|DefaultLayer
+    7400078: ISS_PIVOT|jem_layers:jem-ps|Base Stack|DefaultLayer
+    7400080: ISS_PIVOT|jem_layers:jemrms|Base Stack|DefaultLayer
+    7400082: ISS_PIVOT|JEM|Base Stack|DefaultLayer
+    7400084: ISS_PIVOT|lab-ext|Base Stack|DefaultLayer
+    7400086: ISS_PIVOT|LAB|Base Stack|DefaultLayer
+    7400088: ISS_PIVOT|MLM:MLM-ERA_arm|Base Stack|DefaultLayer
+    7400090: ISS_PIVOT|MLM:MLM_body|Base Stack|DefaultLayer
+    7400092: ISS_PIVOT|MLM:MLM_solar_panels|Base Stack|DefaultLayer
+    7400094: ISS_PIVOT|MLM|Base Stack|DefaultLayer
+    7400096: ISS_PIVOT|Mobile_Servicing_System|Base Stack|DefaultLayer
+    7400098: ISS_PIVOT|MRM1_no_airlock-radiator|Base Stack|DefaultLayer
+    7400100: ISS_PIVOT|MRM2_lo|Base Stack|DefaultLayer
+    7400102: ISS_PIVOT|mss:ceta_A_stbd|Base Stack|DefaultLayer
+    7400104: ISS_PIVOT|mss:ceta_B_port|Base Stack|DefaultLayer
+    7400106: ISS_PIVOT|mss:mbs|Base Stack|DefaultLayer
+    7400108: ISS_PIVOT|mss:mt|Base Stack|DefaultLayer
+    7400110: ISS_PIVOT|NODE1|Base Stack|DefaultLayer
+    7400112: ISS_PIVOT|node1|Base Stack|DefaultLayer
+    7400114: ISS_PIVOT|node2_wdoors|Base Stack|DefaultLayer
+    7400116: ISS_PIVOT|node3-ani|Base Stack|DefaultLayer
+    7400118: ISS_PIVOT|OBSS_on_S1|Base Stack|DefaultLayer
+    7400120: ISS_PIVOT|p1-ani|Base Stack|DefaultLayer
+    7400122: ISS_PIVOT|p3-ani|Base Stack|DefaultLayer
+    7400124: ISS_PIVOT|p4-ani|Base Stack|DefaultLayer
+    7400126: ISS_PIVOT|P5|Base Stack|DefaultLayer
+    7400128: ISS_PIVOT|p6-ani|Base Stack|DefaultLayer
+    7400130: ISS_PIVOT|papi-ani_w_goldcells|Base Stack|DefaultLayer
+    7400132: ISS_PIVOT|papo-ani_w_goldcells|Base Stack|DefaultLayer
+    7400134: ISS_PIVOT|pasi-ani_w_goldcells|Base Stack|DefaultLayer
+    7400136: ISS_PIVOT|paso-ani_w_goldcells|Base Stack|DefaultLayer
+    7400138: ISS_PIVOT|pma1-ext|Base Stack|DefaultLayer
+    7400140: ISS_PIVOT|pma2-ext|Base Stack|DefaultLayer
+    7400142: ISS_PIVOT|pma3-ext|Base Stack|DefaultLayer
+    7400144: ISS_PIVOT|PMM|Base Stack|DefaultLayer
+    7400146: ISS_PIVOT|s0-ani|Base Stack|DefaultLayer
+    7400148: ISS_PIVOT|s1-ani|Base Stack|DefaultLayer
+    7400150: ISS_PIVOT|s3-ani|Base Stack|DefaultLayer
+    7400152: ISS_PIVOT|s4-ani|Base Stack|DefaultLayer
+    7400154: ISS_PIVOT|S5|Base Stack|DefaultLayer
+    7400156: ISS_PIVOT|s6-ani|Base Stack|DefaultLayer
+    7400158: ISS_PIVOT|sm-ext:panels|Base Stack|DefaultLayer
+    7400160: ISS_PIVOT|sm-ext:sm|Base Stack|DefaultLayer
+    7400162: ISS_PIVOT|SM|Base Stack|DefaultLayer
+    7400164: ISS_PIVOT|SPDM_low|Base Stack|DefaultLayer
+    7400166: ISS_PIVOT|SSRMS|Base Stack|DefaultLayer
+    7400168: ISS_PIVOT|Sun_pivot|Base Stack|DefaultLayer
+    7400170: ISS_PIVOT|Sun|Base Stack|DefaultLayer
+    7400172: ISS_PIVOT|tcs-p-ani|Base Stack|DefaultLayer
+    7400174: ISS_PIVOT|tcs-s-ani|Base Stack|DefaultLayer
+    7400176: ISS_PIVOT|z1-ext_01|Base Stack|DefaultLayer
+    7400178: cupola_open|AIRLOCK|Base Stack|DefaultLayer
+    7400180: cupola_open|al-ext:Gas1|Base Stack|DefaultLayer
+    7400182: cupola_open|al-ext:Gas2|Base Stack|DefaultLayer
+    7400184: cupola_open|al-ext:Gas3|Base Stack|DefaultLayer
+    7400186: cupola_open|al-ext:Gas4|Base Stack|DefaultLayer
+    7400188: cupola_open|al-ext:main-struct|Base Stack|DefaultLayer
+    7400190: cupola_open|al-ext:Toolbox|Base Stack|DefaultLayer
+    7400192: cupola_open|AMS2|Base Stack|DefaultLayer
+    7400194: cupola_open|armA:Boom1|Base Stack|DefaultLayer
+    7400196: cupola_open|armA:Boom2|Base Stack|DefaultLayer
+    7400198: cupola_open|armA:EndA|Base Stack|DefaultLayer
+    7400200: cupola_open|armA:EP-joint|Base Stack|DefaultLayer
+    7400202: cupola_open|armA:SP-joint|Base Stack|DefaultLayer
+    7400204: cupola_open|armA:SR-joint|Base Stack|DefaultLayer
+    7400206: cupola_open|armA:SY-joint|Base Stack|DefaultLayer
+    7400208: cupola_open|armA:WP-joint|Base Stack|DefaultLayer
+    7400210: cupola_open|armA:WR-joint|Base Stack|DefaultLayer
+    7400212: cupola_open|armA:WY-joint|Base Stack|DefaultLayer
+    7400214: cupola_open|Camera.001|Base Stack|DefaultLayer
+    7400216: cupola_open|Camera_pivot|Base Stack|DefaultLayer
+    7400218: cupola_open|columbus|Base Stack|DefaultLayer
+    7400220: cupola_open|cupola_open|Base Stack|DefaultLayer
+    7400222: cupola_open|door|Base Stack|DefaultLayer
+    7400224: cupola_open|Earth_(1)|Base Stack|DefaultLayer
+    7400226: cupola_open|Earth_(2)|Base Stack|DefaultLayer
+    7400228: cupola_open|ELC1|Base Stack|DefaultLayer
+    7400230: cupola_open|ELC2:ELC2|Base Stack|DefaultLayer
+    7400232: cupola_open|ELC3|Base Stack|DefaultLayer
+    7400234: cupola_open|ELC4|Base Stack|DefaultLayer
+    7400236: cupola_open|ESP1|Base Stack|DefaultLayer
+    7400238: cupola_open|esp2_lo|Base Stack|DefaultLayer
+    7400240: cupola_open|ESP3|Base Stack|DefaultLayer
+    7400242: cupola_open|fgb-ext_layers:core|Base Stack|DefaultLayer
+    7400244: cupola_open|fgb-ext_layers:panels_closed|Base Stack|DefaultLayer
+    7400246: cupola_open|fgb-ext_layers:panels|Base Stack|DefaultLayer
+    7400248: cupola_open|FGB|Base Stack|DefaultLayer
+    7400250: cupola_open|ISS_PIVOT|Base Stack|DefaultLayer
+    7400252: cupola_open|jem_layers:jem-ef|Base Stack|DefaultLayer
+    7400254: cupola_open|jem_layers:jem-pm|Base Stack|DefaultLayer
+    7400256: cupola_open|jem_layers:jem-ps|Base Stack|DefaultLayer
+    7400258: cupola_open|jem_layers:jemrms|Base Stack|DefaultLayer
+    7400260: cupola_open|JEM|Base Stack|DefaultLayer
+    7400262: cupola_open|lab-ext|Base Stack|DefaultLayer
+    7400264: cupola_open|LAB|Base Stack|DefaultLayer
+    7400266: cupola_open|MLM:MLM-ERA_arm|Base Stack|DefaultLayer
+    7400268: cupola_open|MLM:MLM_body|Base Stack|DefaultLayer
+    7400270: cupola_open|MLM:MLM_solar_panels|Base Stack|DefaultLayer
+    7400272: cupola_open|MLM|Base Stack|DefaultLayer
+    7400274: cupola_open|Mobile_Servicing_System|Base Stack|DefaultLayer
+    7400276: cupola_open|MRM1_no_airlock-radiator|Base Stack|DefaultLayer
+    7400278: cupola_open|MRM2_lo|Base Stack|DefaultLayer
+    7400280: cupola_open|mss:ceta_A_stbd|Base Stack|DefaultLayer
+    7400282: cupola_open|mss:ceta_B_port|Base Stack|DefaultLayer
+    7400284: cupola_open|mss:mbs|Base Stack|DefaultLayer
+    7400286: cupola_open|mss:mt|Base Stack|DefaultLayer
+    7400288: cupola_open|NODE1|Base Stack|DefaultLayer
+    7400290: cupola_open|node1|Base Stack|DefaultLayer
+    7400292: cupola_open|node2_wdoors|Base Stack|DefaultLayer
+    7400294: cupola_open|node3-ani|Base Stack|DefaultLayer
+    7400296: cupola_open|OBSS_on_S1|Base Stack|DefaultLayer
+    7400298: cupola_open|p1-ani|Base Stack|DefaultLayer
+    7400300: cupola_open|p3-ani|Base Stack|DefaultLayer
+    7400302: cupola_open|p4-ani|Base Stack|DefaultLayer
+    7400304: cupola_open|P5|Base Stack|DefaultLayer
+    7400306: cupola_open|p6-ani|Base Stack|DefaultLayer
+    7400308: cupola_open|papi-ani_w_goldcells|Base Stack|DefaultLayer
+    7400310: cupola_open|papo-ani_w_goldcells|Base Stack|DefaultLayer
+    7400312: cupola_open|pasi-ani_w_goldcells|Base Stack|DefaultLayer
+    7400314: cupola_open|paso-ani_w_goldcells|Base Stack|DefaultLayer
+    7400316: cupola_open|pma1-ext|Base Stack|DefaultLayer
+    7400318: cupola_open|pma2-ext|Base Stack|DefaultLayer
+    7400320: cupola_open|pma3-ext|Base Stack|DefaultLayer
+    7400322: cupola_open|PMM|Base Stack|DefaultLayer
+    7400324: cupola_open|s0-ani|Base Stack|DefaultLayer
+    7400326: cupola_open|s1-ani|Base Stack|DefaultLayer
+    7400328: cupola_open|s3-ani|Base Stack|DefaultLayer
+    7400330: cupola_open|s4-ani|Base Stack|DefaultLayer
+    7400332: cupola_open|S5|Base Stack|DefaultLayer
+    7400334: cupola_open|s6-ani|Base Stack|DefaultLayer
+    7400336: cupola_open|sm-ext:panels|Base Stack|DefaultLayer
+    7400338: cupola_open|sm-ext:sm|Base Stack|DefaultLayer
+    7400340: cupola_open|SM|Base Stack|DefaultLayer
+    7400342: cupola_open|SPDM_low|Base Stack|DefaultLayer
+    7400344: cupola_open|SSRMS|Base Stack|DefaultLayer
+    7400346: cupola_open|Sun_pivot|Base Stack|DefaultLayer
+    7400348: cupola_open|Sun|Base Stack|DefaultLayer
+    7400350: cupola_open|tcs-p-ani|Base Stack|DefaultLayer
+    7400352: cupola_open|tcs-s-ani|Base Stack|DefaultLayer
+    7400354: cupola_open|z1-ext_01|Base Stack|DefaultLayer
+    7400356: JEM|AIRLOCK|Base Stack|DefaultLayer
+    7400358: JEM|al-ext:Gas1|Base Stack|DefaultLayer
+    7400360: JEM|al-ext:Gas2|Base Stack|DefaultLayer
+    7400362: JEM|al-ext:Gas3|Base Stack|DefaultLayer
+    7400364: JEM|al-ext:Gas4|Base Stack|DefaultLayer
+    7400366: JEM|al-ext:main-struct|Base Stack|DefaultLayer
+    7400368: JEM|al-ext:Toolbox|Base Stack|DefaultLayer
+    7400370: JEM|AMS2|Base Stack|DefaultLayer
+    7400372: JEM|armA:Boom1|Base Stack|DefaultLayer
+    7400374: JEM|armA:Boom2|Base Stack|DefaultLayer
+    7400376: JEM|armA:EndA|Base Stack|DefaultLayer
+    7400378: JEM|armA:EP-joint|Base Stack|DefaultLayer
+    7400380: JEM|armA:SP-joint|Base Stack|DefaultLayer
+    7400382: JEM|armA:SR-joint|Base Stack|DefaultLayer
+    7400384: JEM|armA:SY-joint|Base Stack|DefaultLayer
+    7400386: JEM|armA:WP-joint|Base Stack|DefaultLayer
+    7400388: JEM|armA:WR-joint|Base Stack|DefaultLayer
+    7400390: JEM|armA:WY-joint|Base Stack|DefaultLayer
+    7400392: JEM|Camera.001|Base Stack|DefaultLayer
+    7400394: JEM|Camera_pivot|Base Stack|DefaultLayer
+    7400396: JEM|columbus|Base Stack|DefaultLayer
+    7400398: JEM|cupola_open|Base Stack|DefaultLayer
+    7400400: JEM|door|Base Stack|DefaultLayer
+    7400402: JEM|Earth_(1)|Base Stack|DefaultLayer
+    7400404: JEM|Earth_(2)|Base Stack|DefaultLayer
+    7400406: JEM|ELC1|Base Stack|DefaultLayer
+    7400408: JEM|ELC2:ELC2|Base Stack|DefaultLayer
+    7400410: JEM|ELC3|Base Stack|DefaultLayer
+    7400412: JEM|ELC4|Base Stack|DefaultLayer
+    7400414: JEM|ESP1|Base Stack|DefaultLayer
+    7400416: JEM|esp2_lo|Base Stack|DefaultLayer
+    7400418: JEM|ESP3|Base Stack|DefaultLayer
+    7400420: JEM|fgb-ext_layers:core|Base Stack|DefaultLayer
+    7400422: JEM|fgb-ext_layers:panels_closed|Base Stack|DefaultLayer
+    7400424: JEM|fgb-ext_layers:panels|Base Stack|DefaultLayer
+    7400426: JEM|FGB|Base Stack|DefaultLayer
+    7400428: JEM|ISS_PIVOT|Base Stack|DefaultLayer
+    7400430: JEM|jem_layers:jem-ef|Base Stack|DefaultLayer
+    7400432: JEM|jem_layers:jem-pm|Base Stack|DefaultLayer
+    7400434: JEM|jem_layers:jem-ps|Base Stack|DefaultLayer
+    7400436: JEM|jem_layers:jemrms|Base Stack|DefaultLayer
+    7400438: JEM|JEM|Base Stack|DefaultLayer
+    7400440: JEM|lab-ext|Base Stack|DefaultLayer
+    7400442: JEM|LAB|Base Stack|DefaultLayer
+    7400444: JEM|MLM:MLM-ERA_arm|Base Stack|DefaultLayer
+    7400446: JEM|MLM:MLM_body|Base Stack|DefaultLayer
+    7400448: JEM|MLM:MLM_solar_panels|Base Stack|DefaultLayer
+    7400450: JEM|MLM|Base Stack|DefaultLayer
+    7400452: JEM|Mobile_Servicing_System|Base Stack|DefaultLayer
+    7400454: JEM|MRM1_no_airlock-radiator|Base Stack|DefaultLayer
+    7400456: JEM|MRM2_lo|Base Stack|DefaultLayer
+    7400458: JEM|mss:ceta_A_stbd|Base Stack|DefaultLayer
+    7400460: JEM|mss:ceta_B_port|Base Stack|DefaultLayer
+    7400462: JEM|mss:mbs|Base Stack|DefaultLayer
+    7400464: JEM|mss:mt|Base Stack|DefaultLayer
+    7400466: JEM|NODE1|Base Stack|DefaultLayer
+    7400468: JEM|node1|Base Stack|DefaultLayer
+    7400470: JEM|node2_wdoors|Base Stack|DefaultLayer
+    7400472: JEM|node3-ani|Base Stack|DefaultLayer
+    7400474: JEM|OBSS_on_S1|Base Stack|DefaultLayer
+    7400476: JEM|p1-ani|Base Stack|DefaultLayer
+    7400478: JEM|p3-ani|Base Stack|DefaultLayer
+    7400480: JEM|p4-ani|Base Stack|DefaultLayer
+    7400482: JEM|P5|Base Stack|DefaultLayer
+    7400484: JEM|p6-ani|Base Stack|DefaultLayer
+    7400486: JEM|papi-ani_w_goldcells|Base Stack|DefaultLayer
+    7400488: JEM|papo-ani_w_goldcells|Base Stack|DefaultLayer
+    7400490: JEM|pasi-ani_w_goldcells|Base Stack|DefaultLayer
+    7400492: JEM|paso-ani_w_goldcells|Base Stack|DefaultLayer
+    7400494: JEM|pma1-ext|Base Stack|DefaultLayer
+    7400496: JEM|pma2-ext|Base Stack|DefaultLayer
+    7400498: JEM|pma3-ext|Base Stack|DefaultLayer
+    7400500: JEM|PMM|Base Stack|DefaultLayer
+    7400502: JEM|s0-ani|Base Stack|DefaultLayer
+    7400504: JEM|s1-ani|Base Stack|DefaultLayer
+    7400506: JEM|s3-ani|Base Stack|DefaultLayer
+    7400508: JEM|s4-ani|Base Stack|DefaultLayer
+    7400510: JEM|S5|Base Stack|DefaultLayer
+    7400512: JEM|s6-ani|Base Stack|DefaultLayer
+    7400514: JEM|sm-ext:panels|Base Stack|DefaultLayer
+    7400516: JEM|sm-ext:sm|Base Stack|DefaultLayer
+    7400518: JEM|SM|Base Stack|DefaultLayer
+    7400520: JEM|SPDM_low|Base Stack|DefaultLayer
+    7400522: JEM|SSRMS|Base Stack|DefaultLayer
+    7400524: JEM|Sun_pivot|Base Stack|DefaultLayer
+    7400526: JEM|Sun|Base Stack|DefaultLayer
+    7400528: JEM|tcs-p-ani|Base Stack|DefaultLayer
+    7400530: JEM|tcs-s-ani|Base Stack|DefaultLayer
+    7400532: JEM|z1-ext_01|Base Stack|DefaultLayer
+    7400534: node3-ani|AIRLOCK|Base Stack|DefaultLayer
+    7400536: node3-ani|al-ext:Gas1|Base Stack|DefaultLayer
+    7400538: node3-ani|al-ext:Gas2|Base Stack|DefaultLayer
+    7400540: node3-ani|al-ext:Gas3|Base Stack|DefaultLayer
+    7400542: node3-ani|al-ext:Gas4|Base Stack|DefaultLayer
+    7400544: node3-ani|al-ext:main-struct|Base Stack|DefaultLayer
+    7400546: node3-ani|al-ext:Toolbox|Base Stack|DefaultLayer
+    7400548: node3-ani|AMS2|Base Stack|DefaultLayer
+    7400550: node3-ani|armA:Boom1|Base Stack|DefaultLayer
+    7400552: node3-ani|armA:Boom2|Base Stack|DefaultLayer
+    7400554: node3-ani|armA:EndA|Base Stack|DefaultLayer
+    7400556: node3-ani|armA:EP-joint|Base Stack|DefaultLayer
+    7400558: node3-ani|armA:SP-joint|Base Stack|DefaultLayer
+    7400560: node3-ani|armA:SR-joint|Base Stack|DefaultLayer
+    7400562: node3-ani|armA:SY-joint|Base Stack|DefaultLayer
+    7400564: node3-ani|armA:WP-joint|Base Stack|DefaultLayer
+    7400566: node3-ani|armA:WR-joint|Base Stack|DefaultLayer
+    7400568: node3-ani|armA:WY-joint|Base Stack|DefaultLayer
+    7400570: node3-ani|Camera.001|Base Stack|DefaultLayer
+    7400572: node3-ani|Camera_pivot|Base Stack|DefaultLayer
+    7400574: node3-ani|columbus|Base Stack|DefaultLayer
+    7400576: node3-ani|cupola_open|Base Stack|DefaultLayer
+    7400578: node3-ani|door|Base Stack|DefaultLayer
+    7400580: node3-ani|Earth_(1)|Base Stack|DefaultLayer
+    7400582: node3-ani|Earth_(2)|Base Stack|DefaultLayer
+    7400584: node3-ani|ELC1|Base Stack|DefaultLayer
+    7400586: node3-ani|ELC2:ELC2|Base Stack|DefaultLayer
+    7400588: node3-ani|ELC3|Base Stack|DefaultLayer
+    7400590: node3-ani|ELC4|Base Stack|DefaultLayer
+    7400592: node3-ani|ESP1|Base Stack|DefaultLayer
+    7400594: node3-ani|esp2_lo|Base Stack|DefaultLayer
+    7400596: node3-ani|ESP3|Base Stack|DefaultLayer
+    7400598: node3-ani|fgb-ext_layers:core|Base Stack|DefaultLayer
+    7400600: node3-ani|fgb-ext_layers:panels_closed|Base Stack|DefaultLayer
+    7400602: node3-ani|fgb-ext_layers:panels|Base Stack|DefaultLayer
+    7400604: node3-ani|FGB|Base Stack|DefaultLayer
+    7400606: node3-ani|ISS_PIVOT|Base Stack|DefaultLayer
+    7400608: node3-ani|jem_layers:jem-ef|Base Stack|DefaultLayer
+    7400610: node3-ani|jem_layers:jem-pm|Base Stack|DefaultLayer
+    7400612: node3-ani|jem_layers:jem-ps|Base Stack|DefaultLayer
+    7400614: node3-ani|jem_layers:jemrms|Base Stack|DefaultLayer
+    7400616: node3-ani|JEM|Base Stack|DefaultLayer
+    7400618: node3-ani|lab-ext|Base Stack|DefaultLayer
+    7400620: node3-ani|LAB|Base Stack|DefaultLayer
+    7400622: node3-ani|MLM:MLM-ERA_arm|Base Stack|DefaultLayer
+    7400624: node3-ani|MLM:MLM_body|Base Stack|DefaultLayer
+    7400626: node3-ani|MLM:MLM_solar_panels|Base Stack|DefaultLayer
+    7400628: node3-ani|MLM|Base Stack|DefaultLayer
+    7400630: node3-ani|Mobile_Servicing_System|Base Stack|DefaultLayer
+    7400632: node3-ani|MRM1_no_airlock-radiator|Base Stack|DefaultLayer
+    7400634: node3-ani|MRM2_lo|Base Stack|DefaultLayer
+    7400636: node3-ani|mss:ceta_A_stbd|Base Stack|DefaultLayer
+    7400638: node3-ani|mss:ceta_B_port|Base Stack|DefaultLayer
+    7400640: node3-ani|mss:mbs|Base Stack|DefaultLayer
+    7400642: node3-ani|mss:mt|Base Stack|DefaultLayer
+    7400644: node3-ani|NODE1|Base Stack|DefaultLayer
+    7400646: node3-ani|node1|Base Stack|DefaultLayer
+    7400648: node3-ani|node2_wdoors|Base Stack|DefaultLayer
+    7400650: node3-ani|node3-ani|Base Stack|DefaultLayer
+    7400652: node3-ani|OBSS_on_S1|Base Stack|DefaultLayer
+    7400654: node3-ani|p1-ani|Base Stack|DefaultLayer
+    7400656: node3-ani|p3-ani|Base Stack|DefaultLayer
+    7400658: node3-ani|p4-ani|Base Stack|DefaultLayer
+    7400660: node3-ani|P5|Base Stack|DefaultLayer
+    7400662: node3-ani|p6-ani|Base Stack|DefaultLayer
+    7400664: node3-ani|papi-ani_w_goldcells|Base Stack|DefaultLayer
+    7400666: node3-ani|papo-ani_w_goldcells|Base Stack|DefaultLayer
+    7400668: node3-ani|pasi-ani_w_goldcells|Base Stack|DefaultLayer
+    7400670: node3-ani|paso-ani_w_goldcells|Base Stack|DefaultLayer
+    7400672: node3-ani|pma1-ext|Base Stack|DefaultLayer
+    7400674: node3-ani|pma2-ext|Base Stack|DefaultLayer
+    7400676: node3-ani|pma3-ext|Base Stack|DefaultLayer
+    7400678: node3-ani|PMM|Base Stack|DefaultLayer
+    7400680: node3-ani|s0-ani|Base Stack|DefaultLayer
+    7400682: node3-ani|s1-ani|Base Stack|DefaultLayer
+    7400684: node3-ani|s3-ani|Base Stack|DefaultLayer
+    7400686: node3-ani|s4-ani|Base Stack|DefaultLayer
+    7400688: node3-ani|S5|Base Stack|DefaultLayer
+    7400690: node3-ani|s6-ani|Base Stack|DefaultLayer
+    7400692: node3-ani|sm-ext:panels|Base Stack|DefaultLayer
+    7400694: node3-ani|sm-ext:sm|Base Stack|DefaultLayer
+    7400696: node3-ani|SM|Base Stack|DefaultLayer
+    7400698: node3-ani|SPDM_low|Base Stack|DefaultLayer
+    7400700: node3-ani|SSRMS|Base Stack|DefaultLayer
+    7400702: node3-ani|Sun_pivot|Base Stack|DefaultLayer
+    7400704: node3-ani|Sun|Base Stack|DefaultLayer
+    7400706: node3-ani|tcs-p-ani|Base Stack|DefaultLayer
+    7400708: node3-ani|tcs-s-ani|Base Stack|DefaultLayer
+    7400710: node3-ani|z1-ext_01|Base Stack|DefaultLayer
+    7400712: NODE1|AIRLOCK|Base Stack|DefaultLayer
+    7400714: NODE1|al-ext:Gas1|Base Stack|DefaultLayer
+    7400716: NODE1|al-ext:Gas2|Base Stack|DefaultLayer
+    7400718: NODE1|al-ext:Gas3|Base Stack|DefaultLayer
+    7400720: NODE1|al-ext:Gas4|Base Stack|DefaultLayer
+    7400722: NODE1|al-ext:main-struct|Base Stack|DefaultLayer
+    7400724: NODE1|al-ext:Toolbox|Base Stack|DefaultLayer
+    7400726: NODE1|AMS2|Base Stack|DefaultLayer
+    7400728: NODE1|armA:Boom1|Base Stack|DefaultLayer
+    7400730: NODE1|armA:Boom2|Base Stack|DefaultLayer
+    7400732: NODE1|armA:EndA|Base Stack|DefaultLayer
+    7400734: NODE1|armA:EP-joint|Base Stack|DefaultLayer
+    7400736: NODE1|armA:SP-joint|Base Stack|DefaultLayer
+    7400738: NODE1|armA:SR-joint|Base Stack|DefaultLayer
+    7400740: NODE1|armA:SY-joint|Base Stack|DefaultLayer
+    7400742: NODE1|armA:WP-joint|Base Stack|DefaultLayer
+    7400744: NODE1|armA:WR-joint|Base Stack|DefaultLayer
+    7400746: NODE1|armA:WY-joint|Base Stack|DefaultLayer
+    7400748: NODE1|Camera.001|Base Stack|DefaultLayer
+    7400750: NODE1|Camera_pivot|Base Stack|DefaultLayer
+    7400752: NODE1|columbus|Base Stack|DefaultLayer
+    7400754: NODE1|cupola_open|Base Stack|DefaultLayer
+    7400756: NODE1|door|Base Stack|DefaultLayer
+    7400758: NODE1|Earth_(1)|Base Stack|DefaultLayer
+    7400760: NODE1|Earth_(2)|Base Stack|DefaultLayer
+    7400762: NODE1|ELC1|Base Stack|DefaultLayer
+    7400764: NODE1|ELC2:ELC2|Base Stack|DefaultLayer
+    7400766: NODE1|ELC3|Base Stack|DefaultLayer
+    7400768: NODE1|ELC4|Base Stack|DefaultLayer
+    7400770: NODE1|ESP1|Base Stack|DefaultLayer
+    7400772: NODE1|esp2_lo|Base Stack|DefaultLayer
+    7400774: NODE1|ESP3|Base Stack|DefaultLayer
+    7400776: NODE1|fgb-ext_layers:core|Base Stack|DefaultLayer
+    7400778: NODE1|fgb-ext_layers:panels_closed|Base Stack|DefaultLayer
+    7400780: NODE1|fgb-ext_layers:panels|Base Stack|DefaultLayer
+    7400782: NODE1|FGB|Base Stack|DefaultLayer
+    7400784: NODE1|ISS_PIVOT|Base Stack|DefaultLayer
+    7400786: NODE1|jem_layers:jem-ef|Base Stack|DefaultLayer
+    7400788: NODE1|jem_layers:jem-pm|Base Stack|DefaultLayer
+    7400790: NODE1|jem_layers:jem-ps|Base Stack|DefaultLayer
+    7400792: NODE1|jem_layers:jemrms|Base Stack|DefaultLayer
+    7400794: NODE1|JEM|Base Stack|DefaultLayer
+    7400796: NODE1|lab-ext|Base Stack|DefaultLayer
+    7400798: NODE1|LAB|Base Stack|DefaultLayer
+    7400800: NODE1|MLM:MLM-ERA_arm|Base Stack|DefaultLayer
+    7400802: NODE1|MLM:MLM_body|Base Stack|DefaultLayer
+    7400804: NODE1|MLM:MLM_solar_panels|Base Stack|DefaultLayer
+    7400806: NODE1|MLM|Base Stack|DefaultLayer
+    7400808: NODE1|Mobile_Servicing_System|Base Stack|DefaultLayer
+    7400810: NODE1|MRM1_no_airlock-radiator|Base Stack|DefaultLayer
+    7400812: NODE1|MRM2_lo|Base Stack|DefaultLayer
+    7400814: NODE1|mss:ceta_A_stbd|Base Stack|DefaultLayer
+    7400816: NODE1|mss:ceta_B_port|Base Stack|DefaultLayer
+    7400818: NODE1|mss:mbs|Base Stack|DefaultLayer
+    7400820: NODE1|mss:mt|Base Stack|DefaultLayer
+    7400822: NODE1|NODE1|Base Stack|DefaultLayer
+    7400824: NODE1|node1|Base Stack|DefaultLayer
+    7400826: NODE1|node2_wdoors|Base Stack|DefaultLayer
+    7400828: NODE1|node3-ani|Base Stack|DefaultLayer
+    7400830: NODE1|OBSS_on_S1|Base Stack|DefaultLayer
+    7400832: NODE1|p1-ani|Base Stack|DefaultLayer
+    7400834: NODE1|p3-ani|Base Stack|DefaultLayer
+    7400836: NODE1|p4-ani|Base Stack|DefaultLayer
+    7400838: NODE1|P5|Base Stack|DefaultLayer
+    7400840: NODE1|p6-ani|Base Stack|DefaultLayer
+    7400842: NODE1|papi-ani_w_goldcells|Base Stack|DefaultLayer
+    7400844: NODE1|papo-ani_w_goldcells|Base Stack|DefaultLayer
+    7400846: NODE1|pasi-ani_w_goldcells|Base Stack|DefaultLayer
+    7400848: NODE1|paso-ani_w_goldcells|Base Stack|DefaultLayer
+    7400850: NODE1|pma1-ext|Base Stack|DefaultLayer
+    7400852: NODE1|pma2-ext|Base Stack|DefaultLayer
+    7400854: NODE1|pma3-ext|Base Stack|DefaultLayer
+    7400856: NODE1|PMM|Base Stack|DefaultLayer
+    7400858: NODE1|s0-ani|Base Stack|DefaultLayer
+    7400860: NODE1|s1-ani|Base Stack|DefaultLayer
+    7400862: NODE1|s3-ani|Base Stack|DefaultLayer
+    7400864: NODE1|s4-ani|Base Stack|DefaultLayer
+    7400866: NODE1|S5|Base Stack|DefaultLayer
+    7400868: NODE1|s6-ani|Base Stack|DefaultLayer
+    7400870: NODE1|sm-ext:panels|Base Stack|DefaultLayer
+    7400872: NODE1|sm-ext:sm|Base Stack|DefaultLayer
+    7400874: NODE1|SM|Base Stack|DefaultLayer
+    7400876: NODE1|SPDM_low|Base Stack|DefaultLayer
+    7400878: NODE1|SSRMS|Base Stack|DefaultLayer
+    7400880: NODE1|Sun_pivot|Base Stack|DefaultLayer
+    7400882: NODE1|Sun|Base Stack|DefaultLayer
+    7400884: NODE1|tcs-p-ani|Base Stack|DefaultLayer
+    7400886: NODE1|tcs-s-ani|Base Stack|DefaultLayer
+    7400888: NODE1|z1-ext_01|Base Stack|DefaultLayer
+    7400890: pma3-ext|AIRLOCK|Base Stack|DefaultLayer
+    7400892: pma3-ext|al-ext:Gas1|Base Stack|DefaultLayer
+    7400894: pma3-ext|al-ext:Gas2|Base Stack|DefaultLayer
+    7400896: pma3-ext|al-ext:Gas3|Base Stack|DefaultLayer
+    7400898: pma3-ext|al-ext:Gas4|Base Stack|DefaultLayer
+    7400900: pma3-ext|al-ext:main-struct|Base Stack|DefaultLayer
+    7400902: pma3-ext|al-ext:Toolbox|Base Stack|DefaultLayer
+    7400904: pma3-ext|AMS2|Base Stack|DefaultLayer
+    7400906: pma3-ext|armA:Boom1|Base Stack|DefaultLayer
+    7400908: pma3-ext|armA:Boom2|Base Stack|DefaultLayer
+    7400910: pma3-ext|armA:EndA|Base Stack|DefaultLayer
+    7400912: pma3-ext|armA:EP-joint|Base Stack|DefaultLayer
+    7400914: pma3-ext|armA:SP-joint|Base Stack|DefaultLayer
+    7400916: pma3-ext|armA:SR-joint|Base Stack|DefaultLayer
+    7400918: pma3-ext|armA:SY-joint|Base Stack|DefaultLayer
+    7400920: pma3-ext|armA:WP-joint|Base Stack|DefaultLayer
+    7400922: pma3-ext|armA:WR-joint|Base Stack|DefaultLayer
+    7400924: pma3-ext|armA:WY-joint|Base Stack|DefaultLayer
+    7400926: pma3-ext|Camera.001|Base Stack|DefaultLayer
+    7400928: pma3-ext|Camera_pivot|Base Stack|DefaultLayer
+    7400930: pma3-ext|columbus|Base Stack|DefaultLayer
+    7400932: pma3-ext|cupola_open|Base Stack|DefaultLayer
+    7400934: pma3-ext|door|Base Stack|DefaultLayer
+    7400936: pma3-ext|Earth_(1)|Base Stack|DefaultLayer
+    7400938: pma3-ext|Earth_(2)|Base Stack|DefaultLayer
+    7400940: pma3-ext|ELC1|Base Stack|DefaultLayer
+    7400942: pma3-ext|ELC2:ELC2|Base Stack|DefaultLayer
+    7400944: pma3-ext|ELC3|Base Stack|DefaultLayer
+    7400946: pma3-ext|ELC4|Base Stack|DefaultLayer
+    7400948: pma3-ext|ESP1|Base Stack|DefaultLayer
+    7400950: pma3-ext|esp2_lo|Base Stack|DefaultLayer
+    7400952: pma3-ext|ESP3|Base Stack|DefaultLayer
+    7400954: pma3-ext|fgb-ext_layers:core|Base Stack|DefaultLayer
+    7400956: pma3-ext|fgb-ext_layers:panels_closed|Base Stack|DefaultLayer
+    7400958: pma3-ext|fgb-ext_layers:panels|Base Stack|DefaultLayer
+    7400960: pma3-ext|FGB|Base Stack|DefaultLayer
+    7400962: pma3-ext|ISS_PIVOT|Base Stack|DefaultLayer
+    7400964: pma3-ext|jem_layers:jem-ef|Base Stack|DefaultLayer
+    7400966: pma3-ext|jem_layers:jem-pm|Base Stack|DefaultLayer
+    7400968: pma3-ext|jem_layers:jem-ps|Base Stack|DefaultLayer
+    7400970: pma3-ext|jem_layers:jemrms|Base Stack|DefaultLayer
+    7400972: pma3-ext|JEM|Base Stack|DefaultLayer
+    7400974: pma3-ext|lab-ext|Base Stack|DefaultLayer
+    7400976: pma3-ext|LAB|Base Stack|DefaultLayer
+    7400978: pma3-ext|MLM:MLM-ERA_arm|Base Stack|DefaultLayer
+    7400980: pma3-ext|MLM:MLM_body|Base Stack|DefaultLayer
+    7400982: pma3-ext|MLM:MLM_solar_panels|Base Stack|DefaultLayer
+    7400984: pma3-ext|MLM|Base Stack|DefaultLayer
+    7400986: pma3-ext|Mobile_Servicing_System|Base Stack|DefaultLayer
+    7400988: pma3-ext|MRM1_no_airlock-radiator|Base Stack|DefaultLayer
+    7400990: pma3-ext|MRM2_lo|Base Stack|DefaultLayer
+    7400992: pma3-ext|mss:ceta_A_stbd|Base Stack|DefaultLayer
+    7400994: pma3-ext|mss:ceta_B_port|Base Stack|DefaultLayer
+    7400996: pma3-ext|mss:mbs|Base Stack|DefaultLayer
+    7400998: pma3-ext|mss:mt|Base Stack|DefaultLayer
+    7401000: pma3-ext|NODE1|Base Stack|DefaultLayer
+    7401002: pma3-ext|node1|Base Stack|DefaultLayer
+    7401004: pma3-ext|node2_wdoors|Base Stack|DefaultLayer
+    7401006: pma3-ext|node3-ani|Base Stack|DefaultLayer
+    7401008: pma3-ext|OBSS_on_S1|Base Stack|DefaultLayer
+    7401010: pma3-ext|p1-ani|Base Stack|DefaultLayer
+    7401012: pma3-ext|p3-ani|Base Stack|DefaultLayer
+    7401014: pma3-ext|p4-ani|Base Stack|DefaultLayer
+    7401016: pma3-ext|P5|Base Stack|DefaultLayer
+    7401018: pma3-ext|p6-ani|Base Stack|DefaultLayer
+    7401020: pma3-ext|papi-ani_w_goldcells|Base Stack|DefaultLayer
+    7401022: pma3-ext|papo-ani_w_goldcells|Base Stack|DefaultLayer
+    7401024: pma3-ext|pasi-ani_w_goldcells|Base Stack|DefaultLayer
+    7401026: pma3-ext|paso-ani_w_goldcells|Base Stack|DefaultLayer
+    7401028: pma3-ext|pma1-ext|Base Stack|DefaultLayer
+    7401030: pma3-ext|pma2-ext|Base Stack|DefaultLayer
+    7401032: pma3-ext|pma3-ext|Base Stack|DefaultLayer
+    7401034: pma3-ext|PMM|Base Stack|DefaultLayer
+    7401036: pma3-ext|s0-ani|Base Stack|DefaultLayer
+    7401038: pma3-ext|s1-ani|Base Stack|DefaultLayer
+    7401040: pma3-ext|s3-ani|Base Stack|DefaultLayer
+    7401042: pma3-ext|s4-ani|Base Stack|DefaultLayer
+    7401044: pma3-ext|S5|Base Stack|DefaultLayer
+    7401046: pma3-ext|s6-ani|Base Stack|DefaultLayer
+    7401048: pma3-ext|sm-ext:panels|Base Stack|DefaultLayer
+    7401050: pma3-ext|sm-ext:sm|Base Stack|DefaultLayer
+    7401052: pma3-ext|SM|Base Stack|DefaultLayer
+    7401054: pma3-ext|SPDM_low|Base Stack|DefaultLayer
+    7401056: pma3-ext|SSRMS|Base Stack|DefaultLayer
+    7401058: pma3-ext|Sun_pivot|Base Stack|DefaultLayer
+    7401060: pma3-ext|Sun|Base Stack|DefaultLayer
+    7401062: pma3-ext|tcs-p-ani|Base Stack|DefaultLayer
+    7401064: pma3-ext|tcs-s-ani|Base Stack|DefaultLayer
+    7401066: pma3-ext|z1-ext_01|Base Stack|DefaultLayer
+    9500000: //RootNode
+  materials:
+    importMaterials: 1
+    materialName: 0
+    materialSearch: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    motionNodeName: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    clipAnimations: []
+    isReadable: 1
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    importBlendShapes: 1
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    optimizeMeshForGPU: 1
+    keepQuads: 0
+    weldVertices: 1
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+  importAnimation: 1
+  copyAvatar: 0
+  humanDescription:
+    human: []
+    skeleton: []
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    rootMotionBoneName: 
+    hasTranslationDoF: 0
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  animationType: 2
+  humanoidOversampling: 1
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

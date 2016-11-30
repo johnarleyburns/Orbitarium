@@ -19,7 +19,13 @@ public class GameController : MonoBehaviour
     public Camera OverviewCamera;
     public GameObject Didymos;
     public GameObject Didymoon;
+    public GameObject EezoDockingPort;
     public float PlayerInitialImpulse;
+    public float PlayerShipRadiusM = 20;
+    public float EnemyShipRadiusM = 20;
+    public float DidymosRadiusM = 500;
+    public float DidymoonRadiusM = 100;
+    public float EezoDockingPortRadiusM = 20;
     public float EnemyDistanceMeters = 500;
     public float EnemyRandomSpreadMeters = 200;
     public float EnemyInitialCount = 3;
@@ -379,7 +385,7 @@ public class GameController : MonoBehaviour
         controller.SetGameController(this);
         string nameRoot = controller.GetShipModel().GetComponent<EnemyShip>().VisibleName;
         enemyShip.name = string.Format("{0}-{1}", nameRoot, suffix);
-        targetDB.AddTarget(enemyShip, TargetDB.TargetType.ENEMY_SHIP);
+        targetDB.AddTarget(enemyShip, TargetDB.TargetType.ENEMY_SHIP, EnemyShipRadiusM);
         hudController.AddTargetIndicator(enemyShip);
         hudController.SelectNextTargetPreferClosestEnemy();
     }
@@ -458,10 +464,12 @@ public class GameController : MonoBehaviour
 
     private void AddPlanetaryBodies()
     {
-        targetDB.AddTarget(Didymos, TargetDB.TargetType.ASTEROID);
-        targetDB.AddTarget(Didymoon, TargetDB.TargetType.MOON);
+        targetDB.AddTarget(Didymos, TargetDB.TargetType.ASTEROID, DidymosRadiusM);
+        targetDB.AddTarget(Didymoon, TargetDB.TargetType.MOON, DidymoonRadiusM);
+        targetDB.AddTarget(EezoDockingPort, TargetDB.TargetType.FRIEND_BASE, EezoDockingPortRadiusM);
         hudController.AddTargetIndicator(Didymos);
         hudController.AddTargetIndicator(Didymoon);
+        hudController.AddTargetIndicator(EezoDockingPort);
     }
 
     private void AddHUDFixedIndicators()
