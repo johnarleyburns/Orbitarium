@@ -35,6 +35,7 @@ public class Autopilot : MonoBehaviour
         Command.INTERCEPT,
         Command.STRAFE,
         Command.RENDEZVOUS,
+        Command.APPROACH,
         Command.DOCK
     };
 
@@ -48,6 +49,7 @@ public class Autopilot : MonoBehaviour
         INTERCEPT,
         STRAFE,
         RENDEZVOUS,
+        APPROACH,
         DOCK
     }
 
@@ -125,6 +127,9 @@ public class Autopilot : MonoBehaviour
             case Command.RENDEZVOUS:
                 Rendezvous(target);
                 break;
+            case Command.APPROACH:
+                Approach(target);
+                break;
             case Command.DOCK:
                 Dock(target);
                 break;
@@ -165,6 +170,12 @@ public class Autopilot : MonoBehaviour
     {
         AutopilotOff();
         PushAndStartCoroutine(RendezvousCo(target));
+    }
+
+    private void Approach(GameObject target)
+    {
+        AutopilotOff();
+        PushAndStartCoroutine(ApproachCo(target));
     }
 
     private void Dock(GameObject target)
@@ -520,13 +531,14 @@ public class Autopilot : MonoBehaviour
             Vector3 relVelUnit;
             PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
             float radius = gameController.TargetData().GetTargetRadius(target);
-            float rendezvousDist = dist - (radius + RendezvousDistM);
-            float secToTarget = rendezvousDist / relv;
             float turnAngle = 180;
+            float a = ship.CurrentMainEngineAccPerSec();
             float secToTurn = turnAngle / ship.CurrentRCSAngularDegPerSec(); // speedup * slowdown 
-            float secToZero = relv / ship.CurrentMainEngineAccPerSec(); // estimated rotate time;
-            float secToStop = secToTurn + secToZero;
-            if (secToTarget < secToStop)
+            float distTurning = secToTurn * relv;
+            float timeToDecelerate = relv / a;
+            float distToDecelerate = 1 / 2 * a * Mathf.Pow(timeToDecelerate, 2);
+            float stoppingDist = distTurning + distToDecelerate + radius + RendezvousDistM;
+            if (dist <= stoppingDist)
             {
                 if (ship.IsMainEngineGo())
                 {
@@ -535,6 +547,60 @@ public class Autopilot : MonoBehaviour
                 yield return PushAndStartCoroutine(KillRelVCo(target));
                 yield return PushAndStartCoroutine(RotToTarget(target));
                 yield break;
+            }
+            else
+            {
+                if (!ship.IsMainEngineGo())
+                {
+                    ship.MainEngineGo();
+                }
+                yield return PushAndStartCoroutine(APNGRotateBurnCo(target));
+                yield return new WaitForEndOfFrame();
+            }
+        }
+    }
+
+    IEnumerator ApproachCo(GameObject target)
+    {
+        for (;;)
+        {
+            float dist;
+            float relv;
+            Vector3 relVelUnit;
+            PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
+            //float secToTarget = dist / relv;
+            float turnAngle = 180;
+            float a = ship.CurrentMainEngineAccPerSec();
+            float secToTurn = turnAngle / ship.CurrentRCSAngularDegPerSec(); // speedup * slowdown 
+            float distTurning = 2 * secToTurn * relv;
+            float timeToDecelerate = relv / a;
+            float distToDecelerate = 1 / 2 * a * Mathf.Pow(timeToDecelerate, 2);
+            float fudge = NavigationalConstant * relv;
+            float stoppingDist = distTurning + distToDecelerate + fudge;
+            if (dist <= stoppingDist)
+            {
+                if (ship.IsMainEngineGo())
+                {
+                    ship.MainEngineCutoff();
+                }
+                yield return PushAndStartCoroutine(KillRelVCo(target));
+                yield return PushAndStartCoroutine(RotToTarget(target));
+                float distLeft;
+                PhysicsUtils.CalcDistance(transform.parent.transform, target, out distLeft);
+                float burnDist = distLeft / 2;
+                float burnSec = Mathf.Sqrt(2 * burnDist / a);
+                if (burnSec > secToTurn)
+                {
+                    float actualBurnSec = burnSec - secToTurn;
+                    ship.MainEngineBurst(burnSec);
+                    yield return new WaitForSeconds(burnSec);
+                    yield return PushAndStartCoroutine(KillRelVCo(target));
+                    yield return PushAndStartCoroutine(RotToTarget(target));
+                }
+                else
+                {
+                    yield break;
+                }
             }
             else
             {

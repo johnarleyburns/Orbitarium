@@ -19,7 +19,8 @@ public class GameController : MonoBehaviour
     public Camera OverviewCamera;
     public GameObject Didymos;
     public GameObject Didymoon;
-    public GameObject EezoDockingPort;
+    public GameObject EezoDock;
+    public GameObject EezoApproach;
     public float PlayerInitialImpulse;
     public float PlayerShipRadiusM = 20;
     public float EnemyShipRadiusM = 20;
@@ -466,10 +467,12 @@ public class GameController : MonoBehaviour
     {
         targetDB.AddTarget(Didymos, TargetDB.TargetType.ASTEROID, DidymosRadiusM);
         targetDB.AddTarget(Didymoon, TargetDB.TargetType.MOON, DidymoonRadiusM);
-        targetDB.AddTarget(EezoDockingPort, TargetDB.TargetType.FRIEND_BASE, EezoDockingPortRadiusM);
+        targetDB.AddTarget(EezoApproach, TargetDB.TargetType.FRIEND_BASE, 0);
+        targetDB.AddTarget(EezoDock, TargetDB.TargetType.FRIEND_BASE, EezoDockingPortRadiusM);
         hudController.AddTargetIndicator(Didymos);
         hudController.AddTargetIndicator(Didymoon);
-        hudController.AddTargetIndicator(EezoDockingPort);
+        hudController.AddTargetIndicator(EezoApproach);
+        hudController.AddTargetIndicator(EezoDock);
     }
 
     private void AddHUDFixedIndicators()
