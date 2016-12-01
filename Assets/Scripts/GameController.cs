@@ -20,7 +20,9 @@ public class GameController : MonoBehaviour
     public GameObject Didymos;
     public GameObject Didymoon;
     public GameObject EezoDock;
+    public GameObject EezoDockGhost;
     public GameObject EezoApproach;
+    public GameObject EezoApproachGhost;
     public float PlayerInitialImpulse;
     public float PlayerShipRadiusM = 20;
     public float EnemyShipRadiusM = 20;
@@ -39,6 +41,7 @@ public class GameController : MonoBehaviour
     private TargetDB targetDB;
     private EnemyTracker enemyTracker;
     private GameObject player;
+    private Dictionary<GameObject, GameObject> followGhost = new Dictionary<GameObject, GameObject>();
     private float gameStartInputTimer = -1;
     private float gameOverInputTimer = -1;
     private GameState gameState;
@@ -63,7 +66,34 @@ public class GameController : MonoBehaviour
         enemyTracker = GetComponent<EnemyTracker>();
         targetDB.gameController = this;
         enemyTracker.gameController = this;
+        StartFollowGhost();
         TransitionToStarting();
+    }
+
+    private void StartFollowGhost()
+    {
+        followGhost = new Dictionary<GameObject, GameObject>()
+        {
+            {
+                EezoDockGhost,
+                EezoDock
+            },
+            {
+                EezoApproachGhost,
+                EezoApproach
+            }
+        };
+        UpdateFollows();
+    }
+
+    private void UpdateFollows()
+    {
+        foreach (GameObject ghost in followGhost.Keys)
+        {
+            GameObject shadow = followGhost[ghost];
+            shadow.transform.position = ghost.transform.position;
+            shadow.transform.rotation = ghost.transform.rotation;
+        }
     }
 
     public HUDController HUD()
@@ -235,19 +265,23 @@ public class GameController : MonoBehaviour
                 UpdateWaitForSplash();
                 break;
             case GameState.START_AWAIT_INPUT:
+                UpdateFollows();
                 UpdateCheckForGameStart();
                 break;
             case GameState.RUNNING:
                 UpdateShip();
+                UpdateFollows();
                 UpdateCheckForGamePause();
                 break;
             case GameState.PAUSED:
                 UpdateCheckForGameUnpause();
                 break;
             case GameState.GAME_OVER_NOT_ACCEPTING_INPUT:
+                UpdateFollows();
                 UpdateWaitForGameOver();
                 break;
             case GameState.GAME_OVER_AWAIT_INPUT:
+                UpdateFollows();
                 UpdateCheckForGameFinished();
                 break;
         }
@@ -467,12 +501,12 @@ public class GameController : MonoBehaviour
     {
         targetDB.AddTarget(Didymos, TargetDB.TargetType.ASTEROID, DidymosRadiusM);
         targetDB.AddTarget(Didymoon, TargetDB.TargetType.MOON, DidymoonRadiusM);
-        targetDB.AddTarget(EezoApproach, TargetDB.TargetType.FRIEND_BASE, 0);
         targetDB.AddTarget(EezoDock, TargetDB.TargetType.FRIEND_BASE, EezoDockingPortRadiusM);
+        targetDB.AddTarget(EezoApproach, TargetDB.TargetType.FRIEND_BASE, 0);
         hudController.AddTargetIndicator(Didymos);
         hudController.AddTargetIndicator(Didymoon);
-        hudController.AddTargetIndicator(EezoApproach);
         hudController.AddTargetIndicator(EezoDock);
+        hudController.AddTargetIndicator(EezoApproach);
     }
 
     private void AddHUDFixedIndicators()
