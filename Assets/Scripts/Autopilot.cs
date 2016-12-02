@@ -35,7 +35,6 @@ public class Autopilot : MonoBehaviour
         Command.INTERCEPT,
         Command.STRAFE,
         Command.RENDEZVOUS,
-        Command.APPROACH,
         Command.DOCK
     };
 
@@ -49,7 +48,6 @@ public class Autopilot : MonoBehaviour
         INTERCEPT,
         STRAFE,
         RENDEZVOUS,
-        APPROACH,
         DOCK
     }
 
@@ -127,9 +125,6 @@ public class Autopilot : MonoBehaviour
             case Command.RENDEZVOUS:
                 Rendezvous(target);
                 break;
-            case Command.APPROACH:
-                Approach(target);
-                break;
             case Command.DOCK:
                 Dock(target);
                 break;
@@ -171,13 +166,7 @@ public class Autopilot : MonoBehaviour
         AutopilotOff();
         PushAndStartCoroutine(RendezvousCo(target));
     }
-
-    private void Approach(GameObject target)
-    {
-        AutopilotOff();
-        PushAndStartCoroutine(ApproachSlowMainCo(target));
-    }
-
+    
     private void Dock(GameObject target)
     {
         AutopilotOff();
@@ -517,106 +506,52 @@ public class Autopilot : MonoBehaviour
         }
     }
 
-    IEnumerator RendezvousCo(GameObject target)
+    private float AimTimeSec = 3.55f;
+
+    private GameObject CreateVirtualApproachTarget(GameObject targetDock)
     {
-        for (;;)
-        {
-            float dist;
-            float relv;
-            Vector3 relVelUnit;
-            PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
-            float radius = gameController.TargetData().GetTargetRadius(target);
-            float turnAngle = 180f;
-            float a = ship.CurrentMainEngineAccPerSec();
-            float secToTurn = turnAngle / ship.CurrentRCSAngularDegPerSec(); // speedup * slowdown 
-            float distTurning = secToTurn * relv;
-            float timeToDecelerate = relv / a;
-            float distToDecelerate = 0.5f * a * Mathf.Pow(timeToDecelerate, 2f);
-            float stoppingDist = distTurning + distToDecelerate + radius + RendezvousDistM;
-            if (dist <= stoppingDist)
-            {
-                if (ship.IsMainEngineGo())
-                {
-                    ship.MainEngineCutoff();
-                }
-                yield return PushAndStartCoroutine(KillRelVCo(target));
-                yield return PushAndStartCoroutine(RotToTarget(target));
-                yield break;
-            }
-            else
-            {
-                if (!ship.IsMainEngineGo())
-                {
-                    ship.MainEngineGo();
-                }
-                yield return PushAndStartCoroutine(APNGRotateBurnCo(target));
-                yield return new WaitForEndOfFrame();
-            }
-        }
+        float radius = gameController.TargetData().GetTargetRadius(targetDock);
+        float distFromDock = radius + RendezvousDistM;
+        GameObject approach = PointForward(targetDock, distFromDock);
+        return approach;
     }
 
-    IEnumerator ApproachCo(GameObject target)
+    private GameObject PointForward(GameObject targetDock, float distFromDock)
     {
-        for (;;)
-        {
-            float dist;
-            float relv;
-            Vector3 relVelUnit;
-            PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
-            float a = ship.CurrentMainEngineAccPerSec();
-            float timeToRot = Turn180Sec();
-            float distTurning = timeToRot * relv;
-            float timeToDecelerate = relv / a;
-            float distToDecelerate =  0.5f * a * Mathf.Pow(timeToDecelerate, 2f);
-            float apngResponseDist = distTurning; // worst case
-            float stoppingDist = apngResponseDist + distTurning + distToDecelerate;
-            float minDist = MinBurnDist(timeToRot);
-            float killDist = Mathf.Max(stoppingDist, minDist); // + fudge
-            if (dist <= killDist)
-            {
-                yield return PushAndStartCoroutine(ApproachSlowMainCo(target));
-                yield break;
-            }
-            else
-            {
-                if (!ship.IsMainEngineGo())
-                {
-                    ship.MainEngineGo();
-                }
-                yield return PushAndStartCoroutine(APNGRotateBurnCo(target));
-                yield return new WaitForEndOfFrame();
-            }
-        }
+        Vector3 approachPos = targetDock.transform.position + distFromDock * targetDock.transform.forward;
+        Quaternion dockQ = targetDock.transform.rotation;
+        Quaternion approachRot = Quaternion.Euler(0f, 180f, 0f) * dockQ;
+        GameObject g = new GameObject();
+        g.transform.position = approachPos;
+        g.transform.rotation = approachRot;
+        return g;
     }
-    private float AimTimeSec = 3.6f;
 
-    IEnumerator ApproachSlowMainCo(GameObject target)
+    IEnumerator RendezvousCo(GameObject targetDock)
     {
         for (;;)
         {
+            GameObject targetApproach = CreateVirtualApproachTarget(targetDock);
             if (ship.IsMainEngineGo())
             {
                 ship.MainEngineCutoff();
             }
-            yield return PushAndStartCoroutine(KillRelVCo(target));
-            yield return PushAndStartCoroutine(RotToTarget(target));
+            yield return PushAndStartCoroutine(KillRelVCo(targetDock));
             float dist;
-            float relv;
-            Vector3 relVelUnit;
-            PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
+            PhysicsUtils.CalcDistance(transform, targetApproach, out dist);
             float minBurnDist = MinBurnDist(1f);
             if (dist < minBurnDist)
             {
+                yield return PushAndStartCoroutine(RotToTarget(targetDock));
                 yield break;
             }
             else
             {
                 float idealBurnSec = IdealBurnSec(dist);
                 float burnSec = Mathf.Max(1f, idealBurnSec);
-                ship.MainEngineBurst(burnSec);
-                yield return new WaitForSeconds(burnSec);
-                yield return PushAndStartCoroutine(KillRelVCo(target));
-                yield return PushAndStartCoroutine(RotToTarget(target));
+                yield return PushAndStartCoroutine(RotToTarget(targetApproach));
+                yield return PushAndStartCoroutine(MainEngineBurnSec(burnSec));
+                yield return PushAndStartCoroutine(KillRelVCo(targetDock));
             }
         }
     }
