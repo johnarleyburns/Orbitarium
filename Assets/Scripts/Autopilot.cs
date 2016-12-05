@@ -8,13 +8,13 @@ public class Autopilot : MonoBehaviour
     public GameController gameController;
 
     public float UpdateTrackTime = 0.2f;
-    public float MaxRCSAutoBurnSec = 10;
+    public float MaxRCSAutoBurnSec = 60f;
     public float MinDeltaVforBurn = 0.1f;
-    public float InterceptDeltaV = 30;
+    public float InterceptDeltaV = 30f;
     public float MinRotToTargetDeltaTheta = 0.2f;
     public float MinAPNGDeltaTheta = 1f;
     public float MinMainEngineBurnSec = 0.5f;
-    public float RendezvousDistM = 100;
+    public float RendezvousDistM = 50f;
     public float StrafeDistM = 150f;
     public float GunRangeM = 1000f;
     public float MinFireTargetAngle = 0.5f;
@@ -75,7 +75,30 @@ public class Autopilot : MonoBehaviour
 
     void Update()
     {
+        UpdateDock();
+    }
 
+    private void UpdateDock()
+    {
+        bool showingDockMFD = gameController.GetComponent<MFDController>().IsShowingMFD(MFDController.MFDPanelType.DOCKING);
+        if (showingDockMFD)
+        {
+            GameObject targetDock = gameController.HUD().GetSelectedTarget();
+
+            float dist;
+            float relv;
+            Vector3 relunitvec;
+            PhysicsUtils.CalcRelV(transform.parent.transform, targetDock, out dist, out relv, out relunitvec);
+
+            float closingDist;
+            float closingRelv;
+            Vector2 planeVec;
+            CalcDockPlanar(targetDock, relv, relunitvec, out closingDist, out closingRelv, out planeVec);
+
+            gameController.InputControl().PropertyChanged("ClosingDistText", DisplayUtils.DistanceText(closingDist));
+            gameController.InputControl().PropertyChanged("ClosingVText", DisplayUtils.RelvText(closingRelv));
+            gameController.InputControl().PropertyChanged("DockingX", planeVec);
+        }
     }
 
     private void KillRot()
@@ -170,6 +193,7 @@ public class Autopilot : MonoBehaviour
     private void Dock(GameObject target)
     {
         AutopilotOff();
+        PushAndStartCoroutine(DockCo(target));
     }
 
     #region CoroutineHandlers
@@ -429,7 +453,26 @@ public class Autopilot : MonoBehaviour
             yield break;
         }
     }
-    
+
+    IEnumerator KillRelVRCSCo(GameObject target)
+    {
+        float dist;
+        float relv;
+        Vector3 relVelUnit;
+        PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
+        Vector3 negVec = -1f * relVelUnit;
+        float sec = CalcDeltaVBurnRCSSec(relv);
+        if (sec >= ship.RCSMinBurnSec)
+        {
+            yield return PushAndStartCoroutine(RCSBurst(negVec, sec));
+        }
+        else
+        {
+            PopCoroutine();
+            yield break;
+        }
+    }
+
     IEnumerator APNGRotateBurnCo(GameObject target)
     {
         float dist;
@@ -518,7 +561,7 @@ public class Autopilot : MonoBehaviour
 
     private GameObject PointForward(GameObject targetDock, float distFromDock)
     {
-        Vector3 approachPos = targetDock.transform.position + distFromDock * targetDock.transform.forward;
+        Vector3 approachPos = PointForwardVec(targetDock, distFromDock);
         Quaternion dockQ = targetDock.transform.rotation;
         Quaternion approachRot = Quaternion.Euler(0f, 180f, 0f) * dockQ;
         GameObject g = new GameObject();
@@ -526,6 +569,14 @@ public class Autopilot : MonoBehaviour
         g.transform.rotation = approachRot;
         return g;
     }
+
+    private Vector3 PointForwardVec(GameObject targetDock, float distFromDock)
+    {
+        Vector3 approachPos = targetDock.transform.position + distFromDock * targetDock.transform.forward;
+        return approachPos;
+    }
+
+    private float MinRendezvousBurnSec = 2f;
 
     IEnumerator RendezvousCo(GameObject targetDock)
     {
@@ -539,7 +590,7 @@ public class Autopilot : MonoBehaviour
             yield return PushAndStartCoroutine(KillRelVCo(targetDock));
             float dist;
             PhysicsUtils.CalcDistance(transform, targetApproach, out dist);
-            float minBurnDist = MinBurnDist(1f);
+            float minBurnDist = MinBurnDist(MinRendezvousBurnSec);
             if (dist < minBurnDist)
             {
                 yield return PushAndStartCoroutine(RotToTarget(targetDock));
@@ -554,6 +605,179 @@ public class Autopilot : MonoBehaviour
                 yield return PushAndStartCoroutine(KillRelVCo(targetDock));
             }
         }
+    }
+
+    private float DockContactDistM = 1f;
+    private float DockSpeedMPS = 2f;
+    private float DockBurnRCSSec = 5f;
+    private float MinDockDeltaTheta = 0.5f;
+    private float MaxCenteredRelv = 0.05f;
+    //private float coastSec = 3f;
+
+    private void CalcDockPlanar(GameObject targetDock, float relv, Vector3 relunitvec, out float closingDist, out float closingRelv, out Vector2 planarVec)
+    {
+        Vector3 targetVec = CalcVectorToTarget(targetDock);
+        Vector3 relvec = Mathf.Abs(relv) * relunitvec;
+        Vector3 planeVec = Vector3.ProjectOnPlane(targetVec, transform.forward);
+        Vector3 planeRelVec = Vector3.ProjectOnPlane(relvec, transform.forward);
+        Vector3 closingVec = targetVec - planeVec;
+        Vector3 closingRelVec = relv * relunitvec - planeRelVec;
+        float closingAngle = Mathf.Rad2Deg * Vector3.Angle(closingVec, closingRelVec);
+//        float planeAngle = Vector3.Angle(planeVec, planeRelVec);
+  //      float planeDist = planeVec.magnitude;
+    //    float planeRelv = planeRelVec.magnitude;
+
+        closingDist = closingVec.magnitude;
+        closingRelv = (closingAngle <= 90 ? 1 : -1) * closingRelVec.magnitude;
+//        planarVec = planeVec;
+
+        Vector3 approachPoint = PointForwardVec(targetDock, closingDist);
+        Vector3 planeOrigin = approachPoint;
+        Vector3 planeNormal = (targetDock.transform.position - approachPoint).normalized;
+        Vector3 projectedVec = Vector3.ProjectOnPlane(transform.position, planeNormal);
+        Vector3 dockUp = targetDock.transform.up;
+/*
+        Vector3 vecToOrigin = approachPoint - transform.position;
+        Vector3 planeNormal = targetDock.transform.position - approachPoint;
+        Vector3 planeNormalized = planeNormal.normalized;
+        planarVec = Vector3.ProjectOnPlane(vecToOrigin, planeNormalized);
+
+        Vector3 d = transform.position - vecToOrigin;
+        Vector2 plane2d = new Vector2(plane2.x, plane2.y);
+*/
+
+        Transform emptyGO = new GameObject().transform;
+        Vector3 point = transform.position;
+        emptyGO.position = planeOrigin;
+        emptyGO.rotation = Quaternion.LookRotation(planeNormal, dockUp);
+        Vector3 localPoint = emptyGO.InverseTransformPoint(point);
+        localPoint.z = 0; // project to the plane.
+
+        planarVec = localPoint;
+    }
+
+    private void CalcDockRCSPlaneBurn(Vector3 targetVec, float relv, Vector3 relunitvec, out Vector3 rcsDir, out float rcsBurnSec)
+    {
+        Vector3 relvec = Mathf.Abs(relv) * relunitvec;
+        Vector3 planeVec = Vector3.ProjectOnPlane(targetVec, transform.forward);
+        Vector3 planeRelVec = Vector3.ProjectOnPlane(relvec, transform.forward);
+        //float planeAngle = Vector3.Angle(planeVec, planeRelVec);
+        //float planeDist = planeVec.magnitude;
+        //float planeRelv = planeRelVec.magnitude;
+        //float planeTimeToStop = planeRelv / ship.CurrentRCSAccelerationPerSec();
+        //float planeTimeToCenter = planeDist / planeRelv;
+        //float timeBeforeStop = planeTimeToStop;
+   //     if (planeRelVec.magnitude <= MaxCenteredRelv)
+     //   {
+            // close enough
+         //   rcsDir = Vector3.zero;
+       //     rcsBurnSec = 0;
+     //   }
+        //else
+            if (planeRelVec.magnitude > MaxCenteredRelv)
+        {
+            // stop
+            rcsDir = -planeRelVec.normalized;
+            rcsBurnSec = planeRelVec.magnitude / ship.CurrentRCSAccelerationPerSec();
+        }
+        else
+        {
+            // accelerate
+            rcsDir = planeVec.normalized;
+            rcsBurnSec = Mathf.Sqrt(planeVec.magnitude / ship.CurrentRCSAccelerationPerSec());
+        }
+
+        /*
+        float signedAngle = Vector3.Angle(transform.right, planeVec) *
+        Mathf.Sign(Vector3.Dot(transform.up, planeVec));
+        if (Mathf.Abs(signedAngle) <= 45)
+        {
+            rcsDir = transform.right;
+        }
+        else if (Mathf.Abs(signedAngle) >= 135)
+        {
+            rcsDir = -transform.right;
+        }
+        else if (Mathf.Sign(signedAngle) == 1)
+        {
+            rcsDir = transform.up;
+        }
+        else
+        {
+            rcsDir = -transform.up;
+        }
+        float rcsDirDist = Vector3.Project(planeVec, rcsDir).magnitude;
+        rcsBurnSec = Mathf.Sqrt(rcsDirDist / ship.CurrentRCSAccelerationPerSec());
+
+        rcsBurnSec = Mathf.Min(rcsBurnSec, MaxRCSAutoBurnSec);
+        */
+    }
+
+    private float MainEngineDockBurstSec = 1f;
+
+    IEnumerator DockCo(GameObject targetDock)
+    {
+        for (;;)
+        {
+            Vector3 dockVec = targetDock.transform.forward;
+            Vector3 approachVec = -dockVec;
+            float dist;
+            float relv;
+            Vector3 relunitvec;
+            PhysicsUtils.CalcRelV(transform.parent.transform, targetDock, out dist, out relv, out relunitvec);
+            float targetAngle = Quaternion.Angle(transform.rotation, Quaternion.LookRotation(approachVec, transform.up));
+//            Vector3 targetVec = CalcVectorToTarget(targetDock);
+//            float relvecAngle = Quaternion.Angle(Quaternion.LookRotation(transform.forward), Quaternion.LookRotation(relvec));
+//            float stopSec = relv < 0 ? 0 : relv / ship.CurrentRCSAccelerationPerSec();
+//            float stopDist = 0.5f * ship.CurrentRCSAccelerationPerSec() * Mathf.Pow(stopSec, 2);
+            float MinDeltaVForRCSBurn = ship.CurrentRCSAccelerationPerSec() * ship.RCSMinBurnSec;
+
+            Vector3 targetVec = CalcVectorToTarget(targetDock);
+            Vector3 planeVec = Vector3.ProjectOnPlane(targetVec, transform.forward);
+            float dockTheta = Mathf.Rad2Deg * Mathf.Asin(planeVec.magnitude / targetVec.magnitude);
+            float mainBurstDist = 0.5f * ship.CurrentMainEngineAccPerSec() * Mathf.Pow(MinMainEngineBurnSec, 2f);
+            float stopAfterMainBurstSec = ship.CurrentMainEngineAccPerSec() * MinMainEngineBurnSec / ship.CurrentRCSAccelerationPerSec();
+            float stopAfterRcsDist = 0.5f * ship.CurrentRCSAccelerationPerSec() * Mathf.Pow(stopAfterMainBurstSec, 2);
+            if (dist <= DockContactDistM && Mathf.Abs(targetAngle) < MinDockDeltaTheta && Mathf.Abs(relv) < MinDeltaVForRCSBurn) // close enough
+            {
+                PopCoroutine();
+                yield break;
+            }
+            else if (relv > MaxCenteredRelv)
+            {
+                yield return PushAndStartCoroutine(KillRelVRCSCo(targetDock));
+            }
+            else if (Mathf.Abs(targetAngle) > MinDockDeltaTheta) // rot to tgt
+            {
+                yield return PushAndStartCoroutine(RotToUnitVec(approachVec));
+            }
+            else if (dockTheta > MinDockDeltaTheta)
+            {
+                Vector3 planeBurnDir;
+                float planeBurnSec;
+                CalcDockRCSPlaneBurn(targetVec, relv, relunitvec, out planeBurnDir, out planeBurnSec);
+                yield return RCSBurst(planeBurnDir, planeBurnSec);
+            }
+            else if (dist > (mainBurstDist + stopAfterRcsDist))
+            {
+                ship.MainEngineBurst(MinMainEngineBurnSec);
+                yield return new WaitForSeconds(MinMainEngineBurnSec);
+            }
+            else if (dist > DockContactDistM)
+            {
+                // approach burst
+                yield return PushAndStartCoroutine(RCSBurst(targetVec.normalized, DockBurnRCSSec));
+            }
+            yield return new WaitForEndOfFrame();
+        }
+    }
+
+    IEnumerator RCSBurst(Vector3 direction, float sec)
+    {
+        sec = Mathf.Min(sec, MaxRCSAutoBurnSec);
+        ship.RCSBurst(direction, sec);
+        yield return new WaitForSeconds(sec);
+        PopCoroutine();
     }
 
     public float MinBurnDist(float sec)
@@ -644,13 +868,20 @@ public class Autopilot : MonoBehaviour
         return b;
     }
 
-
     private float CalcDeltaVBurnSec(float deltaV)
     {
         float mainEngineA = ship.CurrentMainEngineAccPerSec();
         float sec = deltaV / mainEngineA;
         //sec = sec > MinMainEngineBurnSec ? sec : 0;
         sec = sec > 0.1f ? sec : 0;
+        return sec;
+    }
+
+    private float CalcDeltaVBurnRCSSec(float deltaV)
+    {
+        float rcsA = ship.CurrentRCSAccelerationPerSec();
+        float sec = deltaV / rcsA;
+        sec = sec > ship.RCSMinBurnSec ? sec : 0;
         return sec;
     }
 

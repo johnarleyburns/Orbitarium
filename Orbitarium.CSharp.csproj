@@ -211,6 +211,7 @@
     <Compile Include="Assets\OffScreenIndicator\Scripts\OffScreenIndicatorManagerCanvas.cs" />
     <Compile Include="Assets\OffScreenIndicator\Scripts\OffScreenIndicatorManagerVR.cs" />
     <Compile Include="Assets\Scripts\Autopilot.cs" />
+    <Compile Include="Assets\Scripts\DisplayUtils.cs" />
     <Compile Include="Assets\Scripts\EnemyShip.cs" />
     <Compile Include="Assets\Scripts\EnemyShipController.cs" />
     <Compile Include="Assets\Scripts\EnemyTracker.cs" />

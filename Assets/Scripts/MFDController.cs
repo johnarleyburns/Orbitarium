@@ -15,19 +15,24 @@ public class MFDController : MonoBehaviour
     public GameObject MFDControlPanelPrefab;
     public GameObject MFDAutopilotPanelPrefab;
     public GameObject MFDWeaponPanelPrefab;
+    public GameObject MFDDockingPanelPrefab;
 
     private GameObject MFDControlPanel;
     private GameObject MFDAutopilotPanel;
     private GameObject MFDWeaponsPanel;
+    private GameObject MFDDockingPanel;
     private GameObject MFDControlPanel2;
     private GameObject MFDAutopilotPanel2;
     private GameObject MFDWeaponsPanel2;
+    private GameObject MFDDockingPanel2;
     private MFDControlController MFDControlPanelController;
     private MFDAutopilotController MFDAutopilotPanelController;
     private MFDWeaponsController MFDWeaponsPanelController;
+    private MFDDockingController MFDDockingPanelController;
     private MFDControlController MFDControlPanelController2;
     private MFDAutopilotController MFDAutopilotPanelController2;
     private MFDWeaponsController MFDWeaponsPanelController2;
+    private MFDDockingController MFDDockingPanelController2;
 
     protected GameController gameController;
     protected InputController inputController;
@@ -41,19 +46,23 @@ public class MFDController : MonoBehaviour
         MFDControlPanel = (GameObject)Instantiate(MFDControlPanelPrefab, MFDInnerPanel.transform);
         MFDAutopilotPanel = (GameObject)Instantiate(MFDAutopilotPanelPrefab, MFDInnerPanel.transform);
         MFDWeaponsPanel = (GameObject)Instantiate(MFDWeaponPanelPrefab, MFDInnerPanel.transform);
+        MFDDockingPanel = (GameObject)Instantiate(MFDDockingPanelPrefab, MFDInnerPanel.transform);
         MFDControlPanel2 = (GameObject)Instantiate(MFDControlPanelPrefab, MFDInnerPanel2.transform);
         MFDAutopilotPanel2 = (GameObject)Instantiate(MFDAutopilotPanelPrefab, MFDInnerPanel2.transform);
         MFDWeaponsPanel2 = (GameObject)Instantiate(MFDWeaponPanelPrefab, MFDInnerPanel2.transform);
+        MFDDockingPanel2 = (GameObject)Instantiate(MFDDockingPanelPrefab, MFDInnerPanel2.transform);
 
         int dropdownHeight = 30;
         Vector3 pos = MFDControlPanel.transform.localPosition;
         MFDControlPanel.transform.localPosition = new Vector3(pos.x, pos.y + dropdownHeight, pos.z);
         MFDAutopilotPanel.transform.localPosition = new Vector3(pos.x, pos.y + dropdownHeight, pos.z);
         MFDWeaponsPanel.transform.localPosition = new Vector3(pos.x, pos.y + dropdownHeight, pos.z);
+        MFDDockingPanel.transform.localPosition = new Vector3(pos.x, pos.y + dropdownHeight, pos.z);
         Vector3 pos2 = MFDControlPanel2.transform.localPosition;
         MFDControlPanel2.transform.localPosition = new Vector3(pos.x, pos2.y + dropdownHeight, pos2.z);
         MFDAutopilotPanel2.transform.localPosition = new Vector3(pos.x, pos2.y + dropdownHeight, pos2.z);
         MFDWeaponsPanel2.transform.localPosition = new Vector3(pos.x, pos2.y + dropdownHeight, pos2.z);
+        MFDDockingPanel2.transform.localPosition = new Vector3(pos.x, pos2.y + dropdownHeight, pos2.z);
 
         MFDControlPanelController = new MFDControlController();
         MFDControlPanelController.Connect(MFDControlPanel, inputController);
@@ -61,12 +70,16 @@ public class MFDController : MonoBehaviour
         MFDAutopilotPanelController.Connect(MFDAutopilotPanel, inputController, gameController);
         MFDWeaponsPanelController = new MFDWeaponsController();
         MFDWeaponsPanelController.Connect(MFDWeaponsPanel, inputController);
+        MFDDockingPanelController = new MFDDockingController();
+        MFDDockingPanelController.Connect(MFDDockingPanel, inputController, gameController);
         MFDControlPanelController2 = new MFDControlController();
         MFDControlPanelController2.Connect(MFDControlPanel2, inputController);
         MFDAutopilotPanelController2 = new MFDAutopilotController();
         MFDAutopilotPanelController2.Connect(MFDAutopilotPanel2, inputController, gameController);
         MFDWeaponsPanelController2 = new MFDWeaponsController();
         MFDWeaponsPanelController2.Connect(MFDWeaponsPanel2, inputController);
+        MFDDockingPanelController2 = new MFDDockingController();
+        MFDDockingPanelController2.Connect(MFDDockingPanel2, inputController, gameController);
 
         MFDDropdown.onValueChanged.AddListener(delegate { MFDDropdownOnValueChanged(); });
         MFDDropdown.value = Convert.ToInt32(MFDPanelType.CONTROL);
@@ -246,7 +259,7 @@ public class MFDController : MonoBehaviour
     public class MFDWeaponsController : IPropertyChangeObserver
     {
         private GameObject panel;
-        private Text targetText;
+//        private Text targetText;
 
         public void Connect(GameObject weaponsPanel, InputController inputController)
         {
@@ -267,6 +280,85 @@ public class MFDController : MonoBehaviour
 
     }
 
+    public class MFDDockingController : IPropertyChangeObserver
+    {
+        private InputController inputController;
+        private GameController gameController;
+        private GameObject panel;
+        private Text ClosingDistText;
+        private Text ClosingVText;
+        private RectTransform DockingX;
+
+        public void Connect(GameObject autoPanel, InputController input, GameController game)
+        {
+            inputController = input;
+            gameController = game;
+            panel = autoPanel;
+            ClosingDistText = panel.transform.Search("ClosingDistText").GetComponent<Text>();
+            ClosingVText = panel.transform.Search("ClosingVText").GetComponent<Text>();
+            DockingX = panel.transform.Search("DockingX").GetComponent<RectTransform>();            
+            inputController.AddObserver("ClosingDistText", this);
+            inputController.AddObserver("ClosingVText", this);
+            inputController.AddObserver("DockingX", this);
+            ClosingDistText.text = "INF";
+            ClosingVText.text = "INF";
+            DockingX.anchoredPosition = Vector2.zero;
+        }
+
+        public void PropertyChanged(string name, object value)
+        {
+            switch (name)
+            {
+                case "ClosingDistText":
+                    ClosingDistText.text = value as string;
+                    break;
+                case "ClosingVText":
+                    ClosingVText.text = value as string;
+                    break;
+                case "DockingX":
+                    Vector2? vec = value as Vector2?;
+                    Vector2 planarVec = vec == null ? Vector2.zero : vec.Value;
+                    UpdateDockingX(planarVec);
+                    break;
+            }
+        }  
+
+        private void UpdateDockingX(Vector2 planeVec)
+        {
+            Vector2 planeVecN = planeVec.normalized;
+            float r = MapWorldToMFDDockR(planeVec.magnitude);
+            float x = r * planeVecN.x;
+            float y = r * planeVecN.y;
+            DockingX.anchoredPosition = new Vector2(x, y);
+        }
+
+        private float innerRadius = 25f;
+        private float outerRadius = 100f;
+        // 0 - 0 - nan
+        // 1 - 25 - 0.1
+        // 10 - 50 - 1
+        // 100 - 75 - 2
+        // 1000 - 100 - 3
+        private float MapWorldToMFDDockR(float x)
+        {
+            float y;
+            if (x <= 1)
+            {
+                y = x * innerRadius;
+            }
+            else if (x <= 1000)
+            {
+                y = innerRadius + Mathf.Log10(x) * innerRadius;
+            }
+            else
+            {
+                y = outerRadius;
+            }
+            return y;
+        }
+
+    }
+
     private void MFDDropdownOnValueChanged()
     {
         int val = MFDDropdown.value;
@@ -279,6 +371,7 @@ public class MFDController : MonoBehaviour
         MFDControlPanel.SetActive(panel == MFDPanelType.CONTROL);
         MFDAutopilotPanel.SetActive(panel == MFDPanelType.AUTOPILOT);
         MFDWeaponsPanel.SetActive(panel == MFDPanelType.WEAPONS);
+        MFDDockingPanel.SetActive(panel == MFDPanelType.DOCKING);
     }
 
     private void MFDDropdownOnValueChanged2()
@@ -293,13 +386,22 @@ public class MFDController : MonoBehaviour
         MFDControlPanel2.SetActive(panel == MFDPanelType.CONTROL);
         MFDAutopilotPanel2.SetActive(panel == MFDPanelType.AUTOPILOT);
         MFDWeaponsPanel2.SetActive(panel == MFDPanelType.WEAPONS);
+        MFDDockingPanel2.SetActive(panel == MFDPanelType.DOCKING);
     }
 
-    private enum MFDPanelType
+    public enum MFDPanelType
     {
         CONTROL,
         AUTOPILOT,
-        WEAPONS
+        WEAPONS,
+        DOCKING
+    }
+
+    public bool IsShowingMFD(MFDPanelType t)
+    {
+        int mfdCode = Convert.ToInt32(t);
+        return (MFDPanel.activeInHierarchy && MFDDropdown.value == mfdCode)
+        || (MFDPanel2.activeInHierarchy && MFDDropdown2.value == mfdCode);
     }
 
     private MFDPanelType MFDPanelTypeFromInt(int val)
@@ -336,8 +438,9 @@ public class MFDController : MonoBehaviour
         {
             MFDPanel.SetActive(true);
         }
-        if (gameController != null && gameController.GetPlayer() != null)
+        if (!MFDPanel2.activeInHierarchy)
         {
+            MFDPanel2.SetActive(true);
         }
     }
 
@@ -346,6 +449,10 @@ public class MFDController : MonoBehaviour
         if (MFDPanel.activeInHierarchy)
         {
             MFDPanel.SetActive(false);
+        }
+        if (MFDPanel2.activeInHierarchy)
+        {
+            MFDPanel2.SetActive(false);
         }
     }
 

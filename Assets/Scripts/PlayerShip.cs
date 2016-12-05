@@ -2,6 +2,7 @@
 using UnityEngine.UI;
 using System.Collections.Generic;
 using Greyman;
+using System.Collections;
 
 public class PlayerShip : MonoBehaviour
 {
@@ -55,10 +56,10 @@ public class PlayerShip : MonoBehaviour
 
     public void UpdateShip()
     {
-        UpdateRCSMode();
         UpdateCameraMode();
         UpdateCameraInput();
         UpdateRCSInput();
+        UpdateRCSAudio();
         UpdateEngineInput();
         UpdateFuelUI();
         UpdateEngineUI();
@@ -85,16 +86,16 @@ public class PlayerShip : MonoBehaviour
     public void SetRCSModeRotate()
     {
         currentRCSMode = RCSMode.Rotate;
-        UpdateRCSMode();
+        ChangeRCSMode();
     }
 
     public void SetRCSModeTranslate()
     {
         currentRCSMode = RCSMode.Translate;
-        UpdateRCSMode();
+        ChangeRCSMode();
     }
 
-    public void UpdateRCSMode()
+    public void ChangeRCSMode()
     {
         if (gameController != null)
         {
@@ -102,16 +103,24 @@ public class PlayerShip : MonoBehaviour
             {
                 case RCSMode.Rotate:
                     inputController.PropertyChanged("RotateButton", true);
-                    if (audioController.IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCS))
-                    {
-                        audioController.Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
-                    }
                     break;
                 case RCSMode.Translate:
                 default:
                     inputController.PropertyChanged("RotateButton", false);
                     break;
             }
+        }
+    }
+
+    private void UpdateRCSAudio()
+    {
+        if (ship.IsRCSFiring() && !audioController.IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCS))
+        {
+            audioController.Play(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
+        }
+        else if (!ship.IsRCSFiring() && audioController.IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCS))
+        {
+            audioController.Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
         }
     }
 
@@ -133,7 +142,7 @@ public class PlayerShip : MonoBehaviour
                 currentRCSMode = RCSMode.Rotate;
                 break;
         }
-        UpdateRCSMode();
+        ChangeRCSMode();
     }
 
     void ToggleCamera()
@@ -555,15 +564,7 @@ public class PlayerShip : MonoBehaviour
             }
             if (v != Vector3.zero)
             {
-                ship.ApplyRCSImpulse(v);
-                if (!audioController.IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCS))
-                {
-                    audioController.Play(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
-                }
-            }
-            else
-            {
-                audioController.Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCS);
+                ship.RCSBurst(v, ship.RCSMinBurnSec);
             }
         }
     }

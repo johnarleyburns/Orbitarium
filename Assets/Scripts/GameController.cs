@@ -21,6 +21,7 @@ public class GameController : MonoBehaviour
     public GameObject Didymoon;
     public GameObject EezoDock;
     public GameObject EezoDockGhost;
+    public Transform SpawnPoint;
     public float PlayerInitialImpulse;
     public float PlayerShipRadiusM = 20;
     public float EnemyShipRadiusM = 20;
@@ -374,14 +375,14 @@ public class GameController : MonoBehaviour
     {
         DestroyPlayer();
         player = Instantiate(PlayerShipPrefab, Vector3.zero, Quaternion.identity) as GameObject;
-        player.transform.position = Vector3.zero;
-        player.transform.rotation = Quaternion.identity;
         PlayerShipController controller = player.GetComponent<PlayerShipController>();
         controller.SetGameController(this);
         GravityEngine.instance.AddBody(player);
         GameObject playerModel = controller.GetShipModel();
         SetupCameras(playerModel);
         playerModel.GetComponent<PlayerShip>().StartShip();
+        player.transform.position = SpawnPoint.position;
+        playerModel.transform.rotation = SpawnPoint.rotation;
     }
 
     private void SetupInitialVelocities()
