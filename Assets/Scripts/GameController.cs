@@ -88,6 +88,9 @@ public class GameController : MonoBehaviour
             GameObject shadow = followGhost[ghost];
             shadow.transform.position = ghost.transform.position;
             shadow.transform.rotation = ghost.transform.rotation;
+            shadow.transform.GetChild(0).localScale = ghost.transform.GetChild(0).localScale;
+            shadow.transform.GetChild(0).position = ghost.transform.GetChild(0).position;
+            shadow.transform.GetChild(0).rotation = ghost.transform.GetChild(0).rotation;
         }
     }
 

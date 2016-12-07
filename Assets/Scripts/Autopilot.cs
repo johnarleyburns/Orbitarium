@@ -95,8 +95,23 @@ public class Autopilot : MonoBehaviour
             Vector2 planeVec;
             CalcDockPlanar(targetDock, relv, relunitvec, out closingDist, out closingRelv, out planeVec);
 
+            //            Vector3 projX = Vector3.ProjectOnPlane(transform.right, -targetDock.transform.GetChild(0).transform.forward);
+            //          float dockAngleX = Vector3.Angle(-targetDock.transform.GetChild(0).transform.right, projX);
+            //        Vector3 projY = Vector3.ProjectOnPlane(transform.up, targetDock.transform.GetChild(0).transform.forward);
+            //      float dockAngleY = Vector3.Angle(targetDock.transform.GetChild(0).transform.up, projY);
+            //    Vector3 projZ = Vector3.ProjectOnPlane(transform.forward, -targetDock.transform.GetChild(0).transform.up);
+            //  float dockAngleZ = Vector3.Angle(-targetDock.transform.GetChild(0).transform.forward, projZ);
+            //float warnThreshold = MinDockDeltaTheta;
+            //float badThreshold = 2f * MinDockDeltaTheta;
+
+            float dockAngleX = Vector3.Angle(targetDock.transform.GetChild(0).transform.right, transform.right);
+            float dockAngleY = Vector3.Angle(targetDock.transform.GetChild(0).transform.up, transform.up);
+            float dockAngleZ = Vector3.Angle(targetDock.transform.GetChild(0).transform.forward, transform.forward);
+
             gameController.InputControl().PropertyChanged("ClosingDistText", DisplayUtils.DistanceText(closingDist));
             gameController.InputControl().PropertyChanged("ClosingVText", DisplayUtils.RelvText(closingRelv));
+            //gameController.InputControl().PropertyChanged("DockAngleColor", DisplayUtils.ColorValueBetween(dockAngle, warnThreshold, badThreshold));
+            gameController.InputControl().PropertyChanged("DockAngleText", DisplayUtils.Angle3Text(dockAngleX, dockAngleY, dockAngleZ));
             gameController.InputControl().PropertyChanged("DockingX", planeVec);
         }
     }
@@ -549,9 +564,9 @@ public class Autopilot : MonoBehaviour
         }
     }
 
-    private float AimTimeSec = 3.55f;
+    private float AimTimeSec = 3.45f;
 
-    private GameObject CreateVirtualApproachTarget(GameObject targetDock)
+    private GameObject CreateVirtualApproachTarget(GameObject targetDock) // destroy g after using
     {
         float radius = gameController.TargetData().GetTargetRadius(targetDock);
         float distFromDock = radius + RendezvousDistM;
@@ -559,10 +574,10 @@ public class Autopilot : MonoBehaviour
         return approach;
     }
 
-    private GameObject PointForward(GameObject targetDock, float distFromDock)
+    private GameObject PointForward(GameObject targetDock, float distFromDock) // destroy g after using
     {
         Vector3 approachPos = PointForwardVec(targetDock, distFromDock);
-        Quaternion dockQ = targetDock.transform.rotation;
+        Quaternion dockQ = targetDock.transform.GetChild(0).transform.rotation;
         Quaternion approachRot = Quaternion.Euler(0f, 180f, 0f) * dockQ;
         GameObject g = new GameObject();
         g.transform.position = approachPos;
@@ -572,7 +587,7 @@ public class Autopilot : MonoBehaviour
 
     private Vector3 PointForwardVec(GameObject targetDock, float distFromDock)
     {
-        Vector3 approachPos = targetDock.transform.position + distFromDock * targetDock.transform.forward;
+        Vector3 approachPos = targetDock.transform.position + distFromDock * targetDock.transform.GetChild(0).transform.forward;
         return approachPos;
     }
 
@@ -604,6 +619,7 @@ public class Autopilot : MonoBehaviour
                 yield return PushAndStartCoroutine(MainEngineBurnSec(burnSec));
                 yield return PushAndStartCoroutine(KillRelVCo(targetDock));
             }
+            Destroy(targetApproach);
         }
     }
 
@@ -616,44 +632,28 @@ public class Autopilot : MonoBehaviour
 
     private void CalcDockPlanar(GameObject targetDock, float relv, Vector3 relunitvec, out float closingDist, out float closingRelv, out Vector2 planarVec)
     {
-        Vector3 targetVec = CalcVectorToTarget(targetDock);
+        Transform dockGhostModel = targetDock.transform.GetChild(0);
+        Vector3 planeOrigin = dockGhostModel.position;
+        Vector3 planeNormal = dockGhostModel.forward;
+        Vector3 dockUp = dockGhostModel.up;
+        GameObject emptyGO = new GameObject();
+        Vector3 shipModelPoint = transform.position;
+        emptyGO.transform.position = planeOrigin;
+        emptyGO.transform.rotation = Quaternion.LookRotation(planeNormal, dockUp);
+        Vector3 localPoint = emptyGO.transform.InverseTransformPoint(shipModelPoint);
+        localPoint.z = 0; // project to the plane.
+        Destroy(emptyGO);
+        planarVec = localPoint;
+
+        Vector3 targetVec = planeOrigin - shipModelPoint;
         Vector3 relvec = Mathf.Abs(relv) * relunitvec;
         Vector3 planeVec = Vector3.ProjectOnPlane(targetVec, transform.forward);
         Vector3 planeRelVec = Vector3.ProjectOnPlane(relvec, transform.forward);
         Vector3 closingVec = targetVec - planeVec;
         Vector3 closingRelVec = relv * relunitvec - planeRelVec;
         float closingAngle = Mathf.Rad2Deg * Vector3.Angle(closingVec, closingRelVec);
-//        float planeAngle = Vector3.Angle(planeVec, planeRelVec);
-  //      float planeDist = planeVec.magnitude;
-    //    float planeRelv = planeRelVec.magnitude;
-
         closingDist = closingVec.magnitude;
         closingRelv = (closingAngle <= 90 ? 1 : -1) * closingRelVec.magnitude;
-//        planarVec = planeVec;
-
-        Vector3 approachPoint = PointForwardVec(targetDock, closingDist);
-        Vector3 planeOrigin = approachPoint;
-        Vector3 planeNormal = (targetDock.transform.position - approachPoint).normalized;
-        Vector3 projectedVec = Vector3.ProjectOnPlane(transform.position, planeNormal);
-        Vector3 dockUp = targetDock.transform.up;
-/*
-        Vector3 vecToOrigin = approachPoint - transform.position;
-        Vector3 planeNormal = targetDock.transform.position - approachPoint;
-        Vector3 planeNormalized = planeNormal.normalized;
-        planarVec = Vector3.ProjectOnPlane(vecToOrigin, planeNormalized);
-
-        Vector3 d = transform.position - vecToOrigin;
-        Vector2 plane2d = new Vector2(plane2.x, plane2.y);
-*/
-
-        Transform emptyGO = new GameObject().transform;
-        Vector3 point = transform.position;
-        emptyGO.position = planeOrigin;
-        emptyGO.rotation = Quaternion.LookRotation(planeNormal, dockUp);
-        Vector3 localPoint = emptyGO.InverseTransformPoint(point);
-        localPoint.z = 0; // project to the plane.
-
-        planarVec = localPoint;
     }
 
     private void CalcDockRCSPlaneBurn(Vector3 targetVec, float relv, Vector3 relunitvec, out Vector3 rcsDir, out float rcsBurnSec)
@@ -719,7 +719,7 @@ public class Autopilot : MonoBehaviour
     {
         for (;;)
         {
-            Vector3 dockVec = targetDock.transform.forward;
+            Vector3 dockVec = targetDock.transform.GetChild(0).transform.forward;
             Vector3 approachVec = -dockVec;
             float dist;
             float relv;

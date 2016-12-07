@@ -39,4 +39,30 @@ public class DisplayUtils {
             : string.Format("{0:,0.00} m/s", relV)))));
         return relvText;
     }
+
+    public static string Angle3Text(float x, float y, float z)
+    {
+        string angleText = string.Format("( {0:0}, {1:0}, {2:0} ) deg", x, y, z);
+        return angleText;
+    }
+
+    public static Color ColorValueBetween(float value, float warnThreshold, float badThreshold)
+    {
+        float v = Mathf.Abs(value);
+        Color c;
+        if (v >= badThreshold)
+        {
+            c = MFDController.COLOR_BAD;
+        }
+        else if (v >= warnThreshold)
+        {
+            c = MFDController.COLOR_WARN;
+        }
+        else
+        {
+            c = MFDController.COLOR_GOOD;
+        }
+        return c;
+    }
+
 }

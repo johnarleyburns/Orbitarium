@@ -5,6 +5,7 @@ using UnityEngine.UI;
 
 public class MFDController : MonoBehaviour
 {
+
     public Transform FPSCanvas;
     public GameObject MFDPanel;
     public Dropdown MFDDropdown;
@@ -16,6 +17,10 @@ public class MFDController : MonoBehaviour
     public GameObject MFDAutopilotPanelPrefab;
     public GameObject MFDWeaponPanelPrefab;
     public GameObject MFDDockingPanelPrefab;
+
+    public static Color COLOR_GOOD = new Color(14f, 236f, 89f, 218f);
+    public static Color COLOR_WARN = new Color(233f, 236f, 19f, 218f);
+    public static Color COLOR_BAD = new Color(194f, 45f, 39f, 218f);
 
     private GameObject MFDControlPanel;
     private GameObject MFDAutopilotPanel;
@@ -287,6 +292,7 @@ public class MFDController : MonoBehaviour
         private GameObject panel;
         private Text ClosingDistText;
         private Text ClosingVText;
+        private Text DockAngleText;
         private RectTransform DockingX;
 
         public void Connect(GameObject autoPanel, InputController input, GameController game)
@@ -296,9 +302,12 @@ public class MFDController : MonoBehaviour
             panel = autoPanel;
             ClosingDistText = panel.transform.Search("ClosingDistText").GetComponent<Text>();
             ClosingVText = panel.transform.Search("ClosingVText").GetComponent<Text>();
+            DockAngleText = panel.transform.Search("DockAngleText").GetComponent<Text>();
             DockingX = panel.transform.Search("DockingX").GetComponent<RectTransform>();            
             inputController.AddObserver("ClosingDistText", this);
             inputController.AddObserver("ClosingVText", this);
+            //inputController.AddObserver("DockAngleColor", this);
+            inputController.AddObserver("DockAngleText", this);
             inputController.AddObserver("DockingX", this);
             ClosingDistText.text = "INF";
             ClosingVText.text = "INF";
@@ -314,6 +323,14 @@ public class MFDController : MonoBehaviour
                     break;
                 case "ClosingVText":
                     ClosingVText.text = value as string;
+                    break;
+                //case "DockAngleColor":
+                //    Color? col = value as Color?;
+                //    Color c = col == null ? COLOR_GOOD : col.Value;
+                //    DockAngleText.color = c;
+                //    break;
+                case "DockAngleText":
+                    DockAngleText.text = value as string;
                     break;
                 case "DockingX":
                     Vector2? vec = value as Vector2?;
