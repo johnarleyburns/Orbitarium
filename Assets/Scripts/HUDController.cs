@@ -152,14 +152,26 @@ public class HUDController : MonoBehaviour, IPropertyChangeObserver
     
     public void SelectNextTargetPreferClosestEnemy()
     {
-        GameObject target = gameController.NextClosestTarget(selectedTarget, TargetDB.TargetType.ENEMY_SHIP);
+        GameObject target = gameController.NextClosestTarget(selectedTarget, TargetDB.TargetType.ENEMY);
         if (target == null)
         {
-            target = gameController.NextClosestTarget(selectedTarget, TargetDB.TargetType.ENEMY_BASE);
+            target = gameController.NextClosestTarget(selectedTarget, TargetDB.TargetType.FRIEND);
         }
         if (target == null)
         {
-            target = gameController.NextClosestTarget(selectedTarget, TargetDB.TargetType.FRIEND_BASE);
+            target = gameController.NextClosestTarget(selectedTarget, TargetDB.TargetType.DOCK);
+        }
+        if (target == null)
+        {
+            target = gameController.NextClosestTarget(selectedTarget, TargetDB.TargetType.MOON);
+        }
+        if (target == null)
+        {
+            target = gameController.NextClosestTarget(selectedTarget, TargetDB.TargetType.ASTEROID);
+        }
+        if (target == null)
+        {
+            target = gameController.NextClosestTarget(selectedTarget, TargetDB.TargetType.PLANET);
         }
         if (target == null)
         {
@@ -191,12 +203,10 @@ public class HUDController : MonoBehaviour, IPropertyChangeObserver
             case TargetDB.TargetType.MOON:
                 indicatorTemplate = HUD_INDICATOR_NONTHREAT_TEMPLATE;
                 break;
-            case TargetDB.TargetType.ENEMY_BASE:
-            case TargetDB.TargetType.ENEMY_SHIP:
+            case TargetDB.TargetType.ENEMY:
                 indicatorTemplate = HUD_INDICATOR_ENEMY_SHIP_TEMPLATE;
                 break;
-            case TargetDB.TargetType.FRIEND_SHIP:
-            case TargetDB.TargetType.FRIEND_BASE:
+            case TargetDB.TargetType.FRIEND:
                 indicatorTemplate = HUD_INDICATOR_NONTHREAT_TEMPLATE;
                 break;
         }

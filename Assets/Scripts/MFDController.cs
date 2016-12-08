@@ -290,45 +290,71 @@ public class MFDController : MonoBehaviour
         private InputController inputController;
         private GameController gameController;
         private GameObject panel;
+        private Dropdown DockTargetSelectorDropdown;
         private Text ClosingDistText;
         private Text ClosingVText;
         private Text DockAngleText;
         private RectTransform DockingX;
+        private List<GameObject> dockTargets = new List<GameObject>();
+        private GameObject dockTarget;
 
         public void Connect(GameObject autoPanel, InputController input, GameController game)
         {
             inputController = input;
             gameController = game;
             panel = autoPanel;
+            DockTargetSelectorDropdown = panel.transform.Search("DockTargetSelectorDropdown").GetComponent<Dropdown>();
             ClosingDistText = panel.transform.Search("ClosingDistText").GetComponent<Text>();
             ClosingVText = panel.transform.Search("ClosingVText").GetComponent<Text>();
             DockAngleText = panel.transform.Search("DockAngleText").GetComponent<Text>();
-            DockingX = panel.transform.Search("DockingX").GetComponent<RectTransform>();            
+            DockingX = panel.transform.Search("DockingX").GetComponent<RectTransform>();
+
+            inputController.AddObserver("TargetList", this);
             inputController.AddObserver("ClosingDistText", this);
             inputController.AddObserver("ClosingVText", this);
-            //inputController.AddObserver("DockAngleColor", this);
             inputController.AddObserver("DockAngleText", this);
             inputController.AddObserver("DockingX", this);
+
             ClosingDistText.text = "INF";
             ClosingVText.text = "INF";
             DockingX.anchoredPosition = Vector2.zero;
+
+            DockTargetSelectorDropdown.onValueChanged.AddListener(delegate { DockTargetSelectorDropdownOnValueChanged(); });
+            DockTargetSelectorDropdown.value = 0;
+            SyncDockTarget();
         }
 
         public void PropertyChanged(string name, object value)
         {
             switch (name)
             {
+                case "TargetList":
+                    GameObject oldTarget = dockTarget;
+                    List<GameObject> targets = value as List<GameObject>;
+                    if (targets != null)
+                    {
+                        List<string> names = new List<string>();
+                        names.Add("No Target");
+                        dockTargets.Clear();
+                        foreach (GameObject g in targets)
+                        {
+                            if (gameController.TargetData().GetTargetType(g) == TargetDB.TargetType.DOCK)
+                            {
+                                names.Add(g.name);
+                                dockTargets.Add(g);
+                            }
+                        }
+                        DockTargetSelectorDropdown.ClearOptions();
+                        DockTargetSelectorDropdown.AddOptions(names);
+                        DockTargetSelectorDropdown.value = 0;
+                    }
+                    break;
                 case "ClosingDistText":
                     ClosingDistText.text = value as string;
                     break;
                 case "ClosingVText":
                     ClosingVText.text = value as string;
                     break;
-                //case "DockAngleColor":
-                //    Color? col = value as Color?;
-                //    Color c = col == null ? COLOR_GOOD : col.Value;
-                //    DockAngleText.color = c;
-                //    break;
                 case "DockAngleText":
                     DockAngleText.text = value as string;
                     break;
@@ -338,7 +364,55 @@ public class MFDController : MonoBehaviour
                     UpdateDockingX(planarVec);
                     break;
             }
-        }  
+        }
+
+        public void Update()
+        {
+            Transform playerShipTransform = gameController.GetPlayerShip().transform;
+
+            float dist;
+            float relv;
+            Vector3 relunitvec;
+            PhysicsUtils.CalcRelV(gameController.GetPlayer().transform.parent.transform, dockTarget, out dist, out relv, out relunitvec);
+
+            float closingDist;
+            float closingRelv;
+            Vector2 planeVec;
+            PhysicsUtils.CalcDockPlanar(playerShipTransform, dockTarget, relv, relunitvec, out closingDist, out closingRelv, out planeVec);
+
+            Transform dockModel = dockTarget.transform.GetChild(0);
+            Quaternion dockAlignQ = playerShipTransform.rotation * Quaternion.Inverse(dockModel.rotation);
+            float dockAngleX = dockAlignQ.eulerAngles.x <= 180 ? dockAlignQ.eulerAngles.x : dockAlignQ.eulerAngles.x - 360;
+            float dockAngleY = dockAlignQ.eulerAngles.y <= 180 ? dockAlignQ.eulerAngles.y : dockAlignQ.eulerAngles.y - 360;
+            float dockAngleZ = dockAlignQ.eulerAngles.z <= 180 ? dockAlignQ.eulerAngles.z : dockAlignQ.eulerAngles.z - 360;
+
+            gameController.InputControl().PropertyChanged("ClosingDistText", DisplayUtils.DistanceText(closingDist));
+            gameController.InputControl().PropertyChanged("ClosingVText", DisplayUtils.RelvText(closingRelv));
+            //gameController.InputControl().PropertyChanged("DockAngleColor", DisplayUtils.ColorValueBetween(dockAngle, warnThreshold, badThreshold));
+            gameController.InputControl().PropertyChanged("DockAngleText", DisplayUtils.Angle3Text(dockAngleX, dockAngleY, dockAngleZ));
+            //gameController.InputControl().PropertyChanged("DockAngleText", DisplayUtils.QText(dockAlignQ));
+            gameController.InputControl().PropertyChanged("DockingX", planeVec);
+        }
+
+        private void SyncDockTarget()
+        {
+            int value = DockTargetSelectorDropdown.value;
+            int? tgt = value as int?;
+            int tgtVal = tgt == null ? -1 : tgt.Value;
+            if (tgtVal >= 0 && tgtVal < dockTargets.Count)
+            {
+                dockTarget = dockTargets[tgtVal];
+            }
+            else
+            {
+                dockTarget = null;
+            }
+        }
+
+        private void DockTargetSelectorDropdownOnValueChanged()
+        {
+            SyncDockTarget();
+        }
 
         private void UpdateDockingX(Vector2 planeVec)
         {
@@ -414,11 +488,16 @@ public class MFDController : MonoBehaviour
         DOCKING
     }
 
-    public bool IsShowingMFD(MFDPanelType t)
+    private bool IsShowingMFD1(MFDPanelType t)
     {
         int mfdCode = Convert.ToInt32(t);
-        return (MFDPanel.activeInHierarchy && MFDDropdown.value == mfdCode)
-        || (MFDPanel2.activeInHierarchy && MFDDropdown2.value == mfdCode);
+        return MFDPanel.activeInHierarchy && MFDDropdown.value == mfdCode;
+    }
+
+    private bool IsShowingMFD2(MFDPanelType t)
+    {
+        int mfdCode = Convert.ToInt32(t);
+        return MFDPanel2.activeInHierarchy && MFDDropdown2.value == mfdCode;
     }
 
     private MFDPanelType MFDPanelTypeFromInt(int val)
@@ -458,6 +537,14 @@ public class MFDController : MonoBehaviour
         if (!MFDPanel2.activeInHierarchy)
         {
             MFDPanel2.SetActive(true);
+        }
+        if (IsShowingMFD1(MFDPanelType.DOCKING))
+        {
+            MFDDockingPanelController.Update();
+        }
+        if (IsShowingMFD2(MFDPanelType.DOCKING))
+        {
+            MFDDockingPanelController2.Update();
         }
     }
 

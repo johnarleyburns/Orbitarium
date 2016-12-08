@@ -19,6 +19,8 @@ public class GameController : MonoBehaviour
     public Camera OverviewCamera;
     public GameObject Didymos;
     public GameObject Didymoon;
+    public GameObject EezoApproach;
+    public GameObject EezoApproachGhost;
     public GameObject EezoDock;
     public GameObject EezoDockGhost;
     public Transform SpawnPoint;
@@ -76,6 +78,10 @@ public class GameController : MonoBehaviour
             {
                 EezoDockGhost,
                 EezoDock
+            },
+            {
+                EezoApproachGhost,
+                EezoApproach
             }
         };
         UpdateFollows();
@@ -392,7 +398,7 @@ public class GameController : MonoBehaviour
     {
         float playerImpulse = Random.Range(0, PlayerInitialImpulse);
         GravityEngine.instance.ApplyImpulse(player.GetComponent<NBody>(), playerImpulse * player.transform.forward);
-        foreach (GameObject enemyShip in targetDB.GetTargets(TargetDB.TargetType.ENEMY_SHIP))
+        foreach (GameObject enemyShip in targetDB.GetTargets(TargetDB.TargetType.ENEMY))
         {
             float enemyImpulse = Random.Range(0, EnemyInitialImpulse);
             GravityEngine.instance.ApplyImpulse(enemyShip.GetComponent<NBody>(), enemyImpulse * -player.transform.forward);
@@ -418,7 +424,7 @@ public class GameController : MonoBehaviour
         controller.SetGameController(this);
         string nameRoot = controller.GetShipModel().GetComponent<EnemyShip>().VisibleName;
         enemyShip.name = string.Format("{0}-{1}", nameRoot, suffix);
-        targetDB.AddTarget(enemyShip, TargetDB.TargetType.ENEMY_SHIP, EnemyShipRadiusM);
+        targetDB.AddTarget(enemyShip, TargetDB.TargetType.ENEMY, EnemyShipRadiusM);
         hudController.AddTargetIndicator(enemyShip);
         hudController.SelectNextTargetPreferClosestEnemy();
     }
@@ -499,9 +505,11 @@ public class GameController : MonoBehaviour
     {
         targetDB.AddTarget(Didymos, TargetDB.TargetType.ASTEROID, DidymosRadiusM);
         targetDB.AddTarget(Didymoon, TargetDB.TargetType.MOON, DidymoonRadiusM);
-        targetDB.AddTarget(EezoDock, TargetDB.TargetType.FRIEND_BASE, EezoDockingPortRadiusM);
+        targetDB.AddTarget(EezoApproach, TargetDB.TargetType.APPROACH, 0);
+        targetDB.AddTarget(EezoDock, TargetDB.TargetType.DOCK, EezoDockingPortRadiusM);
         hudController.AddTargetIndicator(Didymos);
         hudController.AddTargetIndicator(Didymoon);
+        hudController.AddTargetIndicator(EezoApproach);
         hudController.AddTargetIndicator(EezoDock);
     }
 
@@ -527,7 +535,7 @@ public class GameController : MonoBehaviour
     public bool IsEnemyActive(GameObject target)
     {
         TargetDB.TargetType t = targetDB.GetTargetType(target);
-        bool isEnemy = t == TargetDB.TargetType.ENEMY_BASE || t == TargetDB.TargetType.ENEMY_SHIP;
+        bool isEnemy = t == TargetDB.TargetType.ENEMY;
         bool isDying = enemyTracker.IsEnemyDying(target);
         return isEnemy && !isDying;
     }
