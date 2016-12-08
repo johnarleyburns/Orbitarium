@@ -46,6 +46,12 @@ public class DisplayUtils {
         return angleText;
     }
 
+    public static string QText(Quaternion q)
+    {
+        string text = string.Format("( {0:0.00}, {1:0.00}, {2:0.00}, {3:0.00} )", q.w, q.x, q.y, q.z);
+        return text;
+    }
+
     public static Color ColorValueBetween(float value, float warnThreshold, float badThreshold)
     {
         float v = Mathf.Abs(value);

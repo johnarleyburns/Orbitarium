@@ -104,14 +104,17 @@ public class Autopilot : MonoBehaviour
             //float warnThreshold = MinDockDeltaTheta;
             //float badThreshold = 2f * MinDockDeltaTheta;
 
-            float dockAngleX = Vector3.Angle(targetDock.transform.GetChild(0).transform.right, transform.right);
-            float dockAngleY = Vector3.Angle(targetDock.transform.GetChild(0).transform.up, transform.up);
-            float dockAngleZ = Vector3.Angle(targetDock.transform.GetChild(0).transform.forward, transform.forward);
+            Transform dockModel = targetDock.transform.GetChild(0);
+            Quaternion dockAlignQ = transform.rotation * Quaternion.Inverse(dockModel.rotation);
+            float dockAngleX = dockAlignQ.eulerAngles.x <= 180 ? dockAlignQ.eulerAngles.x : dockAlignQ.eulerAngles.x - 360;
+            float dockAngleY = dockAlignQ.eulerAngles.y <= 180 ? dockAlignQ.eulerAngles.y : dockAlignQ.eulerAngles.y - 360;
+            float dockAngleZ = dockAlignQ.eulerAngles.z <= 180 ? dockAlignQ.eulerAngles.z : dockAlignQ.eulerAngles.z - 360;
 
             gameController.InputControl().PropertyChanged("ClosingDistText", DisplayUtils.DistanceText(closingDist));
             gameController.InputControl().PropertyChanged("ClosingVText", DisplayUtils.RelvText(closingRelv));
             //gameController.InputControl().PropertyChanged("DockAngleColor", DisplayUtils.ColorValueBetween(dockAngle, warnThreshold, badThreshold));
-            gameController.InputControl().PropertyChanged("DockAngleText", DisplayUtils.Angle3Text(dockAngleX, dockAngleY, dockAngleZ));
+//            gameController.InputControl().PropertyChanged("DockAngleText", DisplayUtils.Angle3Text(dockAngleX, dockAngleY, dockAngleZ));
+            gameController.InputControl().PropertyChanged("DockAngleText", DisplayUtils.QText(dockAlignQ));
             gameController.InputControl().PropertyChanged("DockingX", planeVec);
         }
     }
