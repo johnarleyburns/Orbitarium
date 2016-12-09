@@ -48,7 +48,7 @@ public class DisplayUtils {
 
     public static string QText(Quaternion q)
     {
-        string text = string.Format("( {0:0.00}, {1:0.00}, {2:0.00}, {3:0.00} )", q.w, q.x, q.y, q.z);
+        string text = string.Format("{0:0.00}, {1:0.00}, {2:0.00}, {3:0.00}", q.w, q.x, q.y, q.z);
         return text;
     }
 
