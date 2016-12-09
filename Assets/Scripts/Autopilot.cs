@@ -35,6 +35,7 @@ public class Autopilot : MonoBehaviour
         Command.INTERCEPT,
         Command.STRAFE,
         Command.RENDEZVOUS,
+        Command.APPROACH,
         Command.DOCK
     };
 
@@ -48,6 +49,7 @@ public class Autopilot : MonoBehaviour
         INTERCEPT,
         STRAFE,
         RENDEZVOUS,
+        APPROACH,
         DOCK
     }
 
@@ -71,52 +73,6 @@ public class Autopilot : MonoBehaviour
     {
         ship = GetComponent<RocketShip>();
         mainGun = GetComponent<PlayerShip>().MainGun;
-    }
-
-    void Update()
-    {
-        UpdateDock();
-    }
-
-    private void UpdateDock()
-    {
-        bool showingDockMFD = gameController.GetComponent<MFDController>().IsShowingMFD(MFDController.MFDPanelType.DOCKING);
-        if (showingDockMFD)
-        {
-            GameObject targetDock = gameController.HUD().GetSelectedTarget();
-
-            float dist;
-            float relv;
-            Vector3 relunitvec;
-            PhysicsUtils.CalcRelV(transform.parent.transform, targetDock, out dist, out relv, out relunitvec);
-
-            float closingDist;
-            float closingRelv;
-            Vector2 planeVec;
-            CalcDockPlanar(targetDock, relv, relunitvec, out closingDist, out closingRelv, out planeVec);
-
-            //            Vector3 projX = Vector3.ProjectOnPlane(transform.right, -targetDock.transform.GetChild(0).transform.forward);
-            //          float dockAngleX = Vector3.Angle(-targetDock.transform.GetChild(0).transform.right, projX);
-            //        Vector3 projY = Vector3.ProjectOnPlane(transform.up, targetDock.transform.GetChild(0).transform.forward);
-            //      float dockAngleY = Vector3.Angle(targetDock.transform.GetChild(0).transform.up, projY);
-            //    Vector3 projZ = Vector3.ProjectOnPlane(transform.forward, -targetDock.transform.GetChild(0).transform.up);
-            //  float dockAngleZ = Vector3.Angle(-targetDock.transform.GetChild(0).transform.forward, projZ);
-            //float warnThreshold = MinDockDeltaTheta;
-            //float badThreshold = 2f * MinDockDeltaTheta;
-
-            Transform dockModel = targetDock.transform.GetChild(0);
-            Quaternion dockAlignQ = transform.rotation * Quaternion.Inverse(dockModel.rotation);
-            float dockAngleX = dockAlignQ.eulerAngles.x <= 180 ? dockAlignQ.eulerAngles.x : dockAlignQ.eulerAngles.x - 360;
-            float dockAngleY = dockAlignQ.eulerAngles.y <= 180 ? dockAlignQ.eulerAngles.y : dockAlignQ.eulerAngles.y - 360;
-            float dockAngleZ = dockAlignQ.eulerAngles.z <= 180 ? dockAlignQ.eulerAngles.z : dockAlignQ.eulerAngles.z - 360;
-
-            gameController.InputControl().PropertyChanged("ClosingDistText", DisplayUtils.DistanceText(closingDist));
-            gameController.InputControl().PropertyChanged("ClosingVText", DisplayUtils.RelvText(closingRelv));
-            //gameController.InputControl().PropertyChanged("DockAngleColor", DisplayUtils.ColorValueBetween(dockAngle, warnThreshold, badThreshold));
-//            gameController.InputControl().PropertyChanged("DockAngleText", DisplayUtils.Angle3Text(dockAngleX, dockAngleY, dockAngleZ));
-            gameController.InputControl().PropertyChanged("DockAngleText", DisplayUtils.QText(dockAlignQ));
-            gameController.InputControl().PropertyChanged("DockingX", planeVec);
-        }
     }
 
     private void KillRot()
@@ -166,6 +122,9 @@ public class Autopilot : MonoBehaviour
             case Command.RENDEZVOUS:
                 Rendezvous(target);
                 break;
+            case Command.APPROACH:
+                Approach(target);
+                break;
             case Command.DOCK:
                 Dock(target);
                 break;
@@ -207,7 +166,13 @@ public class Autopilot : MonoBehaviour
         AutopilotOff();
         PushAndStartCoroutine(RendezvousCo(target));
     }
-    
+
+    private void Approach(GameObject target)
+    {
+        AutopilotOff();
+        PushAndStartCoroutine(ApproachCo(target));
+    }
+
     private void Dock(GameObject target)
     {
         AutopilotOff();
@@ -348,7 +313,7 @@ public class Autopilot : MonoBehaviour
         {
             Vector3 b = CalcVectorToTarget(target).normalized;
             Quaternion q = Quaternion.LookRotation(b);
-            bool converged = ship.ConvergeSpin(q, MinRotToTargetDeltaTheta);
+            bool converged = ship.ConvergeSpin(q, MinAPNGDeltaTheta);
             if (converged)
             {
                 cmgActive = false;
@@ -455,10 +420,10 @@ public class Autopilot : MonoBehaviour
 
     IEnumerator KillRelVCo(GameObject target)
     {
-        float dist;
+        Vector3 targetVec;
         float relv;
         Vector3 relVelUnit;
-        PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
+        PhysicsUtils.CalcRelV(transform.parent.transform, target, out targetVec, out relv, out relVelUnit);
         Vector3 negVec = -1f * relVelUnit;
         float sec = CalcDeltaVBurnSec(relv);
         if (sec >= MinMainEngineBurnSec)
@@ -474,10 +439,10 @@ public class Autopilot : MonoBehaviour
 
     IEnumerator KillRelVRCSCo(GameObject target)
     {
-        float dist;
+        Vector3 targetVec;
         float relv;
         Vector3 relVelUnit;
-        PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
+        PhysicsUtils.CalcRelV(transform.parent.transform, target, out targetVec, out relv, out relVelUnit);
         Vector3 negVec = -1f * relVelUnit;
         float sec = CalcDeltaVBurnRCSSec(relv);
         if (sec >= ship.RCSMinBurnSec)
@@ -493,10 +458,10 @@ public class Autopilot : MonoBehaviour
 
     IEnumerator APNGRotateBurnCo(GameObject target)
     {
-        float dist;
+        Vector3 targetVec;
         float relv;
         Vector3 relVelUnit;
-        PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
+        PhysicsUtils.CalcRelV(transform.parent.transform, target, out targetVec, out relv, out relVelUnit);
         Vector3 f = relVelUnit;
         Vector3 a = CalcAPNG(target.transform.position, relv, relVelUnit);
         if (relv < 0f)
@@ -522,10 +487,11 @@ public class Autopilot : MonoBehaviour
 
     IEnumerator StrafeCo(GameObject target)
     {
-        float dist;
+        Vector3 targetVec;
         float relv;
         Vector3 relVelUnit;
-        PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
+        PhysicsUtils.CalcRelV(transform.parent.transform, target, out targetVec, out relv, out relVelUnit);
+        float dist = targetVec.magnitude;
         Vector3 f = relVelUnit;
 
         // break if close enough
@@ -596,6 +562,33 @@ public class Autopilot : MonoBehaviour
 
     private float MinRendezvousBurnSec = 2f;
 
+    IEnumerator ApproachCo(GameObject targetDock)
+    {
+        for (;;)
+        {
+            if (ship.IsMainEngineGo())
+            {
+                ship.MainEngineCutoff();
+            }
+            yield return PushAndStartCoroutine(KillRelVCo(targetDock));
+            float dist;
+            PhysicsUtils.CalcDistance(transform, targetDock, out dist);
+            float minBurnDist = MinBurnDist(MinRendezvousBurnSec);
+            if (dist < minBurnDist)
+            {
+                yield break;
+            }
+            else
+            {
+                float idealBurnSec = IdealBurnSec(dist);
+                float burnSec = Mathf.Max(1f, idealBurnSec);
+                yield return PushAndStartCoroutine(RotToTarget(targetDock));
+                yield return PushAndStartCoroutine(MainEngineBurnSec(burnSec));
+                yield return PushAndStartCoroutine(KillRelVCo(targetDock));
+            }
+        }
+    }
+
     IEnumerator RendezvousCo(GameObject targetDock)
     {
         for (;;)
@@ -632,32 +625,6 @@ public class Autopilot : MonoBehaviour
     private float MinDockDeltaTheta = 0.5f;
     private float MaxCenteredRelv = 0.05f;
     //private float coastSec = 3f;
-
-    private void CalcDockPlanar(GameObject targetDock, float relv, Vector3 relunitvec, out float closingDist, out float closingRelv, out Vector2 planarVec)
-    {
-        Transform dockGhostModel = targetDock.transform.GetChild(0);
-        Vector3 planeOrigin = dockGhostModel.position;
-        Vector3 planeNormal = dockGhostModel.forward;
-        Vector3 dockUp = dockGhostModel.up;
-        GameObject emptyGO = new GameObject();
-        Vector3 shipModelPoint = transform.position;
-        emptyGO.transform.position = planeOrigin;
-        emptyGO.transform.rotation = Quaternion.LookRotation(planeNormal, dockUp);
-        Vector3 localPoint = emptyGO.transform.InverseTransformPoint(shipModelPoint);
-        localPoint.z = 0; // project to the plane.
-        Destroy(emptyGO);
-        planarVec = localPoint;
-
-        Vector3 targetVec = planeOrigin - shipModelPoint;
-        Vector3 relvec = Mathf.Abs(relv) * relunitvec;
-        Vector3 planeVec = Vector3.ProjectOnPlane(targetVec, transform.forward);
-        Vector3 planeRelVec = Vector3.ProjectOnPlane(relvec, transform.forward);
-        Vector3 closingVec = targetVec - planeVec;
-        Vector3 closingRelVec = relv * relunitvec - planeRelVec;
-        float closingAngle = Mathf.Rad2Deg * Vector3.Angle(closingVec, closingRelVec);
-        closingDist = closingVec.magnitude;
-        closingRelv = (closingAngle <= 90 ? 1 : -1) * closingRelVec.magnitude;
-    }
 
     private void CalcDockRCSPlaneBurn(Vector3 targetVec, float relv, Vector3 relunitvec, out Vector3 rcsDir, out float rcsBurnSec)
     {
@@ -724,18 +691,18 @@ public class Autopilot : MonoBehaviour
         {
             Vector3 dockVec = targetDock.transform.GetChild(0).transform.forward;
             Vector3 approachVec = -dockVec;
-            float dist;
+            Vector3 targetVec;
             float relv;
             Vector3 relunitvec;
-            PhysicsUtils.CalcRelV(transform.parent.transform, targetDock, out dist, out relv, out relunitvec);
+            PhysicsUtils.CalcRelV(transform.parent.transform, targetDock, out targetVec, out relv, out relunitvec);
             float targetAngle = Quaternion.Angle(transform.rotation, Quaternion.LookRotation(approachVec, transform.up));
 //            Vector3 targetVec = CalcVectorToTarget(targetDock);
 //            float relvecAngle = Quaternion.Angle(Quaternion.LookRotation(transform.forward), Quaternion.LookRotation(relvec));
 //            float stopSec = relv < 0 ? 0 : relv / ship.CurrentRCSAccelerationPerSec();
 //            float stopDist = 0.5f * ship.CurrentRCSAccelerationPerSec() * Mathf.Pow(stopSec, 2);
             float MinDeltaVForRCSBurn = ship.CurrentRCSAccelerationPerSec() * ship.RCSMinBurnSec;
+            float dist = targetVec.magnitude;
 
-            Vector3 targetVec = CalcVectorToTarget(targetDock);
             Vector3 planeVec = Vector3.ProjectOnPlane(targetVec, transform.forward);
             float dockTheta = Mathf.Rad2Deg * Mathf.Asin(planeVec.magnitude / targetVec.magnitude);
             float mainBurstDist = 0.5f * ship.CurrentMainEngineAccPerSec() * Mathf.Pow(MinMainEngineBurnSec, 2f);
@@ -900,13 +867,13 @@ public class Autopilot : MonoBehaviour
 
     private Vector3 CalcAPNGStrafe(GameObject target)
     {
-        float dist;
+        Vector3 targetVec;
         float relv;
         Vector3 relVelUnit;
-        PhysicsUtils.CalcRelV(transform.parent.transform, target, out dist, out relv, out relVelUnit);
+        PhysicsUtils.CalcRelV(transform.parent.transform, target, out targetVec, out relv, out relVelUnit);
         float N = NavigationalConstantAPNG;
         Vector3 vr = relv * -relVelUnit;
-        Vector3 r = CalcVectorToTarget(target);
+        Vector3 r = targetVec;
         Vector3 o = Vector3.Cross(r, vr) / Vector3.Dot(r, r);
         Vector3 a = Vector3.Cross(-N * Mathf.Abs(vr.magnitude) * r.normalized, o);
         return a;

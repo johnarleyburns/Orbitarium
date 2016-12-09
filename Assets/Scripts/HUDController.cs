@@ -85,10 +85,11 @@ public class HUDController : MonoBehaviour, IPropertyChangeObserver
         bool calcRelV = target.GetComponent<NBody>() != null;
         if (calcRelV)
         {
-            float targetDist;
+            Vector3 targetVec;
             float targetRelV;
             Vector3 targetRelVUnitVec;
-            PhysicsUtils.CalcRelV(gameController.GetPlayer().transform, target, out targetDist, out targetRelV, out targetRelVUnitVec);
+            PhysicsUtils.CalcRelV(gameController.GetPlayer().transform, target, out targetVec, out targetRelV, out targetRelVUnitVec);
+            float targetDist = targetVec.magnitude;
             if (isSelectedTarget)
             {
                 UpdateSelectedTargetIndicator(targetDist, targetRelV);
@@ -152,14 +153,26 @@ public class HUDController : MonoBehaviour, IPropertyChangeObserver
     
     public void SelectNextTargetPreferClosestEnemy()
     {
-        GameObject target = gameController.NextClosestTarget(selectedTarget, TargetDB.TargetType.ENEMY_SHIP);
+        GameObject target = gameController.NextClosestTarget(selectedTarget, TargetDB.TargetType.ENEMY);
         if (target == null)
         {
-            target = gameController.NextClosestTarget(selectedTarget, TargetDB.TargetType.ENEMY_BASE);
+            target = gameController.NextClosestTarget(selectedTarget, TargetDB.TargetType.FRIEND);
         }
         if (target == null)
         {
-            target = gameController.NextClosestTarget(selectedTarget, TargetDB.TargetType.FRIEND_BASE);
+            target = gameController.NextClosestTarget(selectedTarget, TargetDB.TargetType.DOCK);
+        }
+        if (target == null)
+        {
+            target = gameController.NextClosestTarget(selectedTarget, TargetDB.TargetType.MOON);
+        }
+        if (target == null)
+        {
+            target = gameController.NextClosestTarget(selectedTarget, TargetDB.TargetType.ASTEROID);
+        }
+        if (target == null)
+        {
+            target = gameController.NextClosestTarget(selectedTarget, TargetDB.TargetType.PLANET);
         }
         if (target == null)
         {
@@ -191,12 +204,10 @@ public class HUDController : MonoBehaviour, IPropertyChangeObserver
             case TargetDB.TargetType.MOON:
                 indicatorTemplate = HUD_INDICATOR_NONTHREAT_TEMPLATE;
                 break;
-            case TargetDB.TargetType.ENEMY_BASE:
-            case TargetDB.TargetType.ENEMY_SHIP:
+            case TargetDB.TargetType.ENEMY:
                 indicatorTemplate = HUD_INDICATOR_ENEMY_SHIP_TEMPLATE;
                 break;
-            case TargetDB.TargetType.FRIEND_SHIP:
-            case TargetDB.TargetType.FRIEND_BASE:
+            case TargetDB.TargetType.FRIEND:
                 indicatorTemplate = HUD_INDICATOR_NONTHREAT_TEMPLATE;
                 break;
         }

@@ -12,7 +12,7 @@ public class PlayerShip : MonoBehaviour
     public Weapon MainGun;
     public int healthMax = 3;
     public float minRelVtoDamage = 1;
-    public float DoubleTapInterval = 0.2f;
+    //public float DoubleTapInterval = 0.2f;
 
     //! Thrust scale
     private RocketShip ship;
@@ -26,10 +26,10 @@ public class PlayerShip : MonoBehaviour
     private CameraMode currentCameraMode;
     private int health;
     private bool rotInput = false;
-    private float doubleTapEngineTimer;
-    private float doubleTapRotatePlusTimer;
-    private float doubleTapRotateMinusTimer;
-    private float doubleTapTargetSelTimer;
+    //private float doubleTapEngineTimer;
+    //private float doubleTapRotatePlusTimer;
+    //private float doubleTapRotateMinusTimer;
+    //private float doubleTapTargetSelTimer;
 
     public void StartShip()
     {
@@ -44,10 +44,9 @@ public class PlayerShip : MonoBehaviour
         transform.parent.transform.rotation = Quaternion.identity;
         currentRCSMode = RCSMode.Rotate;
         currentCameraMode = CameraMode.FPS;
-        doubleTapEngineTimer = -1;
-        doubleTapRotatePlusTimer = -1;
-        doubleTapRotateMinusTimer = -1;
-        doubleTapTargetSelTimer = -1;
+        //doubleTapRotatePlusTimer = -1;
+        //doubleTapRotateMinusTimer = -1;
+        //doubleTapTargetSelTimer = -1;
         health = healthMax;
         rotInput = false;
 
@@ -242,7 +241,11 @@ public class PlayerShip : MonoBehaviour
 
     private void UpdateTargetSelection()
     {
-        UpdateDoubleTap(KeyCode.KeypadMultiply, ref doubleTapTargetSelTimer, gameController.HUD().SelectNextTargetPreferClosestEnemy, RotateTowardsTarget);
+//      UpdateDoubleTap(KeyCode.KeypadMultiply, ref doubleTapTargetSelTimer, gameController.HUD().SelectNextTargetPreferClosestEnemy, RotateTowardsTarget);
+        if (Input.GetKeyDown(KeyCode.KeypadMultiply))
+        {
+            gameController.HUD().SelectNextTargetPreferClosestEnemy();
+        }
     }
 
     private void UpdateKillRotV()
@@ -253,6 +256,7 @@ public class PlayerShip : MonoBehaviour
         }
     }
 
+    /*
     private delegate void TapFunc();
     private void UpdateDoubleTap(KeyCode keyCode, ref float timer, TapFunc singleTapFunc, TapFunc doubleTapFunc)
     {
@@ -282,17 +286,22 @@ public class PlayerShip : MonoBehaviour
             timer = -1;
         }
     }
+    */
 
     private void UpdateEngineInput()
     {
-        UpdateDoubleTap(KeyCode.KeypadEnter, ref doubleTapEngineTimer, ToggleEngine, Rendezvous);
+//      UpdateDoubleTap(KeyCode.KeypadEnter, ref doubleTapEngineTimer, ToggleEngine, Rendezvous);
+        if (Input.GetKeyDown(KeyCode.KeypadEnter))
+        {
+            ToggleEngine();
+        }
     }
 
-    private void BurstEngine()
-    {
-        float burnTime = DoubleTapInterval;
-        ship.MainEngineBurst(burnTime);
-    }
+//  private void BurstEngine()
+//    {
+//      float burnTime = DoubleTapInterval;
+//        ship.MainEngineBurst(burnTime);
+//    }
 
     private void ToggleEngine()
     {
@@ -442,7 +451,11 @@ public class PlayerShip : MonoBehaviour
 
     private void UpdateRotatePlus()
     {
-        UpdateDoubleTap(KeyCode.KeypadPlus, ref doubleTapRotatePlusTimer, RotateToPos, StrafeTarget);
+//        UpdateDoubleTap(KeyCode.KeypadPlus, ref doubleTapRotatePlusTimer, RotateToPos, StrafeTarget);
+        if (Input.GetKeyDown(KeyCode.KeypadPlus))
+        {
+            RotateToPos();
+        }
     }
 
     private void RotateToPos()
@@ -457,7 +470,11 @@ public class PlayerShip : MonoBehaviour
 
     private void UpdateRotateMinus()
     {
-        UpdateDoubleTap(KeyCode.KeypadMinus, ref doubleTapRotateMinusTimer, RotateToMinus, KillVTarget);
+        //        UpdateDoubleTap(KeyCode.KeypadMinus, ref doubleTapRotateMinusTimer, RotateToMinus, KillVTarget);
+        if (Input.GetKeyDown(KeyCode.KeypadMinus))
+        {
+            RotateToMinus();
+        }
     }
 
     private void RotateToMinus()
