@@ -16,10 +16,10 @@ public class TargetDB : MonoBehaviour {
         PLANET,
         ASTEROID,
         MOON,
-        FRIEND,
-        ENEMY,
-        APPROACH,
-        DOCK
+        FRIEND_SHIP,
+        FRIEND_BASE,
+        ENEMY_SHIP,
+        ENEMY_BASE
     }
 
     public int TargetTypeIndex(TargetType t)
