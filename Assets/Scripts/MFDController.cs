@@ -107,13 +107,13 @@ public class MFDController : MonoBehaviour
         public void Connect(GameObject controlPanel, InputController inputController)
         {
             panel = controlPanel;
-            RotateButton = panel.transform.Search("RotateButton").GetComponent<ToggleButton>();
-            TranslateButton = panel.transform.Search("TranslateButton").GetComponent<ToggleButton>();
-            GoThrustButton = panel.transform.Search("GoThrustButton").GetComponent<ToggleButton>();
+            //RotateButton = panel.transform.Search("RotateButton").GetComponent<ToggleButton>();
+            //TranslateButton = panel.transform.Search("TranslateButton").GetComponent<ToggleButton>();
+            GoThrustButton = panel.transform.Search("MainOnButton").GetComponent<ToggleButton>();
             FuelSlider = panel.transform.Search("FuelSlider").GetComponent<Slider>();
             FuelRemainingText = panel.transform.Search("FuelRemainingText").GetComponent<Text>();
-            inputController.AddObserver("RotateButton", this);
-            inputController.AddObserver("TranslateButton", this);
+            //inputController.AddObserver("RotateButton", this);
+            //inputController.AddObserver("TranslateButton", this);
             inputController.AddObserver("GoThrustButton", this);
             inputController.AddObserver("FuelSlider", this);
             inputController.AddObserver("FuelRemainingText", this);
