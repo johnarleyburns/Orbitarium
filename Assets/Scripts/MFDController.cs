@@ -70,7 +70,7 @@ public class MFDController : MonoBehaviour
         MFDDockingPanel2.transform.localPosition = new Vector3(pos.x, pos2.y + dropdownHeight, pos2.z);
 
         MFDControlPanelController = new MFDControlController();
-        MFDControlPanelController.Connect(MFDControlPanel, inputController);
+        MFDControlPanelController.Connect(MFDControlPanel, inputController, gameController);
         MFDAutopilotPanelController = new MFDAutopilotController();
         MFDAutopilotPanelController.Connect(MFDAutopilotPanel, inputController, gameController);
         MFDWeaponsPanelController = new MFDWeaponsController();
@@ -78,7 +78,7 @@ public class MFDController : MonoBehaviour
         MFDDockingPanelController = new MFDDockingController();
         MFDDockingPanelController.Connect(MFDDockingPanel, inputController, gameController);
         MFDControlPanelController2 = new MFDControlController();
-        MFDControlPanelController2.Connect(MFDControlPanel2, inputController);
+        MFDControlPanelController2.Connect(MFDControlPanel2, inputController, gameController);
         MFDAutopilotPanelController2 = new MFDAutopilotController();
         MFDAutopilotPanelController2.Connect(MFDAutopilotPanel2, inputController, gameController);
         MFDWeaponsPanelController2 = new MFDWeaponsController();
@@ -98,25 +98,29 @@ public class MFDController : MonoBehaviour
     public class MFDControlController : IPropertyChangeObserver
     {
         private GameObject panel;
+        private GameController gameController;
         private ToggleButton RotateButton;
         private ToggleButton TranslateButton;
-        private ToggleButton GoThrustButton;
+        private ToggleButton MainOnButton;
         private Slider FuelSlider;
         private Text FuelRemainingText;
-
-        public void Connect(GameObject controlPanel, InputController inputController)
+        
+        public void Connect(GameObject controlPanel, InputController inputController, GameController game)
         {
             panel = controlPanel;
+            gameController = game;
             //RotateButton = panel.transform.Search("RotateButton").GetComponent<ToggleButton>();
             //TranslateButton = panel.transform.Search("TranslateButton").GetComponent<ToggleButton>();
-            GoThrustButton = panel.transform.Search("MainOnButton").GetComponent<ToggleButton>();
+            MainOnButton = panel.transform.Search("MainOnButton").GetComponent<ToggleButton>();
             FuelSlider = panel.transform.Search("FuelSlider").GetComponent<Slider>();
             FuelRemainingText = panel.transform.Search("FuelRemainingText").GetComponent<Text>();
             //inputController.AddObserver("RotateButton", this);
             //inputController.AddObserver("TranslateButton", this);
-            inputController.AddObserver("GoThrustButton", this);
+            inputController.AddObserver("MainOnButton", this);
             inputController.AddObserver("FuelSlider", this);
             inputController.AddObserver("FuelRemainingText", this);
+
+            MainOnButton.onClick.AddListener(delegate { gameController.GetPlayerShip().ToggleEngine(); });
         }
 
         public void PropertyChanged(string name, object value)
@@ -133,9 +137,10 @@ public class MFDController : MonoBehaviour
                     RotateButton.isToggled = rot2 != null ? rot2.Value : false;
                     TranslateButton.isToggled = rot2 != null ? !rot2.Value : true;
                     break;
-                case "GoThrustButton":
+                case "MainOnButton":
                     bool? thrust = value as bool?;
-                    GoThrustButton.isToggled = thrust != null ? thrust.Value : false;
+                    MainOnButton.isToggled = thrust != null ? thrust.Value : false;
+                    MainOnButton.transform.GetChild(0).GetComponent<Text>().text = MainOnButton.isToggled ? "ON" : "OFF";
                     break;
                 case "FuelSlider":
                     float? fuel = value as float?;

@@ -52,7 +52,6 @@ public class PlayerShip : MonoBehaviour
 
     }
 
-
     public void UpdateShip()
     {
         UpdateCameraMode();
@@ -197,7 +196,7 @@ public class PlayerShip : MonoBehaviour
                 audioController.Stop(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE);
                 cameraController.StopShake();
             }
-            inputController.PropertyChanged("GoThrustButton", stillRunning);
+            inputController.PropertyChanged("MainOnButton", stillRunning);
         }
     }
 
@@ -303,9 +302,10 @@ public class PlayerShip : MonoBehaviour
 //        ship.MainEngineBurst(burnTime);
 //    }
 
-    private void ToggleEngine()
+    public void ToggleEngine()
     {
-        if (ship.IsMainEngineGo())
+        bool go = ship.IsMainEngineGo();
+        if (go)
         {
             ship.MainEngineCutoff();
         }
@@ -313,6 +313,7 @@ public class PlayerShip : MonoBehaviour
         {
             ship.MainEngineGo();
         }
+        inputController.PropertyChanged("MainEngineGo", go);
     }
 
     private void Rendezvous()
