@@ -42,14 +42,13 @@ public class PlayerShip : MonoBehaviour
         transform.rotation = Quaternion.identity;
         transform.parent.transform.position = Vector3.zero;
         transform.parent.transform.rotation = Quaternion.identity;
-        currentRCSMode = RCSMode.Rotate;
         currentCameraMode = CameraMode.FPS;
         //doubleTapRotatePlusTimer = -1;
         //doubleTapRotateMinusTimer = -1;
         //doubleTapTargetSelTimer = -1;
         health = healthMax;
         rotInput = false;
-
+        SetRCSModeRotate();
     }
 
     public void UpdateShip()
@@ -100,10 +99,12 @@ public class PlayerShip : MonoBehaviour
             switch (currentRCSMode)
             {
                 case RCSMode.Rotate:
+                    inputController.PropertyChanged("TranslateButton", false);
                     inputController.PropertyChanged("RotateButton", true);
                     break;
                 case RCSMode.Translate:
                 default:
+                    inputController.PropertyChanged("TranslateButton", true);
                     inputController.PropertyChanged("RotateButton", false);
                     break;
             }
@@ -128,7 +129,7 @@ public class PlayerShip : MonoBehaviour
         inputController.PropertyChanged("CommandExecuted", command);
     }
     
-    void ToggleRCSMode()
+    public void ToggleRCSMode()
     {
         switch (currentRCSMode)
         {
@@ -337,7 +338,7 @@ public class PlayerShip : MonoBehaviour
         {
             ship.MainEngineGo();
         }
-        inputController.PropertyChanged("MainOnButton", go);
+        inputController.PropertyChanged("MainOnButton", !go);
     }
 
     public void ToggleAuxEngine()
@@ -351,7 +352,21 @@ public class PlayerShip : MonoBehaviour
         {
             ship.AuxEngineGo();
         }
-        inputController.PropertyChanged("AuxOnButton", go);
+        inputController.PropertyChanged("AuxOnButton", !go);
+    }
+
+    public void ToggleRCSFineControl()
+    {
+        bool fine = ship.IsRCSFineControlOn();
+        if (fine)
+        {
+            ship.RCSFineControlOff();
+        }
+        else
+        {
+            ship.RCSFineControlOn();
+        }
+        inputController.PropertyChanged("RCSFineOnButton", !fine);
     }
 
     private void Rendezvous()
@@ -434,20 +449,6 @@ public class PlayerShip : MonoBehaviour
             if (Input.GetKey(KeyCode.Keypad4))
             {
                 rotInput = ship.ApplyRCSSpin(Quaternion.Euler(0, 0, 1));
-            }
-            if (Input.GetKey(KeyCode.Keypad7))
-            {
-                autopilot.ExecuteCommand(Autopilot.Command.ACTIVE_TRACK, gameController.GetComponent<InputController>().RelativeVelocityNormalMinusDirectionIndicator);
-                inputController.PropertyChanged("CommandExecuted", Autopilot.Command.ACTIVE_TRACK);
-                ToggleButtons(false, false, false, true);
-                rotInput = false;
-            }
-            if (Input.GetKey(KeyCode.Keypad9))
-            {
-                autopilot.ExecuteCommand(Autopilot.Command.ACTIVE_TRACK, gameController.GetComponent<InputController>().RelativeVelocityNormalPlusDirectionIndicator);
-                inputController.PropertyChanged("CommandExecuted", Autopilot.Command.ACTIVE_TRACK);
-                ToggleButtons(false, false, true, false);
-                rotInput = false;
             }
             if (rotInput)
             {
@@ -620,7 +621,7 @@ public class PlayerShip : MonoBehaviour
             }
             if (v != Vector3.zero)
             {
-                ship.RCSBurst(v, ship.RCSMinBurnSec);
+                ship.RCSBurst(v, ship.RCSBurnMinSec);
             }
         }
     }

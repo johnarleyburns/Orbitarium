@@ -445,7 +445,7 @@ public class Autopilot : MonoBehaviour
         PhysicsUtils.CalcRelV(transform.parent.transform, target, out targetVec, out relv, out relVelUnit);
         Vector3 negVec = -1f * relVelUnit;
         float sec = CalcDeltaVBurnRCSSec(relv);
-        if (sec >= ship.RCSMinBurnSec)
+        if (sec >= ship.RCSBurnMinSec)
         {
             yield return PushAndStartCoroutine(RCSBurst(negVec, sec));
         }
@@ -700,7 +700,7 @@ public class Autopilot : MonoBehaviour
 //            float relvecAngle = Quaternion.Angle(Quaternion.LookRotation(transform.forward), Quaternion.LookRotation(relvec));
 //            float stopSec = relv < 0 ? 0 : relv / ship.CurrentRCSAccelerationPerSec();
 //            float stopDist = 0.5f * ship.CurrentRCSAccelerationPerSec() * Mathf.Pow(stopSec, 2);
-            float MinDeltaVForRCSBurn = ship.CurrentRCSAccelerationPerSec() * ship.RCSMinBurnSec;
+            float MinDeltaVForRCSBurn = ship.CurrentRCSAccelerationPerSec() * ship.RCSBurnMinSec;
             float dist = targetVec.magnitude;
 
             Vector3 planeVec = Vector3.ProjectOnPlane(targetVec, transform.forward);
@@ -744,9 +744,12 @@ public class Autopilot : MonoBehaviour
 
     IEnumerator RCSBurst(Vector3 direction, float sec)
     {
-        sec = Mathf.Min(sec, MaxRCSAutoBurnSec);
-        ship.RCSBurst(direction, sec);
-        yield return new WaitForSeconds(sec);
+        float s = Mathf.Min(sec, MaxRCSAutoBurnSec);
+        if (sec >= ship.RCSBurnMinSec)
+        {
+            ship.RCSBurst(direction, s);
+            yield return new WaitForSeconds(s);
+        }
         PopCoroutine();
     }
 
@@ -851,7 +854,7 @@ public class Autopilot : MonoBehaviour
     {
         float rcsA = ship.CurrentRCSAccelerationPerSec();
         float sec = deltaV / rcsA;
-        sec = sec > ship.RCSMinBurnSec ? sec : 0;
+        sec = sec >= ship.RCSBurnMinSec ? sec : 0;
         return sec;
     }
 

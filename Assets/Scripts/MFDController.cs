@@ -101,47 +101,43 @@ public class MFDController : MonoBehaviour
         private GameController gameController;
         private ToggleButton MainOnButton;
         private ToggleButton AuxOnButton;
+        private ToggleButton RCSFineOnButton;
 
         private ToggleButton RotateButton;
         private ToggleButton TranslateButton;
         private Slider FuelSlider;
         private Text FuelRemainingText;
-        
+
         public void Connect(GameObject controlPanel, InputController inputController, GameController game)
         {
             panel = controlPanel;
             gameController = game;
-            //RotateButton = panel.transform.Search("RotateButton").GetComponent<ToggleButton>();
-            //TranslateButton = panel.transform.Search("TranslateButton").GetComponent<ToggleButton>();
             MainOnButton = panel.transform.Search("MainOnButton").GetComponent<ToggleButton>();
             AuxOnButton = panel.transform.Search("AuxOnButton").GetComponent<ToggleButton>();
+            RCSFineOnButton = panel.transform.Search("RCSFineOnButton").GetComponent<ToggleButton>();
+            TranslateButton = panel.transform.Search("TranslateButton").GetComponent<ToggleButton>();
+            RotateButton = panel.transform.Search("RotateButton").GetComponent<ToggleButton>();
             FuelSlider = panel.transform.Search("FuelSlider").GetComponent<Slider>();
             FuelRemainingText = panel.transform.Search("FuelRemainingText").GetComponent<Text>();
-            //inputController.AddObserver("RotateButton", this);
-            //inputController.AddObserver("TranslateButton", this);
             inputController.AddObserver("MainOnButton", this);
             inputController.AddObserver("AuxOnButton", this);
+            inputController.AddObserver("RCSFineOnButton", this);
+            inputController.AddObserver("TranslateButton", this);
+            inputController.AddObserver("RotateButton", this);
             inputController.AddObserver("FuelSlider", this);
             inputController.AddObserver("FuelRemainingText", this);
 
             MainOnButton.onClick.AddListener(delegate { gameController.GetPlayerShip().ToggleEngine(); });
             AuxOnButton.onClick.AddListener(delegate { gameController.GetPlayerShip().ToggleAuxEngine(); });
+            RCSFineOnButton.onClick.AddListener(delegate { gameController.GetPlayerShip().ToggleRCSFineControl(); });
+            TranslateButton.onClick.AddListener(delegate { gameController.GetPlayerShip().ToggleRCSMode(); });
+            RotateButton.onClick.AddListener(delegate { gameController.GetPlayerShip().ToggleRCSMode(); });
         }
 
         public void PropertyChanged(string name, object value)
         {
             switch (name)
             {
-                case "RotateButton":
-                    bool? rot = value as bool?;
-                    RotateButton.isToggled = rot != null ? rot.Value : true;
-                    TranslateButton.isToggled = rot != null ? !rot.Value : false;
-                    break;
-                case "TranslateButton":
-                    bool? rot2 = value as bool?;
-                    RotateButton.isToggled = rot2 != null ? rot2.Value : false;
-                    TranslateButton.isToggled = rot2 != null ? !rot2.Value : true;
-                    break;
                 case "MainOnButton":
                     bool? thrust = value as bool?;
                     MainOnButton.isToggled = thrust != null ? thrust.Value : false;
@@ -151,6 +147,19 @@ public class MFDController : MonoBehaviour
                     bool? auxThrust = value as bool?;
                     AuxOnButton.isToggled = auxThrust != null ? auxThrust.Value : false;
                     AuxOnButton.transform.GetChild(0).GetComponent<Text>().text = AuxOnButton.isToggled ? "ON" : "OFF";
+                    break;
+                case "RCSFineOnButton":
+                    bool? rcsFine = value as bool?;
+                    RCSFineOnButton.isToggled = rcsFine != null ? rcsFine.Value : false;
+                    RCSFineOnButton.transform.GetChild(0).GetComponent<Text>().text = RCSFineOnButton.isToggled ? "ON" : "OFF";
+                    break;
+                case "TranslateButton":
+                    bool? rot2 = value as bool?;
+                    TranslateButton.isToggled = rot2 != null ? rot2.Value : false;
+                    break;
+                case "RotateButton":
+                    bool? rot = value as bool?;
+                    RotateButton.isToggled = rot != null ? rot.Value : false;
                     break;
                 case "FuelSlider":
                     float? fuel = value as float?;

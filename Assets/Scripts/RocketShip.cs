@@ -16,7 +16,8 @@ public class RocketShip : MonoBehaviour {
     public float RCSRadiusM = 2.5f;
     public float minSpinDeltaDegPerSec = 0.2f;
     public float MaxRotationDegPerSec = 720;
-    public float RCSMinBurnSec = 0.25f;
+    public float RCSBurnMinSec = 0.02f;
+    public float RCSFineControlFactor = 0.5f;
 
     private NBody nbody;
     private float currentFuelKg;
@@ -27,6 +28,7 @@ public class RocketShip : MonoBehaviour {
     private float RCSAngularDegPerSec;
     private bool mainEngineOn;
     private bool auxEngineOn;
+    private bool rcsFineControlOn;
     private bool rcsOn;
     private float mainEngineCutoffTimer = -1;
     private float auxEngineCutoffTimer = -1;
@@ -39,6 +41,7 @@ public class RocketShip : MonoBehaviour {
         nbody = transform.parent.GetComponent<NBody>();
         mainEngineOn = false;
         auxEngineOn = false;
+        rcsFineControlOn = false;
         currentTotalMassKg = EmptyMassKg + FuelMassKg;
         currentFuelKg = FuelMassKg;
         currentSpinPerSec = Quaternion.identity;
@@ -63,7 +66,8 @@ public class RocketShip : MonoBehaviour {
 
     public float CurrentRCSAccelerationPerSec()
     {
-        return RCSThrustPerSec;
+        float adj = currentRCSFactor();
+        return RCSThrustPerSec * adj;
     }
 
     public float CurrentMainEngineAccPerSec()
@@ -114,6 +118,21 @@ public class RocketShip : MonoBehaviour {
     public bool IsAuxEngineGo()
     {
         return auxEngineOn;
+    }
+
+    public void RCSFineControlOn()
+    {
+        rcsFineControlOn = true;
+    }
+
+    public void RCSFineControlOff()
+    {
+        rcsFineControlOn = false;
+    }
+
+    public bool IsRCSFineControlOn()
+    {
+        return rcsFineControlOn;
     }
 
     public void MainEngineBurst(float sec)
@@ -179,7 +198,8 @@ public class RocketShip : MonoBehaviour {
 
     public void RCSBurst(Vector3 rcsDir, float sec)
     {
-        if (rcsDir.magnitude > 0 && currentFuelKg > sec * RCSFuelKgPerSec)
+        float adj = currentRCSFactor();
+        if (rcsDir.magnitude > 0 && currentFuelKg > sec * RCSFuelKgPerSec * adj)
         {
             rcsDirection = rcsDir;
             rcsCutoffTimer = sec;
@@ -191,14 +211,21 @@ public class RocketShip : MonoBehaviour {
         }
     }
 
+    private float currentRCSFactor()
+    {
+        float adj = rcsFineControlOn ? RCSFineControlFactor : 1.0f;
+        return adj;
+    }
+
     private void UpdateRCS()
     {
         if (rcsOn)
         {
-            if (currentFuelKg > RCSFuelKgPerSec && (rcsCutoffTimer <= -1 || rcsCutoffTimer > 0))
+            float adj = currentRCSFactor();
+            if (currentFuelKg > RCSFuelKgPerSec * adj && (rcsCutoffTimer <= -1 || rcsCutoffTimer > 0))
             {
-                ApplyImpulse(rcsDirection, RCSThrustPerSec, Time.deltaTime);
-                ApplyFuel(-RCSFuelKgPerSec);
+                ApplyImpulse(rcsDirection, RCSThrustPerSec * adj, Time.deltaTime);
+                ApplyFuel(-RCSFuelKgPerSec * adj);
                 if (rcsCutoffTimer > 0)
                 {
                     rcsCutoffTimer -= Time.deltaTime;
