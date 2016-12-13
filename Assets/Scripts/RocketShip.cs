@@ -7,9 +7,11 @@ public class RocketShip : MonoBehaviour {
     public float EmptyMassKg = 10000;
     public float FuelMassKg = 9200;
     public float RCSThrustNewtons = 880; // 220*4 in the SM
-    public float EngineThrustNewtons = 27700;
+    public float EngineThrustNewtons = 25700; // 1 in the SM
+    public float AuxThrustNewtons = 3920; // 490 * 8 in the SM
     public float RCSFuelKgPerSec = 0.14f;
     public float EngineFuelKgPerSec = 8.7f;
+    public float AuxFuelKgPerSec = 1.3f;
     public float DumpFuelRateKgPerSec = 100;
     public float RCSRadiusM = 2.5f;
     public float minSpinDeltaDegPerSec = 0.2f;
@@ -21,10 +23,13 @@ public class RocketShip : MonoBehaviour {
     private float currentTotalMassKg;
     private float RCSThrustPerSec;
     private float EngineThrustPerSec;
+    private float AuxThrustPerSec;
     private float RCSAngularDegPerSec;
     private bool mainEngineOn;
-    private float mainEngineCutoffTimer = -1;
+    private bool auxEngineOn;
     private bool rcsOn;
+    private float mainEngineCutoffTimer = -1;
+    private float auxEngineCutoffTimer = -1;
     private float rcsCutoffTimer = -1;
     private Vector3 rcsDirection;
     private Quaternion currentSpinPerSec;
@@ -33,6 +38,7 @@ public class RocketShip : MonoBehaviour {
     {
         nbody = transform.parent.GetComponent<NBody>();
         mainEngineOn = false;
+        auxEngineOn = false;
         currentTotalMassKg = EmptyMassKg + FuelMassKg;
         currentFuelKg = FuelMassKg;
         currentSpinPerSec = Quaternion.identity;
@@ -47,7 +53,7 @@ public class RocketShip : MonoBehaviour {
             {
                 case GameController.GameState.RUNNING:
                     UpdateThrustRates();
-                    UpdateEngine();
+                    UpdateEngines();
                     UpdateRCS();
                     UpdateApplyCurrentSpin();
                     break;
@@ -63,6 +69,11 @@ public class RocketShip : MonoBehaviour {
     public float CurrentMainEngineAccPerSec()
     {
         return EngineThrustPerSec;
+    }
+
+    public float CurrentAuxAccPerSec()
+    {
+        return AuxThrustPerSec;
     }
 
     public float CurrentRCSAngularDegPerSec()
@@ -90,6 +101,21 @@ public class RocketShip : MonoBehaviour {
         return mainEngineOn;
     }
 
+    public void AuxEngineGo()
+    {
+        auxEngineOn = true;
+    }
+
+    public void AuxEngineCutoff()
+    {
+        auxEngineOn = false;
+    }
+
+    public bool IsAuxEngineGo()
+    {
+        return auxEngineOn;
+    }
+
     public void MainEngineBurst(float sec)
     {
         if (currentFuelKg > sec * EngineFuelKgPerSec)
@@ -103,7 +129,7 @@ public class RocketShip : MonoBehaviour {
         }
     }
 
-    private void UpdateEngine()
+    private void UpdateEngines()
     {
         if (mainEngineOn)
         {
@@ -122,8 +148,25 @@ public class RocketShip : MonoBehaviour {
                 mainEngineCutoffTimer = -1;
             }
         }
+        if (auxEngineOn)
+        {
+            if (currentFuelKg > AuxFuelKgPerSec && (auxEngineCutoffTimer <= -1 || auxEngineCutoffTimer > 0))
+            {
+                ApplyImpulse(transform.forward, AuxThrustPerSec, Time.deltaTime);
+                ApplyFuel(-AuxFuelKgPerSec);
+                if (auxEngineCutoffTimer > 0)
+                {
+                    auxEngineCutoffTimer -= Time.deltaTime;
+                }
+            }
+            else
+            {
+                AuxEngineCutoff();
+                auxEngineCutoffTimer = -1;
+            }
+        }
     }
-    
+
     public void RCSCutoff()
     {
         rcsOn = false;
@@ -210,6 +253,7 @@ public class RocketShip : MonoBehaviour {
         currentTotalMassKg = EmptyMassKg + currentFuelKg;
         RCSThrustPerSec = RCSThrustNewtons / currentTotalMassKg;
         EngineThrustPerSec = EngineThrustNewtons / currentTotalMassKg;
+        AuxThrustPerSec = AuxThrustNewtons / currentTotalMassKg;
         RCSAngularDegPerSec = Mathf.Rad2Deg * Mathf.Sqrt(RCSThrustPerSec / RCSRadiusM);
     }
 

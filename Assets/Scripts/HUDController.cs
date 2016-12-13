@@ -124,13 +124,17 @@ public class HUDController : MonoBehaviour, IPropertyChangeObserver
     public void UpdateRelativeVelocityIndicators(Vector3 relVUnitVec)
     {
         Vector3 relVIndicatorScaled = RelVIndicatorScaled(relVUnitVec);
-        Vector3 myPos = gameController.GetPlayer().transform.position;
-        Quaternion rotNormalPlus = Quaternion.Euler(0, 90, 0);
-        Quaternion rotNormalMinus = Quaternion.Euler(0, -90, 0);
-        inputController.RelativeVelocityDirectionIndicator.transform.position = myPos + relVIndicatorScaled;
-        inputController.RelativeVelocityAntiDirectionIndicator.transform.position = myPos + -relVIndicatorScaled;
-        inputController.RelativeVelocityNormalPlusDirectionIndicator.transform.position = myPos + rotNormalPlus * relVIndicatorScaled;
-        inputController.RelativeVelocityNormalMinusDirectionIndicator.transform.position = myPos + rotNormalMinus * relVIndicatorScaled;
+        Transform trans = gameController.GetPlayer().transform;
+        Vector3 myPos = trans.position;
+        Vector3 posPos = myPos + relVIndicatorScaled;
+        Vector3 negPos = myPos - relVIndicatorScaled;
+        float sqrt05 = Mathf.Sqrt(0.5f);
+        Vector3 nmlPlusPos = myPos + Quaternion.AngleAxis(90f, trans.up) * relVIndicatorScaled;
+        Vector3 nmlMinusPos = myPos + Quaternion.AngleAxis(-90f, trans.up) * relVIndicatorScaled;
+        inputController.RelativeVelocityDirectionIndicator.transform.position = posPos;
+        inputController.RelativeVelocityAntiDirectionIndicator.transform.position = negPos;
+        inputController.RelativeVelocityNormalPlusDirectionIndicator.transform.position = nmlPlusPos;
+        inputController.RelativeVelocityNormalMinusDirectionIndicator.transform.position = nmlMinusPos;
     }
 
     private void SelectTarget(GameObject target)

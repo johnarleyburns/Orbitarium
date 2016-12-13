@@ -71,7 +71,7 @@ public class EnemyShip : MonoBehaviour {
             float relVel;
             if (PhysicsUtils.ShouldBounce(gameObject, otherBody, out relVel))
             {
-                gameController.FPSCamera.GetComponent<FPSCameraController>().PlayShake();
+//                gameController.FPSCamera.GetComponent<FPSCameraController>().PlayMainEngineShake();
                 if (relVel >= minRelVtoDamage)
                 {
                     health--;

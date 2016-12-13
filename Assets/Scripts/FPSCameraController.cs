@@ -7,15 +7,17 @@ public class FPSCameraController : MonoBehaviour
     public GameObject player;
     public float duration = 2f;
     public float speed = 20f;
-    public float magnitude = 2f;
+    public float collisionShakeMagnitude = 10f;
+    public float mainEngineShakeMagnitude = 2f;
+    public float auxEngineShakeMagnitude = 0.3f;
     public AnimationCurve damper = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(0.9f, .33f, -2f, -2f), new Keyframe(1f, 0f, -5.65f, -5.65f));
-    public bool testShake = false;
 
     private Vector3 cameraOffset = Vector3.zero;
     private Quaternion shakeRotation;
     private float shakeElapsed = 0;
     private bool shaking = false;
     private float shakeDuration = 0;
+    private float shakeMagnitude = 0;
     private Vector3 originalPos = Vector3.zero;
 
     void Awake()
@@ -26,14 +28,7 @@ public class FPSCameraController : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-        if (testShake)
-        {
-            PlayShake();
-        }
-        else
-        {
-            StopShake();
-        }
+        StopShake();
     }
 
     public void UpdatePlayer(GameObject newPlayer)
@@ -61,25 +56,42 @@ public class FPSCameraController : MonoBehaviour
         }
     }
 
-    public void PlayShake(float dur)
+    private void PlayShake(float mag, float dur)
     {
         shakeElapsed = 0;
         shakeRotation = Quaternion.identity;
         shakeDuration = dur;
+        shakeMagnitude = mag;
         shaking = true;
     }
 
-    public void PlayShake()
+    public void PlayCollisionShake()
     {
-        PlayShake(duration);
+        PlayShake(duration, collisionShakeMagnitude);
     }
 
-    public static float CONTINUOUS_SHAKE_DURATION;
-    public void StartContinuousShake()
+    private void PlayMainEngineShake()
     {
-        if (!shaking || shakeDuration < CONTINUOUS_SHAKE_DURATION)
+        PlayShake(duration, mainEngineShakeMagnitude);
+    }
+
+    private void PlayAuxEngineShake()
+    {
+        PlayShake(duration*.15f, auxEngineShakeMagnitude);
+    }
+
+    public void StartContinuousMainEngineShake()
+    {
+        if (!shaking)
         {
-            PlayShake(CONTINUOUS_SHAKE_DURATION);
+            PlayMainEngineShake();
+        }
+    }
+    public void StartContinuousAuxEngineShake()
+    {
+        if (!shaking)
+        {
+            PlayAuxEngineShake();
         }
     }
 
@@ -98,8 +110,8 @@ public class FPSCameraController : MonoBehaviour
             StopShake();
         }
         float damperedMag = (damper != null)
-            ? (damper.Evaluate(shakeElapsed / duration) * magnitude)
-            : magnitude;
+            ? (damper.Evaluate(shakeElapsed / duration) * shakeMagnitude)
+            : mainEngineShakeMagnitude;
         float x = (Mathf.PerlinNoise(Time.time * speed, 0f) * damperedMag) - (damperedMag / 2f);
         float y = (Mathf.PerlinNoise(0f, Time.time * speed) * damperedMag) - (damperedMag / 2f);
         float z = (x + y) / 2;

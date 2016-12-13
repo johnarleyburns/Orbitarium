@@ -99,9 +99,11 @@ public class MFDController : MonoBehaviour
     {
         private GameObject panel;
         private GameController gameController;
+        private ToggleButton MainOnButton;
+        private ToggleButton AuxOnButton;
+
         private ToggleButton RotateButton;
         private ToggleButton TranslateButton;
-        private ToggleButton MainOnButton;
         private Slider FuelSlider;
         private Text FuelRemainingText;
         
@@ -112,15 +114,18 @@ public class MFDController : MonoBehaviour
             //RotateButton = panel.transform.Search("RotateButton").GetComponent<ToggleButton>();
             //TranslateButton = panel.transform.Search("TranslateButton").GetComponent<ToggleButton>();
             MainOnButton = panel.transform.Search("MainOnButton").GetComponent<ToggleButton>();
+            AuxOnButton = panel.transform.Search("AuxOnButton").GetComponent<ToggleButton>();
             FuelSlider = panel.transform.Search("FuelSlider").GetComponent<Slider>();
             FuelRemainingText = panel.transform.Search("FuelRemainingText").GetComponent<Text>();
             //inputController.AddObserver("RotateButton", this);
             //inputController.AddObserver("TranslateButton", this);
             inputController.AddObserver("MainOnButton", this);
+            inputController.AddObserver("AuxOnButton", this);
             inputController.AddObserver("FuelSlider", this);
             inputController.AddObserver("FuelRemainingText", this);
 
             MainOnButton.onClick.AddListener(delegate { gameController.GetPlayerShip().ToggleEngine(); });
+            AuxOnButton.onClick.AddListener(delegate { gameController.GetPlayerShip().ToggleAuxEngine(); });
         }
 
         public void PropertyChanged(string name, object value)
@@ -141,6 +146,11 @@ public class MFDController : MonoBehaviour
                     bool? thrust = value as bool?;
                     MainOnButton.isToggled = thrust != null ? thrust.Value : false;
                     MainOnButton.transform.GetChild(0).GetComponent<Text>().text = MainOnButton.isToggled ? "ON" : "OFF";
+                    break;
+                case "AuxOnButton":
+                    bool? auxThrust = value as bool?;
+                    AuxOnButton.isToggled = auxThrust != null ? auxThrust.Value : false;
+                    AuxOnButton.transform.GetChild(0).GetComponent<Text>().text = AuxOnButton.isToggled ? "ON" : "OFF";
                     break;
                 case "FuelSlider":
                     float? fuel = value as float?;

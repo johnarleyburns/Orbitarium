@@ -181,11 +181,11 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            bool stillRunning = ship.IsMainEngineGo();
-            if (stillRunning)
+            bool mainOn = ship.IsMainEngineGo();
+            bool auxOn = ship.IsAuxEngineGo();
+            if (mainOn)
             {
-                UpdateFuelUI();
-                cameraController.StartContinuousShake();
+                cameraController.StartContinuousMainEngineShake();
                 if (!audioController.IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE))
                 {
                     audioController.Play(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE);
@@ -194,9 +194,29 @@ public class PlayerShip : MonoBehaviour
             else
             {
                 audioController.Stop(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE);
+            }
+            if (!mainOn && auxOn)
+            {
+                cameraController.StartContinuousAuxEngineShake();
+                if (!audioController.IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_AUX))
+                {
+                    audioController.Play(FPSAudioController.AudioClipEnum.SPACESHIP_AUX);
+                }
+            }
+            else
+            {
+                audioController.Stop(FPSAudioController.AudioClipEnum.SPACESHIP_AUX);
+            }
+            if (mainOn || auxOn)
+            {
+                UpdateFuelUI();
+            }
+            else
+            {
                 cameraController.StopShake();
             }
-            inputController.PropertyChanged("MainOnButton", stillRunning);
+            inputController.PropertyChanged("MainOnButton", mainOn);
+            inputController.PropertyChanged("AuxOnButton", auxOn);
         }
     }
 
@@ -289,18 +309,22 @@ public class PlayerShip : MonoBehaviour
 
     private void UpdateEngineInput()
     {
-//      UpdateDoubleTap(KeyCode.KeypadEnter, ref doubleTapEngineTimer, ToggleEngine, Rendezvous);
+        //      UpdateDoubleTap(KeyCode.KeypadEnter, ref doubleTapEngineTimer, ToggleEngine, Rendezvous);
         if (Input.GetKeyDown(KeyCode.KeypadEnter))
         {
             ToggleEngine();
         }
+        if (Input.GetKeyDown(KeyCode.KeypadPlus))
+        {
+            ToggleAuxEngine();
+        }
     }
 
-//  private void BurstEngine()
-//    {
-//      float burnTime = DoubleTapInterval;
-//        ship.MainEngineBurst(burnTime);
-//    }
+    //  private void BurstEngine()
+    //    {
+    //      float burnTime = DoubleTapInterval;
+    //        ship.MainEngineBurst(burnTime);
+    //    }
 
     public void ToggleEngine()
     {
@@ -313,7 +337,21 @@ public class PlayerShip : MonoBehaviour
         {
             ship.MainEngineGo();
         }
-        inputController.PropertyChanged("MainEngineGo", go);
+        inputController.PropertyChanged("MainOnButton", go);
+    }
+
+    public void ToggleAuxEngine()
+    {
+        bool go = ship.IsAuxEngineGo();
+        if (go)
+        {
+            ship.AuxEngineCutoff();
+        }
+        else
+        {
+            ship.AuxEngineGo();
+        }
+        inputController.PropertyChanged("AuxOnButton", go);
     }
 
     private void Rendezvous()
@@ -330,7 +368,7 @@ public class PlayerShip : MonoBehaviour
             float relVel;
             if (PhysicsUtils.ShouldBounce(gameObject, otherBody, out relVel))
             {
-                cameraController.PlayShake();
+                cameraController.PlayCollisionShake();
                 if (relVel >= minRelVtoDamage)
                 {
                     health--;
@@ -453,10 +491,10 @@ public class PlayerShip : MonoBehaviour
     private void UpdateRotatePlus()
     {
 //        UpdateDoubleTap(KeyCode.KeypadPlus, ref doubleTapRotatePlusTimer, RotateToPos, StrafeTarget);
-        if (Input.GetKeyDown(KeyCode.KeypadPlus))
-        {
-            RotateToPos();
-        }
+//        if (Input.GetKeyDown(KeyCode.KeypadPlus))
+//        {
+//            RotateToPos();
+//        }
     }
 
     private void RotateToPos()
