@@ -1,8 +1,8 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
-using Greyman;
 using System.Collections.Generic;
+using Crosstales.RTVoice;
 
 public class GameController : MonoBehaviour
 {
@@ -36,6 +36,7 @@ public class GameController : MonoBehaviour
     public float EnemyInitialImpulse = 10;
     public Material StrobeMaterial;
     public string StrobeTag = "Strobe";
+    public AudioSource AS;
 
     private HUDController hudController;
     private InputController inputController;
@@ -130,7 +131,13 @@ public class GameController : MonoBehaviour
         GamePauseCanvas.SetActive(false);
         GameOverCanvas.SetActive(false);
         SetupStrobes();
+        Speak(DialogText.ReadyPlayerOne);
         gameState = GameState.START_NOT_ACCEPTING_INPUT;
+    }
+
+    private void Speak(string text)
+    {
+        Speaker.Speak(text, AS, Speaker.VoiceForCulture("en", 1), false, 1, 0.4f, null, 3f);
     }
 
     private void SetupStrobes()
@@ -169,6 +176,7 @@ public class GameController : MonoBehaviour
         AddHUDFixedIndicators();
         InstantiateEnemies();
         SetupInitialVelocities();
+        hudController.SelectNextTargetPreferClosestEnemy();
         FPSCanvas.SetActive(true);
         GameStartCanvas.SetActive(false);
         GamePauseCanvas.SetActive(false);
@@ -426,7 +434,6 @@ public class GameController : MonoBehaviour
         enemyShip.name = string.Format("{0}-{1}", nameRoot, suffix);
         targetDB.AddTarget(enemyShip, TargetDB.TargetType.ENEMY, EnemyShipRadiusM);
         hudController.AddTargetIndicator(enemyShip);
-        hudController.SelectNextTargetPreferClosestEnemy();
     }
 
     private void EnableOverviewCamera()

@@ -12,6 +12,7 @@ public class PlayerShip : MonoBehaviour
     public Weapon MainGun;
     public int healthMax = 3;
     public float minRelVtoDamage = 1;
+    public float LowFuelThreshold = 0.1f;
     //public float DoubleTapInterval = 0.2f;
 
     //! Thrust scale
@@ -48,7 +49,9 @@ public class PlayerShip : MonoBehaviour
         //doubleTapTargetSelTimer = -1;
         health = healthMax;
         rotInput = false;
-        SetRCSModeRotate();
+        currentRCSMode = RCSMode.Rotate;
+        inputController.PropertyChanged("TranslateButtonNoAudio", false);
+        inputController.PropertyChanged("RotateButtonNoAudio", true);
     }
 
     public void UpdateShip()
@@ -78,18 +81,6 @@ public class PlayerShip : MonoBehaviour
         {
             audioController.Stop(FPSAudioController.AudioClipEnum.SPACESHIP_RCSCMG);
         }
-    }
-
-    public void SetRCSModeRotate()
-    {
-        currentRCSMode = RCSMode.Rotate;
-        ChangeRCSMode();
-    }
-
-    public void SetRCSModeTranslate()
-    {
-        currentRCSMode = RCSMode.Translate;
-        ChangeRCSMode();
     }
 
     public void ChangeRCSMode()
@@ -129,6 +120,11 @@ public class PlayerShip : MonoBehaviour
         inputController.PropertyChanged("CommandExecuted", command);
     }
     
+    public bool IsLowFuel()
+    {
+        return ship.NormalizedFuel() < LowFuelThreshold;
+    }
+
     public void ToggleRCSMode()
     {
         switch (currentRCSMode)
@@ -216,8 +212,8 @@ public class PlayerShip : MonoBehaviour
             {
                 cameraController.StopShake();
             }
-            inputController.PropertyChanged("MainOnButton", mainOn);
-            inputController.PropertyChanged("AuxOnButton", auxOn);
+            //inputController.PropertyChanged("MainOnButton", mainOn);
+            //inputController.PropertyChanged("AuxOnButton", auxOn);
         }
     }
 
@@ -454,7 +450,6 @@ public class PlayerShip : MonoBehaviour
             {
                 autopilot.ExecuteCommand(Autopilot.Command.OFF, null);
                 inputController.PropertyChanged("CommandExecuted", Autopilot.Command.OFF);
-                ToggleButtons(false, false, false, false);
             }
         }
     }
@@ -465,7 +460,6 @@ public class PlayerShip : MonoBehaviour
         {
             autopilot.ExecuteCommand(Autopilot.Command.ACTIVE_TRACK, gameController.HUD().GetSelectedTarget());
             inputController.PropertyChanged("CommandExecuted", Autopilot.Command.ACTIVE_TRACK);
-            ToggleButtons(false, true, false, false);
         }
     }
 
@@ -475,7 +469,6 @@ public class PlayerShip : MonoBehaviour
         {
             autopilot.ExecuteCommand(Autopilot.Command.KILL_ROTATION, null);
             inputController.PropertyChanged("CommandExecuted", Autopilot.Command.KILL_ROTATION);
-            ToggleButtons(true, false, false, false);
         }
     }
 
@@ -485,7 +478,6 @@ public class PlayerShip : MonoBehaviour
         {
             autopilot.ExecuteCommand(Autopilot.Command.KILL_REL_V, gameController.HUD().GetSelectedTarget());
             inputController.PropertyChanged("CommandExecuted", Autopilot.Command.KILL_REL_V);
-            ToggleButtons(false, true, false, false);
         }
     }
 
@@ -504,7 +496,6 @@ public class PlayerShip : MonoBehaviour
         {
             autopilot.ExecuteCommand(Autopilot.Command.FACE_TARGET, gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator);
             inputController.PropertyChanged("CommandExecuted", Autopilot.Command.FACE_TARGET);
-            ToggleButtons(false, false, true, false);
         }
     }
 
@@ -523,7 +514,6 @@ public class PlayerShip : MonoBehaviour
         {
             autopilot.ExecuteCommand(Autopilot.Command.FACE_TARGET, gameController.GetComponent<InputController>().RelativeVelocityAntiDirectionIndicator);
             inputController.PropertyChanged("CommandExecuted", Autopilot.Command.FACE_TARGET);
-            ToggleButtons(false, false, false, true);
         }
     }
 
@@ -533,7 +523,6 @@ public class PlayerShip : MonoBehaviour
         {
             autopilot.ExecuteCommand(Autopilot.Command.INTERCEPT, gameController.HUD().GetSelectedTarget());
             inputController.PropertyChanged("CommandExecuted", Autopilot.Command.INTERCEPT);
-            ToggleButtons(false, true, false, false);
         }
 
     }
@@ -544,19 +533,10 @@ public class PlayerShip : MonoBehaviour
         {
             autopilot.ExecuteCommand(Autopilot.Command.STRAFE, gameController.HUD().GetSelectedTarget());
             inputController.PropertyChanged("CommandExecuted", Autopilot.Command.STRAFE);
-            ToggleButtons(false, true, false, false);
         }
 
     }
-
-    private void ToggleButtons(bool kill, bool target, bool pos, bool neg)
-    {
-//        gameController.GetComponent<InputController>().KILLToggleButton.isToggled = kill;
-  //      gameController.GetComponent<InputController>().TargetToggleButton.isToggled = target;
-    //    gameController.GetComponent<InputController>().POSToggleButton.isToggled = pos;
-      //  gameController.GetComponent<InputController>().NEGToggleButton.isToggled = neg;
-    }
-
+    
     void PlayRotateSounds()
     {
         if (gameController != null)

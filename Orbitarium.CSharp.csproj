@@ -67,6 +67,9 @@
     <Reference Include="AmplifyBloom">
       <HintPath>Assets\AmplifyBloom\Plugins\AmplifyBloom.dll</HintPath>
     </Reference>
+    <Reference Include="RTVoice">
+      <HintPath>Assets\crosstales\RTVoice\Plugins\RTVoice.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Orbitarium.CSharp.Plugins.csproj">
@@ -211,6 +214,7 @@
     <Compile Include="Assets\OffScreenIndicator\Scripts\OffScreenIndicatorManagerCanvas.cs" />
     <Compile Include="Assets\OffScreenIndicator\Scripts\OffScreenIndicatorManagerVR.cs" />
     <Compile Include="Assets\Scripts\Autopilot.cs" />
+    <Compile Include="Assets\Scripts\DialogText.cs" />
     <Compile Include="Assets\Scripts\DisplayUtils.cs" />
     <Compile Include="Assets\Scripts\EnemyShip.cs" />
     <Compile Include="Assets\Scripts\EnemyShipController.cs" />
@@ -292,6 +296,30 @@
     <Compile Include="Assets\_Target &amp; HUD Effect V1\Plugins\HTSpriteSheet.cs" />
     <Compile Include="Assets\_Target &amp; HUD Effect V1\Script\FpsCounter.cs" />
     <Compile Include="Assets\_Target &amp; HUD Effect V1\_DemoStuff\_Clouds &amp; Sun\CameraFacingBillboard.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\Dialog.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\GUIAudioFilter.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\GUIDialog.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\GUIMain.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\GUIMultiAudioFilter.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\GUIScenes.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\GUISpeech.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\GUISpeechMobile.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\NativeAudio.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\NativeDisabler.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\PreGeneratedAudio.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\SendMessage.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\SequenceCaller.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\Simple.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\SimpleNative.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\SpeakWrapper.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\Util\AudioVisualizer.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\Util\FFTAnalyzer.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\Util\MaterialChanger.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\Util\PlatformEnabler.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\Util\RandomColor.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\Util\RandomRotator.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\Util\RandomScaler.cs" />
+    <Compile Include="Assets\crosstales\RTVoice\Demo\Scripts\Util\ScrollRectHandler.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\AmplifyBloom\Readme.txt" />
@@ -431,6 +459,8 @@
     <None Include="Assets\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
     <None Include="Assets\Starbox\readme.txt" />
     <None Include="Assets\_Target &amp; HUD Effect V1\_DemoStuff\_Planet_01\Materials\Planet.shader" />
+    <None Include="Assets\crosstales\RTVoice\3rd party\Assets.txt" />
+    <None Include="Assets\crosstales\RTVoice\README.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\SyntaxTree\UnityVS\2015\UnityVS.CSharp.targets" />
 </Project>

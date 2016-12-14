@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using Crosstales.RTVoice;
 
 public class MFDController : MonoBehaviour
 {
@@ -17,6 +18,7 @@ public class MFDController : MonoBehaviour
     public GameObject MFDAutopilotPanelPrefab;
     public GameObject MFDWeaponPanelPrefab;
     public GameObject MFDDockingPanelPrefab;
+    public AudioSource AS;
 
     public static Color COLOR_GOOD = new Color(14f, 236f, 89f, 218f);
     public static Color COLOR_WARN = new Color(233f, 236f, 19f, 218f);
@@ -95,6 +97,11 @@ public class MFDController : MonoBehaviour
         SetMFDPanels2(MFDPanelType.AUTOPILOT);
     }
 
+    void Speak(string text)
+    {
+        Speaker.Speak(text, AS, Speaker.VoiceForCulture("en", 1), false, 1, 0.4f, null, 3f);
+    }
+
     public class MFDControlController : IPropertyChangeObserver
     {
         private GameObject panel;
@@ -124,6 +131,8 @@ public class MFDController : MonoBehaviour
             inputController.AddObserver("RCSFineOnButton", this);
             inputController.AddObserver("TranslateButton", this);
             inputController.AddObserver("RotateButton", this);
+            inputController.AddObserver("TranslateButtonNoAudio", this);
+            inputController.AddObserver("RotateButtonNoAudio", this);
             inputController.AddObserver("FuelSlider", this);
             inputController.AddObserver("FuelRemainingText", this);
 
@@ -134,6 +143,11 @@ public class MFDController : MonoBehaviour
             RotateButton.onClick.AddListener(delegate { gameController.GetPlayerShip().ToggleRCSMode(); });
         }
 
+        public void Speak(string text)
+        {
+            gameController.GetComponent<MFDController>().Speak(text);
+        }
+
         public void PropertyChanged(string name, object value)
         {
             switch (name)
@@ -142,24 +156,40 @@ public class MFDController : MonoBehaviour
                     bool? thrust = value as bool?;
                     MainOnButton.isToggled = thrust != null ? thrust.Value : false;
                     MainOnButton.transform.GetChild(0).GetComponent<Text>().text = MainOnButton.isToggled ? "ON" : "OFF";
+                    string mainOnText = MainOnButton.isToggled ? DialogText.MainEngineOn : DialogText.MainEngineOff;
+                    Speak(mainOnText);
                     break;
                 case "AuxOnButton":
                     bool? auxThrust = value as bool?;
                     AuxOnButton.isToggled = auxThrust != null ? auxThrust.Value : false;
                     AuxOnButton.transform.GetChild(0).GetComponent<Text>().text = AuxOnButton.isToggled ? "ON" : "OFF";
+                    string auxOnText = AuxOnButton.isToggled ? DialogText.AuxEngineOn : DialogText.AuxEngineOff;
+                    Speak(auxOnText);
                     break;
                 case "RCSFineOnButton":
                     bool? rcsFine = value as bool?;
                     RCSFineOnButton.isToggled = rcsFine != null ? rcsFine.Value : false;
                     RCSFineOnButton.transform.GetChild(0).GetComponent<Text>().text = RCSFineOnButton.isToggled ? "ON" : "OFF";
+                    string rcsFineText = RCSFineOnButton.isToggled ? DialogText.RCSFineControlOn : DialogText.RCSFineControlOff;
+                    Speak(rcsFineText);
                     break;
                 case "TranslateButton":
                     bool? rot2 = value as bool?;
                     TranslateButton.isToggled = rot2 != null ? rot2.Value : false;
+                    if (TranslateButton.isToggled) { Speak(DialogText.Translation); }
                     break;
                 case "RotateButton":
                     bool? rot = value as bool?;
                     RotateButton.isToggled = rot != null ? rot.Value : false;
+                    if (RotateButton.isToggled) { Speak(DialogText.Rotation); }
+                    break;
+                case "TranslateButtonNoAudio":
+                    bool? rot2a = value as bool?;
+                    TranslateButton.isToggled = rot2a != null ? rot2a.Value : false;
+                    break;
+                case "RotateButtonNoAudio":
+                    bool? rota = value as bool?;
+                    RotateButton.isToggled = rota != null ? rota.Value : false;
                     break;
                 case "FuelSlider":
                     float? fuel = value as float?;
@@ -167,6 +197,7 @@ public class MFDController : MonoBehaviour
                     break;
                 case "FuelRemainingText":
                     FuelRemainingText.text = value as string;
+                    if (gameController.GetPlayerShip().IsLowFuel()) { Speak(DialogText.LowFuel); }
                     break;
             }
         }
@@ -211,6 +242,11 @@ public class MFDController : MonoBehaviour
             TargetSelectorDropdown.onValueChanged.AddListener(delegate { TargetSelectorDropdownOnValueChanged(); });
             TargetSelectorDropdown.value = 0;
             CommandButton.onClick.AddListener(delegate { CommandButtonClicked(); });
+        }
+
+        public void Speak(string text)
+        {
+            gameController.GetComponent<MFDController>().Speak(text);
         }
 
         public void PropertyChanged(string name, object value)
@@ -266,6 +302,28 @@ public class MFDController : MonoBehaviour
                     if (CommandDropdown.value != commandIdx)
                     {
                         CommandDropdown.value = commandIdx;
+                    }
+                    if (command != Autopilot.Command.OFF)
+                    {
+                        string verb;
+                        if (command == Autopilot.Command.STRAFE)
+                        {
+                            verb = DialogText.Strafe;
+                        }
+                        else {
+                            verb = CommandDropdown.options[CommandDropdown.value].text;
+                        }
+                        string obj = TargetSelectorDropdown.options[TargetSelectorDropdown.value].text;
+                        string commandText;
+                        if (command == Autopilot.Command.KILL_ROTATION)
+                        {
+                            commandText = verb;
+                        }
+                        else
+                        {
+                            commandText = DialogText.CombineImperative(verb, obj);
+                        }
+                        Speak(commandText);
                     }
                     break;
             }
