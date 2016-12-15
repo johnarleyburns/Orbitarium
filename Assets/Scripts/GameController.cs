@@ -36,6 +36,9 @@ public class GameController : MonoBehaviour
     public float EnemyInitialImpulse = 10;
     public Material StrobeMaterial;
     public string StrobeTag = "Strobe";
+    public AudioSource StartMusic;
+    public AudioSource RunningBackgroundMusic;
+    public AudioSource GameOverMusic;
     public AudioSource AS;
 
     private HUDController hudController;
@@ -131,7 +134,8 @@ public class GameController : MonoBehaviour
         GamePauseCanvas.SetActive(false);
         GameOverCanvas.SetActive(false);
         SetupStrobes();
-        Speak(DialogText.ReadyPlayerOne);
+        //Speak(DialogText.ReadyPlayerOne);
+        StartMusic.Play();
         gameState = GameState.START_NOT_ACCEPTING_INPUT;
     }
 
@@ -184,6 +188,8 @@ public class GameController : MonoBehaviour
         FPSCamera.enabled = true;
         OverviewCamera.enabled = false;
         OverShoulderCamera.enabled = false;
+        StartMusic.Stop();
+        RunningBackgroundMusic.Play();
         gameState = GameState.RUNNING;
     }
 
@@ -197,6 +203,7 @@ public class GameController : MonoBehaviour
         FPSCamera.enabled = true;
         OverviewCamera.enabled = false;
         OverShoulderCamera.enabled = false;
+        RunningBackgroundMusic.Stop();
         gameState = GameState.PAUSED;
     }
 
@@ -210,6 +217,7 @@ public class GameController : MonoBehaviour
         OverviewCamera.enabled = false;
         OverShoulderCamera.enabled = false;
         Time.timeScale = 1.0f;
+        RunningBackgroundMusic.Play();
         gameState = GameState.RUNNING;
     }
 
@@ -245,16 +253,19 @@ public class GameController : MonoBehaviour
         GameStartCanvas.SetActive(false);
         GamePauseCanvas.SetActive(false);
         FPSCanvas.SetActive(false);
+        RunningBackgroundMusic.Stop();
         gameState = GameState.GAME_OVER_NOT_ACCEPTING_INPUT;
     }
 
     private void TransitionToGameOverAwaitInput()
     {
+        GameOverMusic.Play();
         gameState = GameState.GAME_OVER_AWAIT_INPUT;
     }
 
     private void TransitionToStartingFromGameOver()
     {
+        GameOverMusic.Stop();
         CleanupScene();
         SceneManager.UnloadScene(SceneManager.GetActiveScene().name);
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
@@ -585,7 +596,8 @@ public class GameController : MonoBehaviour
     private void SetupCameras(GameObject playerModel)
     {
         FPSCamera.GetComponent<FPSCameraController>().UpdatePlayer(playerModel);
-        OverShoulderCamera.GetComponent<ThirdPartyCameraController>().UpdatePlayer(playerModel);
+        //OverShoulderCamera.GetComponent<ThirdPartyCameraController>().UpdatePlayer(playerModel);
+        OverShoulderCamera.GetComponent<CameraSpin>().UpdateTarget(playerModel);
         OverviewCamera.GetComponent<CameraSpin>().UpdateTarget(playerModel);
     }
 

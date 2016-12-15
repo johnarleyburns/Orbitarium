@@ -169,6 +169,7 @@ public class PlayerShip : MonoBehaviour
                 case CameraMode.ThirdParty:
                     gameController.FPSCamera.enabled = false;
                     gameController.OverShoulderCamera.enabled = true;
+                    gameController.OverShoulderCamera.GetComponent<CameraSpin>().UpdateTarget(gameObject);
                     break;
             }
         }

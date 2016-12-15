@@ -375,6 +375,7 @@ public class MFDController : MonoBehaviour
         private Dropdown DockTargetSelectorDropdown;
         private Text ClosingDistText;
         private Text ClosingVText;
+        private Text ClosingTimeText;
         private Text DockAngleText;
         private RectTransform DockingX;
         private List<GameObject> dockTargets = new List<GameObject>();
@@ -388,17 +389,20 @@ public class MFDController : MonoBehaviour
             DockTargetSelectorDropdown = panel.transform.Search("DockTargetSelectorDropdown").GetComponent<Dropdown>();
             ClosingDistText = panel.transform.Search("ClosingDistText").GetComponent<Text>();
             ClosingVText = panel.transform.Search("ClosingVText").GetComponent<Text>();
+            ClosingTimeText = panel.transform.Search("ClosingTimeText").GetComponent<Text>();
             DockAngleText = panel.transform.Search("DockAngleText").GetComponent<Text>();
             DockingX = panel.transform.Search("DockingX").GetComponent<RectTransform>();
 
             inputController.AddObserver("TargetList", this);
             inputController.AddObserver("ClosingDistText", this);
             inputController.AddObserver("ClosingVText", this);
+            inputController.AddObserver("ClosingTimeText", this);
             inputController.AddObserver("DockAngleText", this);
             inputController.AddObserver("DockingX", this);
 
             ClosingDistText.text = "INF";
             ClosingVText.text = "INF";
+            ClosingTimeText.text = "INF";
             DockingX.anchoredPosition = Vector2.zero;
 
             DockTargetSelectorDropdown.onValueChanged.AddListener(delegate { DockTargetSelectorDropdownOnValueChanged(); });
@@ -436,6 +440,9 @@ public class MFDController : MonoBehaviour
                     break;
                 case "ClosingVText":
                     ClosingVText.text = value as string;
+                    break;
+                case "ClosingTimeText":
+                    ClosingTimeText.text = value as string;
                     break;
                 case "DockAngleText":
                     DockAngleText.text = value as string;
@@ -486,6 +493,7 @@ public class MFDController : MonoBehaviour
 
                 gameController.InputControl().PropertyChanged("ClosingDistText", DisplayUtils.DistanceText(closingDist));
                 gameController.InputControl().PropertyChanged("ClosingVText", DisplayUtils.RelvText(closingRelV));
+                gameController.InputControl().PropertyChanged("ClosingTimeText", DisplayUtils.TimeToTargetText(closingDist, closingRelV));
                 //gameController.InputControl().PropertyChanged("DockAngleColor", DisplayUtils.ColorValueBetween(dockAngle, warnThreshold, badThreshold));
                 //gameController.InputControl().PropertyChanged("DockAngleText", DisplayUtils.Angle3Text(dockAngleX, dockAngleY, dockAngleZ));
                 gameController.InputControl().PropertyChanged("DockAngleText", DisplayUtils.QText(dockAlignQ));
