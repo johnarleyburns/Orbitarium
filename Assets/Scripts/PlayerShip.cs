@@ -125,6 +125,11 @@ public class PlayerShip : MonoBehaviour
         return ship.NormalizedFuel() < LowFuelThreshold;
     }
 
+    public RocketShip RocketShip()
+    {
+        return ship;
+    }
+
     public void ToggleRCSMode()
     {
         switch (currentRCSMode)
@@ -586,7 +591,11 @@ public class PlayerShip : MonoBehaviour
             }
             if (Input.GetKey(KeyCode.Keypad2))
             {
-                v = transform.up;
+                inputController.PropertyChanged("Circle1Up_OnPointerDown", null);
+            }
+            else
+            {
+                inputController.PropertyChanged("Circle1Up_OnPointerUp", null);
             }
             if (Input.GetKey(KeyCode.Keypad8))
             {

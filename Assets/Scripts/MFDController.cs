@@ -43,6 +43,7 @@ public class MFDController : MonoBehaviour
 
     protected GameController gameController;
     protected InputController inputController;
+    private Crosstales.RTVoice.Model.Voice speakerVoice;
 
     // Use this for initialization
     void Awake()
@@ -95,11 +96,16 @@ public class MFDController : MonoBehaviour
         MFDDropdown2.onValueChanged.AddListener(delegate { MFDDropdownOnValueChanged2(); });
         MFDDropdown2.value = Convert.ToInt32(MFDPanelType.AUTOPILOT);
         SetMFDPanels2(MFDPanelType.AUTOPILOT);
+
+        speakerVoice = Speaker.Voices.Count > 0 ? Speaker.Voices[Speaker.Voices.Count - 1] : null;
     }
 
     void Speak(string text)
     {
-        Speaker.Speak(text, AS, Speaker.VoiceForCulture("en", 1), false, 1, 0.4f, null, 3f);
+        if (speakerVoice != null)
+        {
+            Speaker.Speak(text, AS, speakerVoice, false, 1, 0.4f, null, 3f);
+        }
     }
 
     public class MFDControlController : IPropertyChangeObserver
@@ -109,11 +115,17 @@ public class MFDController : MonoBehaviour
         private ToggleButton MainOnButton;
         private ToggleButton AuxOnButton;
         private ToggleButton RCSFineOnButton;
-
-        private ToggleButton RotateButton;
         private ToggleButton TranslateButton;
+        private ToggleButton RotateButton;
+
+        private Transform Circle1Up;
+
         private Slider FuelSlider;
         private Text FuelRemainingText;
+
+        private Vector3 translateVec = Vector3.zero;
+        private bool translatePointerDown = false;
+        private bool translatePointerUp = false;
 
         public void Connect(GameObject controlPanel, InputController inputController, GameController game)
         {
@@ -124,8 +136,12 @@ public class MFDController : MonoBehaviour
             RCSFineOnButton = panel.transform.Search("RCSFineOnButton").GetComponent<ToggleButton>();
             TranslateButton = panel.transform.Search("TranslateButton").GetComponent<ToggleButton>();
             RotateButton = panel.transform.Search("RotateButton").GetComponent<ToggleButton>();
+
+            Circle1Up = panel.transform.Search("Circle1Up");
+
             FuelSlider = panel.transform.Search("FuelSlider").GetComponent<Slider>();
             FuelRemainingText = panel.transform.Search("FuelRemainingText").GetComponent<Text>();
+
             inputController.AddObserver("MainOnButton", this);
             inputController.AddObserver("AuxOnButton", this);
             inputController.AddObserver("RCSFineOnButton", this);
@@ -133,6 +149,10 @@ public class MFDController : MonoBehaviour
             inputController.AddObserver("RotateButton", this);
             inputController.AddObserver("TranslateButtonNoAudio", this);
             inputController.AddObserver("RotateButtonNoAudio", this);
+
+            inputController.AddObserver("Circle1Up_OnPointerDown", this);
+            inputController.AddObserver("Circle1Up_OnPointerUp", this);
+
             inputController.AddObserver("FuelSlider", this);
             inputController.AddObserver("FuelRemainingText", this);
 
@@ -141,8 +161,9 @@ public class MFDController : MonoBehaviour
             RCSFineOnButton.onClick.AddListener(delegate { gameController.GetPlayerShip().ToggleRCSFineControl(); });
             TranslateButton.onClick.AddListener(delegate { gameController.GetPlayerShip().ToggleRCSMode(); });
             RotateButton.onClick.AddListener(delegate { gameController.GetPlayerShip().ToggleRCSMode(); });
+            Circle1Up.GetComponent<RCSButton>().inputController = inputController;
         }
-
+        
         public void Speak(string text)
         {
             gameController.GetComponent<MFDController>().Speak(text);
@@ -191,6 +212,19 @@ public class MFDController : MonoBehaviour
                     bool? rota = value as bool?;
                     RotateButton.isToggled = rota != null ? rota.Value : false;
                     break;
+
+                case "Circle1Up_OnPointerDown":
+                    Circle1Up.GetComponent<ToggleButton>().isToggled = true;
+                    translateVec = gameController.GetPlayerShip().transform.up;
+                    translatePointerUp = false;
+                    translatePointerDown = true;
+                    break;
+                case "Circle1Up_OnPointerUp":
+                    Circle1Up.GetComponent<ToggleButton>().isToggled = false;
+                    translatePointerDown = false;
+                    translatePointerUp = true;
+                    break;
+
                 case "FuelSlider":
                     float? fuel = value as float?;
                     FuelSlider.value = fuel != null ? fuel.Value : 0;
@@ -202,6 +236,21 @@ public class MFDController : MonoBehaviour
             }
         }
 
+        public void Update()
+        {
+            PlayerShip playerShip = gameController.GetPlayerShip();
+            RocketShip ship = playerShip.RocketShip();
+
+            if (translatePointerDown)
+            {
+                ship.RCSBurst(translateVec, ship.RCSBurnMinSec);
+            }
+            if (translatePointerUp)
+            {
+                ship.RCSCutoff();
+                translatePointerUp = false;
+            }
+        }
     }
 
     public class MFDAutopilotController : IPropertyChangeObserver
@@ -651,6 +700,8 @@ public class MFDController : MonoBehaviour
         {
             MFDDockingPanelController2.Update();
         }
+        MFDControlPanelController.Update();
+        MFDControlPanelController2.Update();
     }
 
     public void HideMFD()
