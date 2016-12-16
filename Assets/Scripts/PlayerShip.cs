@@ -21,8 +21,6 @@ public class PlayerShip : MonoBehaviour
     private InputController inputController;
     private FPSAudioController audioController;
     private FPSCameraController cameraController;
-    private enum RCSMode { Rotate, Translate };
-    private RCSMode currentRCSMode;
     private enum CameraMode { FPS, ThirdParty };
     private CameraMode currentCameraMode;
     private int health;
@@ -49,7 +47,6 @@ public class PlayerShip : MonoBehaviour
         //doubleTapTargetSelTimer = -1;
         health = healthMax;
         rotInput = false;
-        currentRCSMode = RCSMode.Rotate;
         inputController.PropertyChanged("TranslateButtonNoAudio", false);
         inputController.PropertyChanged("RotateButtonNoAudio", true);
     }
@@ -58,12 +55,11 @@ public class PlayerShip : MonoBehaviour
     {
         UpdateCameraMode();
         UpdateCameraInput();
-        UpdateRCSInput();
         UpdateRCSAudio();
         UpdateEngineInput();
         UpdateFuelUI();
         UpdateEngineUI();
-        UpdateSpinUI();
+        //UpdateSpinUI();
         UpdateTargetSelection();
     }
 
@@ -83,26 +79,13 @@ public class PlayerShip : MonoBehaviour
         }
     }
 
-    public void ChangeRCSMode()
+    private void UpdateRCSAudio()
     {
-        if (gameController != null)
-        {
-            switch (currentRCSMode)
-            {
-                case RCSMode.Rotate:
-                    inputController.PropertyChanged("TranslateButton", false);
-                    inputController.PropertyChanged("RotateButton", true);
-                    break;
-                case RCSMode.Translate:
-                default:
-                    inputController.PropertyChanged("TranslateButton", true);
-                    inputController.PropertyChanged("RotateButton", false);
-                    break;
-            }
-        }
+        PlayTranslateSounds();
+        PlayRotateSounds();
     }
 
-    private void UpdateRCSAudio()
+    private void PlayTranslateSounds()
     {
         if (ship.IsRCSFiring() && !audioController.IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCS))
         {
@@ -120,6 +103,11 @@ public class PlayerShip : MonoBehaviour
         inputController.PropertyChanged("CommandExecuted", command);
     }
     
+    public Autopilot.Command CurrentAutopilotCommand()
+    {
+        return autopilot.CurrentCommand();
+    }
+
     public bool IsLowFuel()
     {
         return ship.NormalizedFuel() < LowFuelThreshold;
@@ -128,21 +116,6 @@ public class PlayerShip : MonoBehaviour
     public RocketShip RocketShip()
     {
         return ship;
-    }
-
-    public void ToggleRCSMode()
-    {
-        switch (currentRCSMode)
-        {
-            case RCSMode.Rotate:
-                currentRCSMode = RCSMode.Translate;
-                break;
-            case RCSMode.Translate:
-            default:
-                currentRCSMode = RCSMode.Rotate;
-                break;
-        }
-        ChangeRCSMode();
     }
 
     void ToggleCamera()
@@ -240,41 +213,12 @@ public class PlayerShip : MonoBehaviour
         }
     }
 
-    private void UpdateRCSInput()
-    {
-        if (Input.GetKeyDown(KeyCode.KeypadDivide))
-        {
-            ToggleRCSMode();
-        }
-        switch (currentRCSMode)
-        {
-            case RCSMode.Rotate:
-                UpdateInputRotation();
-                break;
-            case RCSMode.Translate:
-                UpdateInputTranslation();
-                break;
-        }
-        UpdateKillRotV();
-        UpdateRotatePlus();
-        UpdateRotateMinus();
-        PlayRotateSounds();
-    }
-
     private void UpdateTargetSelection()
     {
 //      UpdateDoubleTap(KeyCode.KeypadMultiply, ref doubleTapTargetSelTimer, gameController.HUD().SelectNextTargetPreferClosestEnemy, RotateTowardsTarget);
         if (Input.GetKeyDown(KeyCode.KeypadMultiply))
         {
             gameController.HUD().SelectNextTargetPreferClosestEnemy();
-        }
-    }
-
-    private void UpdateKillRotV()
-    {
-        if (Input.GetKeyDown(KeyCode.Keypad5))
-        {
-            KillRot();
         }
     }
 
@@ -422,44 +366,7 @@ public class PlayerShip : MonoBehaviour
         ShipExplosion.GetComponent<AudioSource>().Play();
         //        Instantiate(ShipExplosion, transform.parent.transform.position, transform.parent.transform.rotation);
     }
-
-    void UpdateInputRotation()
-    {
-        if (gameController != null)
-        {
-            rotInput = false;
-            if (Input.GetKey(KeyCode.Keypad2))
-            {
-                rotInput = ship.ApplyRCSSpin(Quaternion.Euler(-1, 0, 0));
-            }
-            if (Input.GetKey(KeyCode.Keypad8))
-            {
-                rotInput = ship.ApplyRCSSpin(Quaternion.Euler(1, 0, 0));
-            }
-            if (Input.GetKey(KeyCode.Keypad1))
-            {
-                rotInput = ship.ApplyRCSSpin(Quaternion.Euler(0, -1, 0));
-            }
-            if (Input.GetKey(KeyCode.Keypad3))
-            {
-                rotInput = ship.ApplyRCSSpin(Quaternion.Euler(0, 1, 0));
-            }
-            if (Input.GetKey(KeyCode.Keypad6))
-            {
-                rotInput = ship.ApplyRCSSpin(Quaternion.Euler(0, 0, -1));
-            }
-            if (Input.GetKey(KeyCode.Keypad4))
-            {
-                rotInput = ship.ApplyRCSSpin(Quaternion.Euler(0, 0, 1));
-            }
-            if (rotInput)
-            {
-                autopilot.ExecuteCommand(Autopilot.Command.OFF, null);
-                inputController.PropertyChanged("CommandExecuted", Autopilot.Command.OFF);
-            }
-        }
-    }
-
+    /*
     public void RotateTowardsTarget()
     {
         if (gameController != null)
@@ -489,11 +396,11 @@ public class PlayerShip : MonoBehaviour
 
     private void UpdateRotatePlus()
     {
-//        UpdateDoubleTap(KeyCode.KeypadPlus, ref doubleTapRotatePlusTimer, RotateToPos, StrafeTarget);
-//        if (Input.GetKeyDown(KeyCode.KeypadPlus))
-//        {
-//            RotateToPos();
-//        }
+        UpdateDoubleTap(KeyCode.KeypadPlus, ref doubleTapRotatePlusTimer, RotateToPos, StrafeTarget);
+        if (Input.GetKeyDown(KeyCode.KeypadPlus))
+        {
+            RotateToPos();
+        }
     }
 
     private void RotateToPos()
@@ -542,7 +449,7 @@ public class PlayerShip : MonoBehaviour
         }
 
     }
-    
+*/    
     void PlayRotateSounds()
     {
         if (gameController != null)
@@ -562,78 +469,10 @@ public class PlayerShip : MonoBehaviour
         }
     }
 
-    private void UpdateSpinUI()
+    public void ApplyRCSSpin(Quaternion q)
     {
-        if (gameController != null)
-        {
-            if (autopilot.IsRot())
-            {
-//                gameController.GetComponent<InputController>().TargetToggleButton.isToggled = false;
-  //              gameController.GetComponent<InputController>().POSToggleButton.isToggled = false;
-    //            gameController.GetComponent<InputController>().NEGToggleButton.isToggled = false;
-            }
-        }
-    }
-
-
-    void UpdateInputTranslation()
-    {
-        if (gameController != null)
-        {
-            if (Input.GetKeyDown(KeyCode.Keypad6))
-            {
-                inputController.PropertyChanged("Circle1Fore_OnPointerDown", null);
-            }
-            else if (Input.GetKeyUp(KeyCode.Keypad6))
-            {
-                inputController.PropertyChanged("Circle1Fore_OnPointerUp", null);
-            }
-
-            if (Input.GetKeyDown(KeyCode.Keypad9))
-            {
-                inputController.PropertyChanged("Circle1Aft_OnPointerDown", null);
-            }
-            else if (Input.GetKeyUp(KeyCode.Keypad9))
-            {
-                inputController.PropertyChanged("Circle1Aft_OnPointerUp", null);
-            }
-
-            if (Input.GetKeyDown(KeyCode.Keypad2))
-            {
-                inputController.PropertyChanged("Circle1Up_OnPointerDown", null);
-            }
-            else if (Input.GetKeyUp(KeyCode.Keypad2))
-            {
-                inputController.PropertyChanged("Circle1Up_OnPointerUp", null);
-            }
-
-            if (Input.GetKeyDown(KeyCode.Keypad8))
-            {
-                inputController.PropertyChanged("Circle1Down_OnPointerDown", null);
-            }
-            else if (Input.GetKeyUp(KeyCode.Keypad8))
-            {
-                inputController.PropertyChanged("Circle1Down_OnPointerUp", null);
-            }
-
-            if (Input.GetKeyDown(KeyCode.Keypad1))
-            {
-                inputController.PropertyChanged("Circle1Left_OnPointerDown", null);
-            }
-            else if (Input.GetKeyUp(KeyCode.Keypad1))
-            {
-                inputController.PropertyChanged("Circle1Left_OnPointerUp", null);
-            }
-
-            if (Input.GetKeyDown(KeyCode.Keypad3))
-            {
-                inputController.PropertyChanged("Circle1Right_OnPointerDown", null);
-            }
-            else if (Input.GetKeyUp(KeyCode.Keypad3))
-            {
-                inputController.PropertyChanged("Circle1Right_OnPointerUp", null);
-            }
-        }
+        rotInput = true;
+        ship.ApplyRCSSpin(q);
     }
 
 }

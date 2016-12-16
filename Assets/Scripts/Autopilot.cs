@@ -25,6 +25,8 @@ public class Autopilot : MonoBehaviour
     private RocketShip ship;
     private Weapon mainGun;
     private bool cmgActive = false;
+    private Command currentCommand = Command.OFF;
+
     public static readonly List<Command> Commands = new List<Command>()
     {
         Command.OFF,
@@ -71,8 +73,14 @@ public class Autopilot : MonoBehaviour
 
     void Start()
     {
+        currentCommand = Command.OFF;
         ship = GetComponent<RocketShip>();
         mainGun = GetComponent<PlayerShip>().MainGun;
+    }
+
+    public Command CurrentCommand()
+    {
+        return currentCommand;
     }
 
     private void KillRot()
@@ -96,6 +104,7 @@ public class Autopilot : MonoBehaviour
     
     public void ExecuteCommand(Command command, GameObject target)
     {
+        currentCommand = command;
         switch (command)
         {
             case Command.OFF:
@@ -209,6 +218,10 @@ public class Autopilot : MonoBehaviour
         if (callStack.Count > 0)
         {
             callStack.Pop();
+        }
+        if (callStack.Count == 0 && currentCommand != Command.OFF)
+        {
+            ExecuteCommand(Command.OFF, null);
         }
     }
 
