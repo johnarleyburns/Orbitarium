@@ -580,38 +580,58 @@ public class PlayerShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            Vector3 v = Vector3.zero;
-            if (Input.GetKey(KeyCode.Keypad6))
+            if (Input.GetKeyDown(KeyCode.Keypad6))
             {
-                v = transform.forward;
+                inputController.PropertyChanged("Circle1Fore_OnPointerDown", null);
             }
-            if (Input.GetKey(KeyCode.Keypad9))
+            else if (Input.GetKeyUp(KeyCode.Keypad6))
             {
-                v = -transform.forward;
+                inputController.PropertyChanged("Circle1Fore_OnPointerUp", null);
             }
-            if (Input.GetKey(KeyCode.Keypad2))
+
+            if (Input.GetKeyDown(KeyCode.Keypad9))
+            {
+                inputController.PropertyChanged("Circle1Aft_OnPointerDown", null);
+            }
+            else if (Input.GetKeyUp(KeyCode.Keypad9))
+            {
+                inputController.PropertyChanged("Circle1Aft_OnPointerUp", null);
+            }
+
+            if (Input.GetKeyDown(KeyCode.Keypad2))
             {
                 inputController.PropertyChanged("Circle1Up_OnPointerDown", null);
             }
-            else
+            else if (Input.GetKeyUp(KeyCode.Keypad2))
             {
                 inputController.PropertyChanged("Circle1Up_OnPointerUp", null);
             }
-            if (Input.GetKey(KeyCode.Keypad8))
+
+            if (Input.GetKeyDown(KeyCode.Keypad8))
             {
-                v = -transform.up;
+                inputController.PropertyChanged("Circle1Down_OnPointerDown", null);
             }
-            if (Input.GetKey(KeyCode.Keypad1))
+            else if (Input.GetKeyUp(KeyCode.Keypad8))
             {
-                v = -transform.right;
+                inputController.PropertyChanged("Circle1Down_OnPointerUp", null);
             }
-            if (Input.GetKey(KeyCode.Keypad3))
+
+            if (Input.GetKeyDown(KeyCode.Keypad1))
             {
-                v = transform.right;
+                inputController.PropertyChanged("Circle1Left_OnPointerDown", null);
             }
-            if (v != Vector3.zero)
+            else if (Input.GetKeyUp(KeyCode.Keypad1))
             {
-                ship.RCSBurst(v, ship.RCSBurnMinSec);
+                inputController.PropertyChanged("Circle1Left_OnPointerUp", null);
+            }
+
+            if (Input.GetKeyDown(KeyCode.Keypad3))
+            {
+                inputController.PropertyChanged("Circle1Right_OnPointerDown", null);
+            }
+            else if (Input.GetKeyUp(KeyCode.Keypad3))
+            {
+                inputController.PropertyChanged("Circle1Right_OnPointerUp", null);
             }
         }
     }

@@ -213,7 +213,6 @@
     <Compile Include="Assets\OffScreenIndicator\Scripts\OffScreenIndicatorManager.cs" />
     <Compile Include="Assets\OffScreenIndicator\Scripts\OffScreenIndicatorManagerCanvas.cs" />
     <Compile Include="Assets\OffScreenIndicator\Scripts\OffScreenIndicatorManagerVR.cs" />
-    <Compile Include="Assets\RCSButton.cs" />
     <Compile Include="Assets\Scripts\Autopilot.cs" />
     <Compile Include="Assets\Scripts\DialogText.cs" />
     <Compile Include="Assets\Scripts\DisplayUtils.cs" />
@@ -228,11 +227,16 @@
     <Compile Include="Assets\Scripts\HUDController.cs" />
     <Compile Include="Assets\Scripts\IPropertyChangeObserver.cs" />
     <Compile Include="Assets\Scripts\InputController.cs" />
+    <Compile Include="Assets\Scripts\MFDAutopilotController.cs" />
+    <Compile Include="Assets\Scripts\MFDControlController.cs" />
     <Compile Include="Assets\Scripts\MFDController.cs" />
+    <Compile Include="Assets\Scripts\MFDDockingController.cs" />
+    <Compile Include="Assets\Scripts\MFDWeaponsController.cs" />
     <Compile Include="Assets\Scripts\PerlinShake.cs" />
     <Compile Include="Assets\Scripts\PhysicsUtils.cs" />
     <Compile Include="Assets\Scripts\PlayerShip.cs" />
     <Compile Include="Assets\Scripts\PlayerShipController.cs" />
+    <Compile Include="Assets\Scripts\RCSButton.cs" />
     <Compile Include="Assets\Scripts\RocketShip.cs" />
     <Compile Include="Assets\Scripts\TargetDB.cs" />
     <Compile Include="Assets\Scripts\ThirdPartyCameraController.cs" />
