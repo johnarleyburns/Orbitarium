@@ -222,6 +222,7 @@ public class Autopilot : MonoBehaviour
         if (callStack.Count == 0 && currentCommand != Command.OFF)
         {
             ExecuteCommand(Command.OFF, null);
+            gameController.InputControl().PropertyChanged("CommandExecuted", Command.OFF);
         }
     }
 

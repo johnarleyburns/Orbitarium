@@ -370,34 +370,36 @@ public class MFDControlController : IPropertyChangeObserver
                 rotatePointerDown = false;
                 break;
             case "Circle2Kill_OnClick":
-                ToggleKillRot();
+                KillRot();
                 rotatePointerDown = false;
                 break;
         }
     }
 
-    private void ToggleKillRot()
+    private void KillRot()
     {
         PlayerShip playerShip = gameController.GetPlayerShip();
-        Button butt = Circle2Kill.GetComponent<Button>();
-        /*
-        if (butt.isToggled)
+        playerShip.ExecuteAutopilotCommand(Autopilot.Command.KILL_ROTATION);
+        MarkKillRot();
+        if (currentRCSMode != RCSMode.Rotate)
         {
-            butt.isToggled = false;
-            Circle2Kill.GetChild(0).GetComponent<Image>().color = BUTTON_GREY;
-            playerShip.ExecuteAutopilotCommand(Autopilot.Command.OFF);
+            ToggleRCSMode();
         }
-        else
-        {
-            butt.isToggled = true;
-            */
-            Circle2Kill.GetChild(0).GetComponent<Image>().color = HUD_GREEN;
-            playerShip.ExecuteAutopilotCommand(Autopilot.Command.KILL_ROTATION);
-            if (currentRCSMode != RCSMode.Rotate)
-            {
-                ToggleRCSMode();
-            }
-//        }
+    }
+
+    private bool IsKillRotMarked()
+    {
+        return Circle2Kill.GetChild(0).GetComponent<Image>().color != BUTTON_GREY;
+    }
+
+    private void MarkKillRot()
+    {
+        Circle2Kill.GetChild(0).GetComponent<Image>().color = HUD_GREEN;
+    }
+
+    private void UnmarkKillRot()
+    {
+        Circle2Kill.GetChild(0).GetComponent<Image>().color = BUTTON_GREY;
     }
 
     private void HandleFuelPropertyChanged(string name, object value)
@@ -610,6 +612,11 @@ public class MFDControlController : IPropertyChangeObserver
                 ToggleRCSMode();
             }
         }
+        if (playerShip.CurrentAutopilotCommand() != Autopilot.Command.KILL_ROTATION && IsKillRotMarked())
+        {
+            UnmarkKillRot();
+        }
+
     }
 
 }
