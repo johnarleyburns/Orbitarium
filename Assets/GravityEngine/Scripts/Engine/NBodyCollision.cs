@@ -77,6 +77,9 @@ public class NBodyCollision : MonoBehaviour {
         }
 		GameObject otherBody = collider.attachedRigidbody.gameObject;
 
+        GameObject otherBodyWithNBody = PhysicsUtils.GetNBodyGameObject(otherBody);
+        GameObject myBodyWithNBody = PhysicsUtils.GetNBodyGameObject(transform.gameObject);
+
 		if (SkipThisCollider(otherBody)) {
 			#pragma warning disable 162		// disable unreachable code warning
 			if (GravityEngine.DEBUG)
@@ -87,28 +90,34 @@ public class NBodyCollision : MonoBehaviour {
 		#pragma warning disable 162		// disable unreachable code warning
 		if (GravityEngine.DEBUG)
 			Debug.Log("Collision type " + collisionType + " for " + gameObject.name);
-		#pragma warning restore 162
+#pragma warning restore 162
 
-		if (collisionType == CollisionType.ABSORB_IMMEDIATE) {
+        if (PhysicsUtils.ShouldDock(gameObject, otherBody))
+        {
+            PerformDock(gameObject, otherBody);
+        }
+        else if (collisionType == CollisionType.ABSORB_IMMEDIATE) {
 			// as soon as they touch remove colliding object
-			GravityEngine.instance.Collision(otherBody.transform.parent.gameObject, transform.parent.gameObject, collisionType, 0f);
+			GravityEngine.instance.Collision(otherBodyWithNBody, myBodyWithNBody, collisionType, 0f);
 			GravityEngine.instance.InactivateBody(transform.parent.gameObject);
 			inactivate = true;
 
-		} else if (collisionType == CollisionType.ABSORB_ENVELOP) {
+		}
+        else if (collisionType == CollisionType.ABSORB_ENVELOP) {
 			// do nothing - handle in triggerStay()
 
-		} else if (collisionType == CollisionType.BOUNCE) {
-			GravityEngine.instance.Collision(otherBody.transform.parent.gameObject, transform.parent.gameObject, collisionType, bounceFactor);
-
-		} else if (collisionType == CollisionType.EXPLODE) {
+		}
+        else if (collisionType == CollisionType.BOUNCE) {
+            GravityEngine.instance.Collision(otherBodyWithNBody, myBodyWithNBody, collisionType, bounceFactor);
+        }
+        else if (collisionType == CollisionType.EXPLODE) {
             ExplodeCollide(otherBody);
         }
         else if (collisionType == CollisionType.EXPLODE_OR_BOUNCE)
         {
             if (PhysicsUtils.ShouldBounce(gameObject, otherBody))
             {
-                GravityEngine.instance.Collision(otherBody.transform.parent.gameObject, transform.parent.gameObject, CollisionType.BOUNCE, bounceFactor);
+                GravityEngine.instance.Collision(otherBodyWithNBody, myBodyWithNBody, CollisionType.BOUNCE, bounceFactor);
             }
             else
             {
@@ -125,6 +134,20 @@ public class NBodyCollision : MonoBehaviour {
 			}
 		}
 	}
+
+    private void PerformDock(GameObject myNBodyChild, GameObject otherBody)
+    {
+        if (myNBodyChild.tag == "Player")
+        {
+            PlayerShip ship = myNBodyChild.GetComponent<PlayerShip>();
+            ship.PerformDock(otherBody);
+            // attach ship to dock
+        }
+        else
+        {
+            // do some dock for enemy ships
+        }
+    }
 
     private void ExplodeCollide(GameObject otherBody)
     {

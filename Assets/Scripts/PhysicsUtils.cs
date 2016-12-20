@@ -3,7 +3,11 @@ using System.Collections;
 
 public class PhysicsUtils : MonoBehaviour {
 
-    public static float minRelVtoExplode = 5;
+    public static float minRelVtoExplode = 5f;
+    public static float minRelVtoDock = 0.1f;
+    public static float maxRelVtoDock = 1f;
+    public static float maxThetatoDock = 5f;
+    public static float maxDistToDock = 2f;
     public static string NeverBounceTag = "Projectile";
 
     public static bool ShouldBounce(GameObject myNBodyChild, GameObject otherBody)
@@ -21,20 +25,58 @@ public class PhysicsUtils : MonoBehaviour {
         }
         else
         {
+            GameObject otherNBody = GetNBodyGameObject(otherBody);
+            GameObject myNBody = GetNBodyGameObject(myNBodyChild);
             Vector3 relVelVec =
-                GravityEngine.instance.GetVelocity(otherBody.transform.parent.gameObject)
+                GravityEngine.instance.GetVelocity(otherNBody)
                 -
-                GravityEngine.instance.GetVelocity(myNBodyChild.transform.parent.gameObject);
+                GravityEngine.instance.GetVelocity(myNBody);
             relVel = relVelVec.magnitude;
             bool bouncing = relVel < minRelVtoExplode;
             return bouncing;
         }
     }
 
+    public static bool ShouldDock(GameObject myNBodyChild, GameObject otherBody)
+    {
+        bool dock = false;
+        if (otherBody.tag == "Dock" && (myNBodyChild.tag == "Player" || myNBodyChild.tag == "Enemy"))
+        {
+            GameObject otherNBody = GetNBodyGameObject(otherBody);
+            GameObject myNBody = GetNBodyGameObject(myNBodyChild);
+            Vector3 relVelVec =
+                GravityEngine.instance.GetVelocity(otherNBody)
+                -
+                GravityEngine.instance.GetVelocity(myNBody);
+            float relVel = relVelVec.magnitude;
+            Transform dockGhostModel = otherBody.transform.GetChild(0).GetChild(0).transform;
+            float relTheta = Quaternion.Angle(myNBodyChild.transform.rotation, dockGhostModel.rotation);
+            bool isRelv = relVel >= minRelVtoDock && relVel <= maxRelVtoDock;
+            bool isPos = Vector3.Distance(myNBody.transform.position, dockGhostModel.position) <= maxDistToDock;
+            bool isAligned = relTheta <= maxThetatoDock;
+            if (isRelv && isPos && isAligned)
+            {
+                dock = true;
+            }
+        }
+        return dock;
+    }
+
+    public static GameObject GetNBodyGameObject(GameObject body) // for rigidbody support
+    {
+        NBody nbody = body.GetComponent<NBody>();
+        while (nbody == null && body.transform.parent != null)
+        {
+            body = body.transform.parent.gameObject;
+            nbody = body.GetComponent<NBody>();
+        }
+        return body;
+    }
+
     public static void CalcRelV(Transform source, GameObject target, out Vector3 targetVec, out float relv, out Vector3 relVelUnit)
     {
-        Vector3 myVel = GravityEngine.instance.GetVelocity(source.gameObject);
-        Vector3 targetVel = GravityEngine.instance.GetVelocity(target);
+        Vector3 myVel = GravityEngine.instance.GetVelocity(PhysicsUtils.GetNBodyGameObject(source.gameObject));
+        Vector3 targetVel = GravityEngine.instance.GetVelocity(PhysicsUtils.GetNBodyGameObject(target));
         Vector3 relVel = myVel - targetVel;
         Vector3 targetPos = target.transform.position;
         Vector3 myPos = source.transform.position;

@@ -7,7 +7,7 @@ public class RCSButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler {
 
     public void OnPointerDown(PointerEventData data)
     {
-        if (inputController != null)
+        if (inputController != null && inputController.ControlsEnabled)
         {
             inputController.PropertyChanged(transform.name + "_OnPointerDown", data);
         }
@@ -15,7 +15,7 @@ public class RCSButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler {
 
     public void OnPointerUp(PointerEventData data)
     {
-        if (inputController != null)
+        if (inputController != null && inputController.ControlsEnabled)
         {
             inputController.PropertyChanged(transform.name + "_OnPointerUp", data);
         }

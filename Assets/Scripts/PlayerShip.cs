@@ -39,6 +39,7 @@ public class PlayerShip : MonoBehaviour
         currentCameraMode = CameraMode.FPS;
         health = healthMax;
         rotInput = false;
+        inputController.ControlsEnabled = true;
         inputController.PropertyChanged("TranslateButtonNoAudio", false);
         inputController.PropertyChanged("RotateButtonNoAudio", true);
     }
@@ -91,7 +92,7 @@ public class PlayerShip : MonoBehaviour
         autopilot.ExecuteCommand(command, gameController.HUD().GetSelectedTarget());
         inputController.PropertyChanged("CommandExecuted", command);
     }
-    
+
     public Autopilot.Command CurrentAutopilotCommand()
     {
         return autopilot.CurrentCommand();
@@ -261,7 +262,7 @@ public class PlayerShip : MonoBehaviour
                 }
                 else if (otherBody.tag == "Dock")
                 {
-                    PerformDock(otherBody);
+                    //PerformDock(otherBody); // called from collider
                 }
                 else
                 {
@@ -276,9 +277,27 @@ public class PlayerShip : MonoBehaviour
         }
     }
 
-    private void PerformDock(GameObject dockModel)
+    public void PerformDock(GameObject dockModel)
     {
+        GameObject shipNbodyBody = transform.parent.gameObject;
+        GameObject dockGhost = dockModel.transform.GetChild(0).gameObject;
+        inputController.ControlsEnabled = false;
+        StopAllThrust();
+        gameController.Dock(shipNbodyBody, dockGhost);
+        //cameraController.PlayCollisionShake();
         audioController.Play(FPSAudioController.AudioClipEnum.SPACESHIP_DOCK);
+    }
+
+    private void StopAllThrust()
+    {
+        if (ship.IsMainEngineGo())
+        {
+            ToggleEngine();
+        }
+        if (ship.IsAuxEngineGo())
+        {
+            ToggleAuxEngine();
+        }
     }
 
     private void GameOverCollision(string otherName)

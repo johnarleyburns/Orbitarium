@@ -113,8 +113,8 @@ public class MFDControlController : IPropertyChangeObserver
         inputController.AddObserver("FuelSlider", this);
         inputController.AddObserver("FuelRemainingText", this);
 
-        MainOnButton.onClick.AddListener(delegate { gameController.GetPlayerShip().ToggleEngine(); });
-        AuxOnButton.onClick.AddListener(delegate { gameController.GetPlayerShip().ToggleAuxEngine(); });
+        MainOnButton.onClick.AddListener(delegate { if (inputController.ControlsEnabled) { gameController.GetPlayerShip().ToggleEngine(); } });
+        AuxOnButton.onClick.AddListener(delegate { if (inputController.ControlsEnabled) { gameController.GetPlayerShip().ToggleAuxEngine(); } });
         RCSFineOnButton.onClick.AddListener(delegate { gameController.GetPlayerShip().ToggleRCSFineControl(); });
         TranslateButton.onClick.AddListener(delegate { ToggleRCSMode(); });
         RotateButton.onClick.AddListener(delegate { ToggleRCSMode(); });
@@ -130,9 +130,13 @@ public class MFDControlController : IPropertyChangeObserver
         Circle2Right.GetComponent<RCSButton>().inputController = inputController;
         Circle2CounterClock.GetComponent<RCSButton>().inputController = inputController;
         Circle2Clock.GetComponent<RCSButton>().inputController = inputController;
-        Circle2Kill.GetComponent<Button>().onClick.AddListener(delegate {
-            gameController.GetPlayerShip().KillRot();
-            inputController.PropertyChanged("Circle2Kill_OnClick", null);
+        Circle2Kill.GetComponent<Button>().onClick.AddListener(delegate
+        {
+            if (inputController.ControlsEnabled)
+            {
+                gameController.GetPlayerShip().KillRot();
+                inputController.PropertyChanged("Circle2Kill_OnClick", null);
+            }
         });
 
         currentRCSMode = RCSMode.Rotate;
@@ -402,10 +406,10 @@ public class MFDControlController : IPropertyChangeObserver
     private void MarkKillRot()
     {
         Circle2Kill.GetChild(0).GetComponent<Image>().color = HUD_GREEN;
-        if (currentRCSMode != RCSMode.Rotate)
-        {
-            ToggleRCSMode();
-        }
+//        if (currentRCSMode != RCSMode.Rotate)
+//        {
+//            ToggleRCSMode();
+//        }
     }
 
     private void UnmarkKillRot()
@@ -446,9 +450,18 @@ public class MFDControlController : IPropertyChangeObserver
 
     private void UpdateKeyInput()
     {
-        UpdateEngineInput();
         UpdateCameraInput();
         UpdateKeyInputToggleMode();
+        if (inputController.ControlsEnabled)
+        {
+            UpdateKeyInputTranslateRotate();
+            UpdateEngineInput();
+            UpdateKeyInputKillRot();
+        }
+    }
+
+    private void UpdateKeyInputTranslateRotate()
+    {
         switch (currentRCSMode)
         {
             case RCSMode.Rotate:
@@ -458,7 +471,6 @@ public class MFDControlController : IPropertyChangeObserver
                 UpdateKeyInputTranslate();
                 break;
         }
-        UpdateKeyInputKillRot();
     }
 
     private void UpdateEngineInput()

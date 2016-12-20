@@ -17,6 +17,7 @@ public class InputController : MonoBehaviour
     public GameObject RelativeVelocityNormalPlusDirectionIndicator;
     public GameObject RelativeVelocityNormalMinusDirectionIndicator;
     public GameObject TargetDirectionIndicator;
+    public bool ControlsEnabled = true;
 
     private Dictionary<string, HashSet<IPropertyChangeObserver>> propertyChangeObservers = new Dictionary<string, HashSet<IPropertyChangeObserver>>();
 
