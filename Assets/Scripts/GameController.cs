@@ -23,6 +23,8 @@ public class GameController : MonoBehaviour
     public GameObject EezoApproachGhost;
     public GameObject EezoDock;
     public GameObject EezoDockGhost;
+    public GameObject EezoDockPort;
+    public GameObject EezoDockPortGhost;
     public Transform SpawnPoint;
     public float PlayerInitialImpulse;
     public float PlayerShipRadiusM = 20;
@@ -86,6 +88,10 @@ public class GameController : MonoBehaviour
             {
                 EezoApproachGhost,
                 EezoApproach
+            },
+            {
+                EezoDockPortGhost,
+                EezoDockPort
             }
         };
         UpdateFollows();

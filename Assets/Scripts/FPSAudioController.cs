@@ -7,13 +7,15 @@ public class FPSAudioController : MonoBehaviour {
     public GameObject AuxAudio;
     public GameObject RCSAudio;
     public GameObject RCSCMGAudio;
+    public GameObject DockAudio;
 
     public enum AudioClipEnum
     {
         SPACESHIP_MAIN_ENGINE,
         SPACESHIP_AUX,
         SPACESHIP_RCS,
-        SPACESHIP_RCSCMG
+        SPACESHIP_RCSCMG,
+        SPACESHIP_DOCK
     };
 
     public bool IsPlaying(AudioClipEnum clip)
@@ -32,6 +34,9 @@ public class FPSAudioController : MonoBehaviour {
                 break;
             case AudioClipEnum.SPACESHIP_RCSCMG:
                 playing = RCSCMGAudio.GetComponent<AudioSource>().isPlaying;
+                break;
+            case AudioClipEnum.SPACESHIP_DOCK:
+                playing = DockAudio.GetComponent<AudioSource>().isPlaying;
                 break;
         }
         return playing;
@@ -53,6 +58,9 @@ public class FPSAudioController : MonoBehaviour {
             case AudioClipEnum.SPACESHIP_RCSCMG:
                 RCSCMGAudio.GetComponent<AudioSource>().Play();
                 break;
+            case AudioClipEnum.SPACESHIP_DOCK:
+                DockAudio.GetComponent<AudioSource>().Play();
+                break;
         }
     }
 
@@ -71,6 +79,9 @@ public class FPSAudioController : MonoBehaviour {
                 break;
             case AudioClipEnum.SPACESHIP_RCSCMG:
                 RCSCMGAudio.GetComponent<AudioSource>().Stop();
+                break;
+            case AudioClipEnum.SPACESHIP_DOCK:
+                DockAudio.GetComponent<AudioSource>().Stop();
                 break;
         }
     }

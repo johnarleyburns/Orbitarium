@@ -73,21 +73,21 @@ public class MFDController : MonoBehaviour
         MFDDockingPanel2.transform.localPosition = new Vector3(pos.x, pos2.y + dropdownHeight, pos2.z);
 
         MFDControlPanelController = new MFDControlController();
-        MFDControlPanelController.Connect(MFDControlPanel, inputController, gameController);
+        MFDControlPanelController.Connect(MFDControlPanel, inputController, gameController, true);
         MFDAutopilotPanelController = new MFDAutopilotController();
-        MFDAutopilotPanelController.Connect(MFDAutopilotPanel, inputController, gameController);
+        MFDAutopilotPanelController.Connect(MFDAutopilotPanel, inputController, gameController, true);
         MFDWeaponsPanelController = new MFDWeaponsController();
-        MFDWeaponsPanelController.Connect(MFDWeaponsPanel, inputController);
+        MFDWeaponsPanelController.Connect(MFDWeaponsPanel, inputController, true);
         MFDDockingPanelController = new MFDDockingController();
-        MFDDockingPanelController.Connect(MFDDockingPanel, inputController, gameController);
+        MFDDockingPanelController.Connect(MFDDockingPanel, inputController, gameController, true);
         MFDControlPanelController2 = new MFDControlController();
-        MFDControlPanelController2.Connect(MFDControlPanel2, inputController, gameController);
+        MFDControlPanelController2.Connect(MFDControlPanel2, inputController, gameController, false);
         MFDAutopilotPanelController2 = new MFDAutopilotController();
-        MFDAutopilotPanelController2.Connect(MFDAutopilotPanel2, inputController, gameController);
+        MFDAutopilotPanelController2.Connect(MFDAutopilotPanel2, inputController, gameController, false);
         MFDWeaponsPanelController2 = new MFDWeaponsController();
-        MFDWeaponsPanelController2.Connect(MFDWeaponsPanel2, inputController);
+        MFDWeaponsPanelController2.Connect(MFDWeaponsPanel2, inputController, false);
         MFDDockingPanelController2 = new MFDDockingController();
-        MFDDockingPanelController2.Connect(MFDDockingPanel2, inputController, gameController);
+        MFDDockingPanelController2.Connect(MFDDockingPanel2, inputController, gameController, false);
 
         MFDDropdown.onValueChanged.AddListener(delegate { MFDDropdownOnValueChanged(); });
         MFDDropdown.value = Convert.ToInt32(MFDPanelType.CONTROL);
@@ -206,6 +206,8 @@ public class MFDController : MonoBehaviour
         }
         MFDControlPanelController.Update();
         MFDControlPanelController2.Update();
+        MFDAutopilotPanelController.Update();
+        MFDAutopilotPanelController2.Update();
     }
 
     public void HideMFD()

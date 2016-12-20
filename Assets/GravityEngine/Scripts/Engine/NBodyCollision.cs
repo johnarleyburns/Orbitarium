@@ -140,7 +140,10 @@ public class NBodyCollision : MonoBehaviour {
         // collision will do velocity update from collision
         CollisionType cType = collisionType == CollisionType.EXPLODE_OR_BOUNCE ? CollisionType.EXPLODE : collisionType;
         GravityEngine.instance.Collision(otherBody.transform.parent.gameObject, transform.parent.gameObject, cType, 0f);
-        StartExplosion(contactPoint, normal, otherBody.transform.parent.gameObject);
+        if (prefabOk)
+        {
+            StartExplosion(contactPoint, normal, otherBody.transform.parent.gameObject);
+        }
         GravityEngine.instance.InactivateBody(transform.parent.gameObject);
         inactivate = true;
     }

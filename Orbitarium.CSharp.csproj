@@ -72,12 +72,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="Orbitarium.CSharp.Plugins.csproj">
-      <Project>{AC00BC3F-D6D2-27D0-88DC-EC9D867A0CA5}</Project>
-      <Name>Orbitarium.CSharp.Plugins</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="Assets\AmplifyBloom\Plugins\AmplifyBloomBase.cs" />
     <Compile Include="Assets\AmplifyBloom\Plugins\AmplifyBloomEffect.cs" />
     <Compile Include="Assets\AmplifyBloom\Plugins\Runtime\AmplifyBokeh.cs" />
@@ -216,6 +210,7 @@
     <Compile Include="Assets\Scripts\Autopilot.cs" />
     <Compile Include="Assets\Scripts\DialogText.cs" />
     <Compile Include="Assets\Scripts\DisplayUtils.cs" />
+    <Compile Include="Assets\Scripts\DockController.cs" />
     <Compile Include="Assets\Scripts\EnemyShip.cs" />
     <Compile Include="Assets\Scripts\EnemyShipController.cs" />
     <Compile Include="Assets\Scripts\EnemyTracker.cs" />
@@ -238,6 +233,50 @@
     <Compile Include="Assets\Scripts\PlayerShipController.cs" />
     <Compile Include="Assets\Scripts\RCSButton.cs" />
     <Compile Include="Assets\Scripts\RocketShip.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Characters\FirstPersonCharacter\Scripts\FirstPersonController.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Characters\FirstPersonCharacter\Scripts\HeadBob.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Characters\FirstPersonCharacter\Scripts\MouseLook.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Characters\FirstPersonCharacter\Scripts\RigidbodyFirstPersonController.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Characters\RollerBall\Scripts\Ball.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Characters\RollerBall\Scripts\BallUserControl.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Characters\ThirdPersonCharacter\Scripts\AICharacterControl.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Characters\ThirdPersonCharacter\Scripts\ThirdPersonCharacter.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Characters\ThirdPersonCharacter\Scripts\ThirdPersonUserControl.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\CrossPlatformInput\Scripts\AxisTouchButton.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\CrossPlatformInput\Scripts\ButtonHandler.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\CrossPlatformInput\Scripts\CrossPlatformInputManager.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\CrossPlatformInput\Scripts\InputAxisScrollbar.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\CrossPlatformInput\Scripts\Joystick.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\CrossPlatformInput\Scripts\MobileControlRig.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\CrossPlatformInput\Scripts\PlatformSpecific\MobileInput.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\CrossPlatformInput\Scripts\PlatformSpecific\StandaloneInput.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\CrossPlatformInput\Scripts\TiltInput.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\CrossPlatformInput\Scripts\TouchPad.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\CrossPlatformInput\Scripts\VirtualInput.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\ActivateTrigger.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\AlphaButtonClickMask.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\AutoMobileShaderSwitch.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\AutoMoveAndRotate.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\CameraRefocus.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\CurveControlledBob.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\DragRigidbody.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\DynamicShadowSettings.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\EventSystemChecker.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\FOVKick.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\FPSCounter.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\FollowTarget.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\ForcedReset.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\LerpControlledBob.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\ObjectResetter.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\ParticleSystemDestroyer.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\PlatformSpecificContent.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\SimpleActivatorMenu.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\SimpleMouseRotator.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\SmoothFollow.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\TimedObjectActivator.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\TimedObjectDestructor.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\WaypointCircuit.cs" />
+    <Compile Include="Assets\Scripts\Standard Assets\Utility\WaypointProgressTracker.cs" />
     <Compile Include="Assets\Scripts\TargetDB.cs" />
     <Compile Include="Assets\Scripts\ThirdPartyCameraController.cs" />
     <Compile Include="Assets\Scripts\Weapon.cs" />
@@ -353,6 +392,10 @@
     <None Include="Assets\Resources\CALVERT2.txt" />
     <None Include="Assets\Resources\SALS.txt" />
     <None Include="Assets\Resources\TDZ.txt" />
+    <None Include="Assets\Scripts\Standard Assets\Characters\FirstPersonCharacter\FirstPersonCharacterGuidelines.txt" />
+    <None Include="Assets\Scripts\Standard Assets\Characters\RollerBall\RollerBallGuidelines.txt" />
+    <None Include="Assets\Scripts\Standard Assets\Characters\ThirdPersonCharacter\ThirdPersonCharacterGuidelines.txt" />
+    <None Include="Assets\Scripts\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
     <None Include="Assets\SolarSystem\Resources\Deimos.txt" />
     <None Include="Assets\SolarSystem\Resources\Earth.txt" />
     <None Include="Assets\SolarSystem\Resources\Europa.txt" />
@@ -458,10 +501,6 @@
     <None Include="Assets\SpriteLights\Shaders\omnidirectionalLight.shader" />
     <None Include="Assets\SpriteLights\Shaders\papiLight.shader" />
     <None Include="Assets\SpriteLights\Shaders\strobeLight.shader" />
-    <None Include="Assets\Standard Assets\Characters\FirstPersonCharacter\FirstPersonCharacterGuidelines.txt" />
-    <None Include="Assets\Standard Assets\Characters\RollerBall\RollerBallGuidelines.txt" />
-    <None Include="Assets\Standard Assets\Characters\ThirdPersonCharacter\ThirdPersonCharacterGuidelines.txt" />
-    <None Include="Assets\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
     <None Include="Assets\Starbox\readme.txt" />
     <None Include="Assets\_Target &amp; HUD Effect V1\_DemoStuff\_Planet_01\Materials\Planet.shader" />
     <None Include="Assets\crosstales\RTVoice\3rd party\Assets.txt" />

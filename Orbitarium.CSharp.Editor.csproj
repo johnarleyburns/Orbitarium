@@ -85,6 +85,9 @@
     <Reference Include="UnityEditor.Graphs">
       <HintPath>Library\UnityAssemblies\UnityEditor.Graphs.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEditor.WebGL.Extensions">
+      <HintPath>Library\UnityAssemblies\UnityEditor.WebGL.Extensions.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEditor.WindowsStandalone.Extensions">
       <HintPath>Library\UnityAssemblies\UnityEditor.WindowsStandalone.Extensions.dll</HintPath>
     </Reference>
@@ -105,10 +108,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="Orbitarium.CSharp.Plugins.csproj">
-      <Project>{AC00BC3F-D6D2-27D0-88DC-EC9D867A0CA5}</Project>
-      <Name>Orbitarium.CSharp.Plugins</Name>
-    </ProjectReference>
     <ProjectReference Include="Orbitarium.CSharp.csproj">
       <Project>{BC950279-415D-0696-1CE8-4E8089BF00FE}</Project>
       <Name>Orbitarium.CSharp</Name>
@@ -205,6 +204,10 @@
     <None Include="Assets\Resources\CALVERT2.txt" />
     <None Include="Assets\Resources\SALS.txt" />
     <None Include="Assets\Resources\TDZ.txt" />
+    <None Include="Assets\Scripts\Standard Assets\Characters\FirstPersonCharacter\FirstPersonCharacterGuidelines.txt" />
+    <None Include="Assets\Scripts\Standard Assets\Characters\RollerBall\RollerBallGuidelines.txt" />
+    <None Include="Assets\Scripts\Standard Assets\Characters\ThirdPersonCharacter\ThirdPersonCharacterGuidelines.txt" />
+    <None Include="Assets\Scripts\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
     <None Include="Assets\SolarSystem\Resources\Deimos.txt" />
     <None Include="Assets\SolarSystem\Resources\Earth.txt" />
     <None Include="Assets\SolarSystem\Resources\Europa.txt" />
@@ -310,10 +313,6 @@
     <None Include="Assets\SpriteLights\Shaders\omnidirectionalLight.shader" />
     <None Include="Assets\SpriteLights\Shaders\papiLight.shader" />
     <None Include="Assets\SpriteLights\Shaders\strobeLight.shader" />
-    <None Include="Assets\Standard Assets\Characters\FirstPersonCharacter\FirstPersonCharacterGuidelines.txt" />
-    <None Include="Assets\Standard Assets\Characters\RollerBall\RollerBallGuidelines.txt" />
-    <None Include="Assets\Standard Assets\Characters\ThirdPersonCharacter\ThirdPersonCharacterGuidelines.txt" />
-    <None Include="Assets\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
     <None Include="Assets\Starbox\readme.txt" />
     <None Include="Assets\_Target &amp; HUD Effect V1\_DemoStuff\_Planet_01\Materials\Planet.shader" />
     <None Include="Assets\crosstales\RTVoice\3rd party\Assets.txt" />

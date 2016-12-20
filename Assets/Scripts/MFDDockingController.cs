@@ -7,33 +7,43 @@ public class MFDDockingController : IPropertyChangeObserver
     private InputController inputController;
     private GameController gameController;
     private GameObject panel;
+    private bool isPrimaryPanel = false;
     private Dropdown DockTargetSelectorDropdown;
     private Text ClosingDistText;
     private Text ClosingVText;
     private Text ClosingTimeText;
-    private Text DockAngleText;
+    private Text DockAnglePitchText;
+    private Text DockAngleRollText;
+    private Text DockAngleYawText;
     private RectTransform DockingX;
     private List<GameObject> dockTargets = new List<GameObject>();
     private GameObject dockTarget;
 
-    public void Connect(GameObject autoPanel, InputController input, GameController game)
+    public void Connect(GameObject autoPanel, InputController input, GameController game, bool panelIsPrimaryPanel)
     {
         inputController = input;
         gameController = game;
         panel = autoPanel;
+        isPrimaryPanel = panelIsPrimaryPanel;
+
         DockTargetSelectorDropdown = panel.transform.Search("DockTargetSelectorDropdown").GetComponent<Dropdown>();
         ClosingDistText = panel.transform.Search("ClosingDistText").GetComponent<Text>();
         ClosingVText = panel.transform.Search("ClosingVText").GetComponent<Text>();
         ClosingTimeText = panel.transform.Search("ClosingTimeText").GetComponent<Text>();
-        DockAngleText = panel.transform.Search("DockAngleText").GetComponent<Text>();
+        DockAnglePitchText = panel.transform.Search("DockAnglePitchText").GetComponent<Text>();
+        DockAngleRollText = panel.transform.Search("DockAngleRollText").GetComponent<Text>();
+        DockAngleYawText = panel.transform.Search("DockAngleYawText").GetComponent<Text>();
         DockingX = panel.transform.Search("DockingX").GetComponent<RectTransform>();
 
         inputController.AddObserver("TargetList", this);
         inputController.AddObserver("ClosingDistText", this);
         inputController.AddObserver("ClosingVText", this);
         inputController.AddObserver("ClosingTimeText", this);
-        inputController.AddObserver("DockAngleText", this);
+        inputController.AddObserver("DockAnglePitchText", this);
+        inputController.AddObserver("DockAngleRollText", this);
+        inputController.AddObserver("DockAngleYawText", this);
         inputController.AddObserver("DockingX", this);
+        inputController.AddObserver("DockingXRoll", this);
 
         ClosingDistText.text = "INF";
         ClosingVText.text = "INF";
@@ -79,13 +89,24 @@ public class MFDDockingController : IPropertyChangeObserver
             case "ClosingTimeText":
                 ClosingTimeText.text = value as string;
                 break;
-            case "DockAngleText":
-                DockAngleText.text = value as string;
+            case "DockAnglePitchText":
+                DockAnglePitchText.text = value as string;
+                break;
+            case "DockAngleRollText":
+                DockAngleRollText.text = value as string;
+                break;
+            case "DockAngleYawText":
+                DockAngleYawText.text = value as string;
                 break;
             case "DockingX":
                 Vector2? vec = value as Vector2?;
                 Vector2 planarVec = vec == null ? Vector2.zero : vec.Value;
                 UpdateDockingX(planarVec);
+                break;
+            case "DockingXRoll":
+                float? roll = value as float?;
+                float r = roll == null ? 0 : roll.Value;
+                UpdateDockingXRoll(r);
                 break;
         }
     }
@@ -122,17 +143,21 @@ public class MFDDockingController : IPropertyChangeObserver
 
             Transform dockModel = dockTarget.transform.GetChild(0);
             Quaternion dockAlignQ = playerShipTransform.rotation * Quaternion.Inverse(dockModel.rotation);
-            //float dockAngleX = dockAlignQ.eulerAngles.x <= 180 ? dockAlignQ.eulerAngles.x : dockAlignQ.eulerAngles.x - 360;
-            //float dockAngleY = dockAlignQ.eulerAngles.y <= 180 ? dockAlignQ.eulerAngles.y : dockAlignQ.eulerAngles.y - 360;
-            //float dockAngleZ = dockAlignQ.eulerAngles.z <= 180 ? dockAlignQ.eulerAngles.z : dockAlignQ.eulerAngles.z - 360;
+            float dockAngleX = dockAlignQ.eulerAngles.x <= 180 ? dockAlignQ.eulerAngles.x : dockAlignQ.eulerAngles.x - 360;
+            float dockAngleY = dockAlignQ.eulerAngles.y <= 180 ? dockAlignQ.eulerAngles.y : dockAlignQ.eulerAngles.y - 360;
+            float dockAngleZ = dockAlignQ.eulerAngles.z <= 180 ? dockAlignQ.eulerAngles.z : dockAlignQ.eulerAngles.z - 360;
 
             gameController.InputControl().PropertyChanged("ClosingDistText", DisplayUtils.DistanceText(closingDist));
             gameController.InputControl().PropertyChanged("ClosingVText", DisplayUtils.RelvText(closingRelV));
             gameController.InputControl().PropertyChanged("ClosingTimeText", DisplayUtils.TimeToTargetText(closingDist, closingRelV));
+            gameController.InputControl().PropertyChanged("DockAnglePitchText", DisplayUtils.DegreeText(dockAngleZ));
+            gameController.InputControl().PropertyChanged("DockAngleRollText", DisplayUtils.DegreeText(dockAngleY));
+            gameController.InputControl().PropertyChanged("DockAngleYawText", DisplayUtils.DegreeText(dockAngleX));
             //gameController.InputControl().PropertyChanged("DockAngleColor", DisplayUtils.ColorValueBetween(dockAngle, warnThreshold, badThreshold));
-            //gameController.InputControl().PropertyChanged("DockAngleText", DisplayUtils.Angle3Text(dockAngleX, dockAngleY, dockAngleZ));
-            gameController.InputControl().PropertyChanged("DockAngleText", DisplayUtils.QText(dockAlignQ));
+            //gameController.InputControl().PropertyChanged("DockAngleText", DisplayUtils.Angle3Text(dockAngleZ, dockAngleY, dockAngleX));
+            //gameController.InputControl().PropertyChanged("DockAngleText", DisplayUtils.QText(dockAlignQ));
             gameController.InputControl().PropertyChanged("DockingX", planeVec);
+            gameController.InputControl().PropertyChanged("DockingXRoll", dockAngleY);
         }
     }
 
@@ -161,6 +186,10 @@ public class MFDDockingController : IPropertyChangeObserver
         float x = r * planeVecN.x;
         float y = r * planeVecN.y;
         DockingX.anchoredPosition = new Vector2(x, y);
+    }
+    private void UpdateDockingXRoll(float roll)
+    {
+        DockingX.rotation = Quaternion.Euler(DockingX.rotation.x, DockingX.rotation.y, roll);
     }
 
     private float innerRadius = 25f;

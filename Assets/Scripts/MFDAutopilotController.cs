@@ -14,12 +14,14 @@ public class MFDAutopilotController : IPropertyChangeObserver
     private Text TimeToTargetText;
     private Dropdown CommandDropdown;
     private Button CommandButton;
+    private bool isPrimaryPanel = false;
 
-    public void Connect(GameObject autoPanel, InputController input, GameController game)
+    public void Connect(GameObject autoPanel, InputController input, GameController game, bool panelIsPrimaryPanel)
     {
         inputController = input;
         gameController = game;
         panel = autoPanel;
+        isPrimaryPanel = panelIsPrimaryPanel;
 
         TargetSelectorDropdown = panel.transform.Search("TargetSelectorDropdown").GetComponent<Dropdown>();
         TargetTypeDropdown = panel.transform.Search("TargetTypeDropdown").GetComponent<Dropdown>();
@@ -40,6 +42,28 @@ public class MFDAutopilotController : IPropertyChangeObserver
         TargetSelectorDropdown.onValueChanged.AddListener(delegate { TargetSelectorDropdownOnValueChanged(); });
         TargetSelectorDropdown.value = 0;
         CommandButton.onClick.AddListener(delegate { CommandButtonClicked(); });
+    }
+
+    public void Update()
+    {
+        if (isPrimaryPanel)
+        {
+            UpdateKeyInput();
+        }
+    }
+
+    private void UpdateKeyInput()
+    {
+        UpdateTargetSelection();
+    }
+
+    private void UpdateTargetSelection()
+    {
+        //      UpdateDoubleTap(KeyCode.KeypadMultiply, ref doubleTapTargetSelTimer, gameController.HUD().SelectNextTargetPreferClosestEnemy, RotateTowardsTarget);
+        if (Input.GetKeyDown(KeyCode.KeypadMultiply))
+        {
+            gameController.HUD().SelectNextTargetPreferClosestEnemy();
+        }
     }
 
     public void Speak(string text)
@@ -101,7 +125,7 @@ public class MFDAutopilotController : IPropertyChangeObserver
                 {
                     CommandDropdown.value = commandIdx;
                 }
-                if (command != Autopilot.Command.OFF)
+                if (command != Autopilot.Command.OFF && command != Autopilot.Command.KILL_ROTATION && isPrimaryPanel)
                 {
                     string verb;
                     if (command == Autopilot.Command.STRAFE)
@@ -140,4 +164,135 @@ public class MFDAutopilotController : IPropertyChangeObserver
         Autopilot.Command command = Autopilot.CommandFromInt(index);
         gameController.GetPlayerShip().ExecuteAutopilotCommand(command);
     }
+
+    /*
+  //public float DoubleTapInterval = 0.2f;
+//private float doubleTapEngineTimer;
+//private float doubleTapRotatePlusTimer;
+//private float doubleTapRotateMinusTimer;
+//private float doubleTapTargetSelTimer;
+//doubleTapRotatePlusTimer = -1;
+//doubleTapRotateMinusTimer = -1;
+//doubleTapTargetSelTimer = -1;
+
+private delegate void TapFunc();
+private void UpdateDoubleTap(KeyCode keyCode, ref float timer, TapFunc singleTapFunc, TapFunc doubleTapFunc)
+{
+    if (Input.GetKeyDown(keyCode))
+    {
+        if (timer > 0)
+        {
+            // it's a double tap
+            doubleTapFunc();
+            timer = -1;
+        }
+        else
+        {
+            // start single tap time
+            timer = DoubleTapInterval;
+        }
+    }
+    else if (timer > 0)
+    {
+        // still waiting for double or single time to elapse
+        timer -= Time.deltaTime;
+    }
+    else if (timer > -1 && timer <= 0)
+    {
+        // time has elapsed for single tap, do it
+        singleTapFunc();
+        timer = -1;
+    }
+}
+
+//  private void BurstEngine()
+//    {
+//      float burnTime = DoubleTapInterval;
+//        ship.MainEngineBurst(burnTime);
+//    }
+
+public void RotateTowardsTarget()
+{
+    if (gameController != null)
+    {
+        autopilot.ExecuteCommand(Autopilot.Command.ACTIVE_TRACK, gameController.HUD().GetSelectedTarget());
+        inputController.PropertyChanged("CommandExecuted", Autopilot.Command.ACTIVE_TRACK);
+    }
+}
+
+public void KillRot()
+{
+    if (gameController != null)
+    {
+        autopilot.ExecuteCommand(Autopilot.Command.KILL_ROTATION, null);
+        inputController.PropertyChanged("CommandExecuted", Autopilot.Command.KILL_ROTATION);
+    }
+}
+
+public void KillVTarget()
+{
+    if (gameController != null)
+    {
+        autopilot.ExecuteCommand(Autopilot.Command.KILL_REL_V, gameController.HUD().GetSelectedTarget());
+        inputController.PropertyChanged("CommandExecuted", Autopilot.Command.KILL_REL_V);
+    }
+}
+
+private void UpdateRotatePlus()
+{
+    UpdateDoubleTap(KeyCode.KeypadPlus, ref doubleTapRotatePlusTimer, RotateToPos, StrafeTarget);
+    if (Input.GetKeyDown(KeyCode.KeypadPlus))
+    {
+        RotateToPos();
+    }
+}
+
+private void RotateToPos()
+{
+    if (gameController != null)
+    {
+        autopilot.ExecuteCommand(Autopilot.Command.FACE_TARGET, gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator);
+        inputController.PropertyChanged("CommandExecuted", Autopilot.Command.FACE_TARGET);
+    }
+}
+
+private void UpdateRotateMinus()
+{
+    //        UpdateDoubleTap(KeyCode.KeypadMinus, ref doubleTapRotateMinusTimer, RotateToMinus, KillVTarget);
+    if (Input.GetKeyDown(KeyCode.KeypadMinus))
+    {
+        RotateToMinus();
+    }
+}
+
+private void RotateToMinus()
+{
+    if (gameController != null)
+    {
+        autopilot.ExecuteCommand(Autopilot.Command.FACE_TARGET, gameController.GetComponent<InputController>().RelativeVelocityAntiDirectionIndicator);
+        inputController.PropertyChanged("CommandExecuted", Autopilot.Command.FACE_TARGET);
+    }
+}
+
+private void APNGToTarget()
+{
+    if (gameController != null)
+    {
+        autopilot.ExecuteCommand(Autopilot.Command.INTERCEPT, gameController.HUD().GetSelectedTarget());
+        inputController.PropertyChanged("CommandExecuted", Autopilot.Command.INTERCEPT);
+    }
+
+}
+
+private void StrafeTarget()
+{
+    if (gameController != null)
+    {
+        autopilot.ExecuteCommand(Autopilot.Command.STRAFE, gameController.HUD().GetSelectedTarget());
+        inputController.PropertyChanged("CommandExecuted", Autopilot.Command.STRAFE);
+    }
+
+}
+*/
+
 }

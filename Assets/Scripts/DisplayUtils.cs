@@ -42,13 +42,19 @@ public class DisplayUtils {
 
     public static string Angle3Text(float x, float y, float z)
     {
-        string angleText = string.Format("( {0:0}, {1:0}, {2:0} ) deg", x, y, z);
+        string angleText = string.Format("pitch={0:0} roll={1:0} yaw={2:0}", x, y, z);
         return angleText;
     }
 
     public static string QText(Quaternion q)
     {
         string text = string.Format("{0:0.00}, {1:0.00}, {2:0.00}, {3:0.00}", q.w, q.x, q.y, q.z);
+        return text;
+    }
+
+    public static string DegreeText(float deg)
+    {
+        string text = string.Format("{0:+000°;-000°; 000°}", deg);
         return text;
     }
 

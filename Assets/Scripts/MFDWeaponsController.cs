@@ -4,11 +4,13 @@ using System.Collections;
 public class MFDWeaponsController : IPropertyChangeObserver
 {
     private GameObject panel;
+    private bool isPrimaryPanel = false;
     //        private Text targetText;
 
-    public void Connect(GameObject weaponsPanel, InputController inputController)
+    public void Connect(GameObject weaponsPanel, InputController inputController, bool panelIsPrimaryPanel)
     {
         panel = weaponsPanel;
+        isPrimaryPanel = panelIsPrimaryPanel;
         //            targetText = panel.transform.Search("TargetText").GetComponent<Text>();
         //            inputController.AddObserver("TargetText", this);
     }

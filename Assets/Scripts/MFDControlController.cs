@@ -37,15 +37,18 @@ public class MFDControlController : IPropertyChangeObserver
 
     private Vector3 rotateVec = Vector3.zero;
     private bool rotatePointerDown = false;
+    private bool isPrimaryPanel = false;
 
     private enum RCSMode { Rotate, Translate };
     private RCSMode currentRCSMode;
 
-    public void Connect(GameObject controlPanel, InputController input, GameController game)
+    public void Connect(GameObject controlPanel, InputController input, GameController game, bool panelIsPrimaryPanel)
     {
         panel = controlPanel;
         gameController = game;
         inputController = input;
+        isPrimaryPanel = panelIsPrimaryPanel;
+
         MainOnButton = panel.transform.Search("MainOnButton").GetComponent<ToggleButton>();
         AuxOnButton = panel.transform.Search("AuxOnButton").GetComponent<ToggleButton>();
         RCSFineOnButton = panel.transform.Search("RCSFineOnButton").GetComponent<ToggleButton>();
@@ -127,7 +130,10 @@ public class MFDControlController : IPropertyChangeObserver
         Circle2Right.GetComponent<RCSButton>().inputController = inputController;
         Circle2CounterClock.GetComponent<RCSButton>().inputController = inputController;
         Circle2Clock.GetComponent<RCSButton>().inputController = inputController;
-        Circle2Kill.GetComponent<Button>().onClick.AddListener(delegate { inputController.PropertyChanged("Circle2Kill_OnClick", null); });
+        Circle2Kill.GetComponent<Button>().onClick.AddListener(delegate {
+            gameController.GetPlayerShip().KillRot();
+            inputController.PropertyChanged("Circle2Kill_OnClick", null);
+        });
 
         currentRCSMode = RCSMode.Rotate;
     }
@@ -186,21 +192,30 @@ public class MFDControlController : IPropertyChangeObserver
                 MainOnButton.isToggled = thrust != null ? thrust.Value : false;
                 MainOnButton.transform.GetChild(0).GetComponent<Text>().text = MainOnButton.isToggled ? "ON" : "OFF";
                 string mainOnText = MainOnButton.isToggled ? DialogText.MainEngineOn : DialogText.MainEngineOff;
-                Speak(mainOnText);
+                if (isPrimaryPanel)
+                {
+                    Speak(mainOnText);
+                }
                 break;
             case "AuxOnButton":
                 bool? auxThrust = value as bool?;
                 AuxOnButton.isToggled = auxThrust != null ? auxThrust.Value : false;
                 AuxOnButton.transform.GetChild(0).GetComponent<Text>().text = AuxOnButton.isToggled ? "ON" : "OFF";
                 string auxOnText = AuxOnButton.isToggled ? DialogText.AuxEngineOn : DialogText.AuxEngineOff;
-                Speak(auxOnText);
+                if (isPrimaryPanel)
+                {
+                    Speak(auxOnText);
+                }
                 break;
             case "RCSFineOnButton":
                 bool? rcsFine = value as bool?;
                 RCSFineOnButton.isToggled = rcsFine != null ? rcsFine.Value : false;
                 RCSFineOnButton.transform.GetChild(0).GetComponent<Text>().text = RCSFineOnButton.isToggled ? "ON" : "OFF";
                 string rcsFineText = RCSFineOnButton.isToggled ? DialogText.RCSFineControlOn : DialogText.RCSFineControlOff;
-                Speak(rcsFineText);
+                if (isPrimaryPanel)
+                {
+                    Speak(rcsFineText);
+                }
                 break;
         }
     }
@@ -212,12 +227,12 @@ public class MFDControlController : IPropertyChangeObserver
             case "TranslateButton":
                 bool? rot2 = value as bool?;
                 TranslateButton.isToggled = rot2 != null ? rot2.Value : false;
-                if (TranslateButton.isToggled) { Speak(DialogText.Translation); }
+                if (TranslateButton.isToggled && isPrimaryPanel) { Speak(DialogText.Translation); }
                 break;
             case "RotateButton":
                 bool? rot = value as bool?;
                 RotateButton.isToggled = rot != null ? rot.Value : false;
-                if (RotateButton.isToggled) { Speak(DialogText.Rotation); }
+                if (RotateButton.isToggled && isPrimaryPanel) { Speak(DialogText.Rotation); }
                 break;
             case "TranslateButtonNoAudio":
                 bool? rot2a = value as bool?;
@@ -370,23 +385,15 @@ public class MFDControlController : IPropertyChangeObserver
                 rotatePointerDown = false;
                 break;
             case "Circle2Kill_OnClick":
-                KillRot();
+                if (!IsKillRotMarked())
+                {
+                    MarkKillRot();
+                }
                 rotatePointerDown = false;
                 break;
         }
     }
-
-    private void KillRot()
-    {
-        PlayerShip playerShip = gameController.GetPlayerShip();
-        playerShip.ExecuteAutopilotCommand(Autopilot.Command.KILL_ROTATION);
-        MarkKillRot();
-        if (currentRCSMode != RCSMode.Rotate)
-        {
-            ToggleRCSMode();
-        }
-    }
-
+ 
     private bool IsKillRotMarked()
     {
         return Circle2Kill.GetChild(0).GetComponent<Image>().color != BUTTON_GREY;
@@ -395,6 +402,10 @@ public class MFDControlController : IPropertyChangeObserver
     private void MarkKillRot()
     {
         Circle2Kill.GetChild(0).GetComponent<Image>().color = HUD_GREEN;
+        if (currentRCSMode != RCSMode.Rotate)
+        {
+            ToggleRCSMode();
+        }
     }
 
     private void UnmarkKillRot()
@@ -424,7 +435,10 @@ public class MFDControlController : IPropertyChangeObserver
     {
         if (inputController != null)
         {
-            UpdateKeyInput();
+            if (isPrimaryPanel)
+            {
+                UpdateKeyInput();
+            }
             UpdateTranslate();
             UpdateRotate();
         }
@@ -432,6 +446,8 @@ public class MFDControlController : IPropertyChangeObserver
 
     private void UpdateKeyInput()
     {
+        UpdateEngineInput();
+        UpdateCameraInput();
         UpdateKeyInputToggleMode();
         switch (currentRCSMode)
         {
@@ -445,6 +461,28 @@ public class MFDControlController : IPropertyChangeObserver
         UpdateKeyInputKillRot();
     }
 
+    private void UpdateEngineInput()
+    {
+        //      UpdateDoubleTap(KeyCode.KeypadEnter, ref doubleTapEngineTimer, ToggleEngine, Rendezvous);
+        if (Input.GetKeyDown(KeyCode.KeypadEnter))
+        {
+            gameController.GetPlayerShip().ToggleEngine();
+        }
+        if (Input.GetKeyDown(KeyCode.KeypadPlus))
+        {
+            gameController.GetPlayerShip().ToggleAuxEngine();
+        }
+    }
+
+    private void UpdateCameraInput()
+    {
+        if (Input.GetKeyDown(KeyCode.F1))
+        {
+            gameController.GetPlayerShip().ToggleCamera();
+        }
+    }
+
+
     private void UpdateKeyInputToggleMode()
     {
         if (Input.GetKeyDown(KeyCode.KeypadDivide))
@@ -455,10 +493,11 @@ public class MFDControlController : IPropertyChangeObserver
 
     private void UpdateKeyInputKillRot()
     {
-        if (Input.GetKey(KeyCode.Keypad5))
+        if (Input.GetKeyDown(KeyCode.Keypad5))
         {
             if (gameController.GetPlayerShip().CurrentAutopilotCommand() != Autopilot.Command.KILL_ROTATION)
             {
+                gameController.GetPlayerShip().KillRot();
                 inputController.PropertyChanged("Circle2Kill_OnClick", null);
             }
         }

@@ -13,7 +13,6 @@ public class PlayerShip : MonoBehaviour
     public int healthMax = 3;
     public float minRelVtoDamage = 1;
     public float LowFuelThreshold = 0.1f;
-    //public float DoubleTapInterval = 0.2f;
 
     //! Thrust scale
     private RocketShip ship;
@@ -25,10 +24,6 @@ public class PlayerShip : MonoBehaviour
     private CameraMode currentCameraMode;
     private int health;
     private bool rotInput = false;
-    //private float doubleTapEngineTimer;
-    //private float doubleTapRotatePlusTimer;
-    //private float doubleTapRotateMinusTimer;
-    //private float doubleTapTargetSelTimer;
 
     public void StartShip()
     {
@@ -42,9 +37,6 @@ public class PlayerShip : MonoBehaviour
         transform.parent.transform.position = Vector3.zero;
         transform.parent.transform.rotation = Quaternion.identity;
         currentCameraMode = CameraMode.FPS;
-        //doubleTapRotatePlusTimer = -1;
-        //doubleTapRotateMinusTimer = -1;
-        //doubleTapTargetSelTimer = -1;
         health = healthMax;
         rotInput = false;
         inputController.PropertyChanged("TranslateButtonNoAudio", false);
@@ -54,13 +46,10 @@ public class PlayerShip : MonoBehaviour
     public void UpdateShip()
     {
         UpdateCameraMode();
-        UpdateCameraInput();
         UpdateRCSAudio();
-        UpdateEngineInput();
         UpdateFuelUI();
         UpdateEngineUI();
         //UpdateSpinUI();
-        UpdateTargetSelection();
     }
 
     private void HaltAudio()
@@ -118,7 +107,7 @@ public class PlayerShip : MonoBehaviour
         return ship;
     }
 
-    void ToggleCamera()
+    public void ToggleCamera()
     {
         switch (currentCameraMode)
         {
@@ -191,8 +180,6 @@ public class PlayerShip : MonoBehaviour
             {
                 cameraController.StopShake();
             }
-            //inputController.PropertyChanged("MainOnButton", mainOn);
-            //inputController.PropertyChanged("AuxOnButton", auxOn);
         }
     }
 
@@ -204,74 +191,6 @@ public class PlayerShip : MonoBehaviour
             inputController.PropertyChanged("FuelSlider", ship.NormalizedFuel());
         }
     }
-
-    private void UpdateCameraInput()
-    {
-        if (Input.GetKeyDown(KeyCode.F1))
-        {
-            ToggleCamera();
-        }
-    }
-
-    private void UpdateTargetSelection()
-    {
-//      UpdateDoubleTap(KeyCode.KeypadMultiply, ref doubleTapTargetSelTimer, gameController.HUD().SelectNextTargetPreferClosestEnemy, RotateTowardsTarget);
-        if (Input.GetKeyDown(KeyCode.KeypadMultiply))
-        {
-            gameController.HUD().SelectNextTargetPreferClosestEnemy();
-        }
-    }
-
-    /*
-    private delegate void TapFunc();
-    private void UpdateDoubleTap(KeyCode keyCode, ref float timer, TapFunc singleTapFunc, TapFunc doubleTapFunc)
-    {
-        if (Input.GetKeyDown(keyCode))
-        {
-            if (timer > 0)
-            {
-                // it's a double tap
-                doubleTapFunc();
-                timer = -1;
-            }
-            else
-            {
-                // start single tap time
-                timer = DoubleTapInterval;
-            }
-        }
-        else if (timer > 0)
-        {
-            // still waiting for double or single time to elapse
-            timer -= Time.deltaTime;
-        }
-        else if (timer > -1 && timer <= 0)
-        {
-            // time has elapsed for single tap, do it
-            singleTapFunc();
-            timer = -1;
-        }
-    }
-    */
-
-    private void UpdateEngineInput()
-    {
-        //      UpdateDoubleTap(KeyCode.KeypadEnter, ref doubleTapEngineTimer, ToggleEngine, Rendezvous);
-        if (Input.GetKeyDown(KeyCode.KeypadEnter))
-        {
-            ToggleEngine();
-        }
-        if (Input.GetKeyDown(KeyCode.KeypadPlus))
-        {
-            ToggleAuxEngine();
-        }
-    }
-
-    //  private void BurstEngine()
-    //    {
-    //      float burnTime = DoubleTapInterval;
-    //        ship.MainEngineBurst(burnTime);
-    //    }
 
     public void ToggleEngine()
     {
@@ -315,6 +234,12 @@ public class PlayerShip : MonoBehaviour
         inputController.PropertyChanged("RCSFineOnButton", !fine);
     }
 
+    public void KillRot()
+    {
+        PlayerShip playerShip = gameController.GetPlayerShip();
+        playerShip.ExecuteAutopilotCommand(Autopilot.Command.KILL_ROTATION);
+    }
+
     private void Rendezvous()
     {
         autopilot.ExecuteCommand(Autopilot.Command.RENDEZVOUS, gameController.HUD().GetSelectedTarget());
@@ -329,10 +254,18 @@ public class PlayerShip : MonoBehaviour
             float relVel;
             if (PhysicsUtils.ShouldBounce(gameObject, otherBody, out relVel))
             {
-                cameraController.PlayCollisionShake();
                 if (relVel >= minRelVtoDamage)
                 {
+                    cameraController.PlayCollisionShake();
                     health--;
+                }
+                else if (otherBody.tag == "Dock")
+                {
+                    PerformDock(otherBody);
+                }
+                else
+                {
+                    cameraController.PlayCollisionShake();
                 }
             }
             else
@@ -341,6 +274,11 @@ public class PlayerShip : MonoBehaviour
                 GameOverCollision(otherBody.transform.parent.name);
             }
         }
+    }
+
+    private void PerformDock(GameObject dockModel)
+    {
+        audioController.Play(FPSAudioController.AudioClipEnum.SPACESHIP_DOCK);
     }
 
     private void GameOverCollision(string otherName)
@@ -366,90 +304,7 @@ public class PlayerShip : MonoBehaviour
         ShipExplosion.GetComponent<AudioSource>().Play();
         //        Instantiate(ShipExplosion, transform.parent.transform.position, transform.parent.transform.rotation);
     }
-    /*
-    public void RotateTowardsTarget()
-    {
-        if (gameController != null)
-        {
-            autopilot.ExecuteCommand(Autopilot.Command.ACTIVE_TRACK, gameController.HUD().GetSelectedTarget());
-            inputController.PropertyChanged("CommandExecuted", Autopilot.Command.ACTIVE_TRACK);
-        }
-    }
 
-    public void KillRot()
-    {
-        if (gameController != null)
-        {
-            autopilot.ExecuteCommand(Autopilot.Command.KILL_ROTATION, null);
-            inputController.PropertyChanged("CommandExecuted", Autopilot.Command.KILL_ROTATION);
-        }
-    }
-
-    public void KillVTarget()
-    {
-        if (gameController != null)
-        {
-            autopilot.ExecuteCommand(Autopilot.Command.KILL_REL_V, gameController.HUD().GetSelectedTarget());
-            inputController.PropertyChanged("CommandExecuted", Autopilot.Command.KILL_REL_V);
-        }
-    }
-
-    private void UpdateRotatePlus()
-    {
-        UpdateDoubleTap(KeyCode.KeypadPlus, ref doubleTapRotatePlusTimer, RotateToPos, StrafeTarget);
-        if (Input.GetKeyDown(KeyCode.KeypadPlus))
-        {
-            RotateToPos();
-        }
-    }
-
-    private void RotateToPos()
-    {
-        if (gameController != null)
-        {
-            autopilot.ExecuteCommand(Autopilot.Command.FACE_TARGET, gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator);
-            inputController.PropertyChanged("CommandExecuted", Autopilot.Command.FACE_TARGET);
-        }
-    }
-
-    private void UpdateRotateMinus()
-    {
-        //        UpdateDoubleTap(KeyCode.KeypadMinus, ref doubleTapRotateMinusTimer, RotateToMinus, KillVTarget);
-        if (Input.GetKeyDown(KeyCode.KeypadMinus))
-        {
-            RotateToMinus();
-        }
-    }
-
-    private void RotateToMinus()
-    {
-        if (gameController != null)
-        {
-            autopilot.ExecuteCommand(Autopilot.Command.FACE_TARGET, gameController.GetComponent<InputController>().RelativeVelocityAntiDirectionIndicator);
-            inputController.PropertyChanged("CommandExecuted", Autopilot.Command.FACE_TARGET);
-        }
-    }
-
-    private void APNGToTarget()
-    {
-        if (gameController != null)
-        {
-            autopilot.ExecuteCommand(Autopilot.Command.INTERCEPT, gameController.HUD().GetSelectedTarget());
-            inputController.PropertyChanged("CommandExecuted", Autopilot.Command.INTERCEPT);
-        }
-
-    }
-
-    private void StrafeTarget()
-    {
-        if (gameController != null)
-        {
-            autopilot.ExecuteCommand(Autopilot.Command.STRAFE, gameController.HUD().GetSelectedTarget());
-            inputController.PropertyChanged("CommandExecuted", Autopilot.Command.STRAFE);
-        }
-
-    }
-*/    
     void PlayRotateSounds()
     {
         if (gameController != null)
