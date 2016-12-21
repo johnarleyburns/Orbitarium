@@ -304,7 +304,7 @@ public class RocketShip : MonoBehaviour {
         bool convergedSpin = Mathf.Abs(Quaternion.Angle(currentSpinPerSec, Quaternion.identity)) < minSpinDeltaDegPerSec;
         if (convergedSpin)
         {
-            currentSpinPerSec = Quaternion.identity;
+            NullSpin();
             converged = true;
         }
         else
@@ -312,6 +312,11 @@ public class RocketShip : MonoBehaviour {
             converged = false;
         }
         return converged;
+    }
+
+    public void NullSpin() // only for things like docking
+    {
+        currentSpinPerSec = Quaternion.identity;
     }
 
     public bool ConvergeSpin(Quaternion targetQ, float minDTheta)

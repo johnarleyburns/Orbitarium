@@ -283,6 +283,7 @@ public class PlayerShip : MonoBehaviour
         GameObject dockGhost = dockModel.transform.GetChild(0).gameObject;
         inputController.ControlsEnabled = false;
         StopAllThrust();
+        ship.NullSpin();
         gameController.Dock(shipNbodyBody, dockGhost);
         //cameraController.PlayCollisionShake();
         audioController.Play(FPSAudioController.AudioClipEnum.SPACESHIP_DOCK);

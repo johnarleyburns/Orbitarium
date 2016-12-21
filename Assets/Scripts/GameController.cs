@@ -23,11 +23,6 @@ public class GameController : MonoBehaviour
     //public GameObject EezoApproachGhost;
     public GameObject EezoDock;
     public GameObject EezoDockGhost;
-    //public GameObject EezoDockPort;
-    //public GameObject EezoDockPortGhost;
-    //public GameObject EezoDockingPort;
-    //public GameObject VirtualChild;
-    //public GameObject VirtualParent;
     public Transform SpawnPoint;
     public float PlayerInitialImpulse;
     public float PlayerShipRadiusM = 20;
@@ -53,13 +48,9 @@ public class GameController : MonoBehaviour
     private EnemyTracker enemyTracker;
     private GameObject player;
     private Dictionary<GameObject, GameObject> followGhost = new Dictionary<GameObject, GameObject>();
-    private Dictionary<GameObject, GameObject> followDock = new Dictionary<GameObject, GameObject>();
     private float gameStartInputTimer = -1;
     private float gameOverInputTimer = -1;
     private GameState gameState;
-
-    //private Vector3 virtualChildOffset;
-    //private Quaternion virtualChildOffsetQ;
 
     public enum GameState
     {
@@ -123,25 +114,6 @@ public class GameController : MonoBehaviour
             shadow.transform.GetChild(0).position = ghost.transform.GetChild(0).position;
             shadow.transform.GetChild(0).rotation = ghost.transform.GetChild(0).rotation;
         }
-        foreach (GameObject ship in followDock.Keys)
-        {
-            GameObject dock = followDock[ship];
-            //GameObject dockBody = PhysicsUtils.GetNBodyGameObject(dock);
-            //GameObject shipBody = PhysicsUtils.GetNBodyGameObject(ship);
-            //Vector3 dockV = GravityEngine.instance.GetVelocity(dockBody);
-            //Vector3 shipV = GravityEngine.instance.GetVelocity(shipBody);
-            //Vector3 deltaV = dockV - shipV;
-            //GravityEngine.instance.ApplyImpulse(shipBody.GetComponent<NBody>(), deltaV);
-            ship.transform.position = dock.transform.position;
-            ship.transform.rotation = dock.transform.rotation;
-            ship.transform.GetChild(0).localScale = dock.transform.GetChild(0).localScale;
-            ship.transform.GetChild(0).position = dock.transform.GetChild(0).position;
-            ship.transform.GetChild(0).rotation = dock.transform.GetChild(0).rotation;
-        }
-
-        //Quaternion q = VirtualParent.transform.rotation * Quaternion.Inverse(virtualChildOffsetQ);
-        //Vector3 v = q * virtualChildOffset;
-        //VirtualChild.transform.position = VirtualParent.transform.position + v;
     }
 
     public HUDController HUD()
@@ -165,7 +137,6 @@ public class GameController : MonoBehaviour
     {
         gameState = GameState.STARTING;
         gameStartInputTimer = 0.5f;
-        ResetGravityEngine();
         hudController.HideTargetIndicator();
         InstantiatePlayer();
         EnableOverviewCamera();
@@ -420,14 +391,14 @@ public class GameController : MonoBehaviour
     }
 
     #endregion
-
+    /*
     private void ResetGravityEngine()
     {
         GravityEngine.instance.Clear();
         GravityEngine.instance.Setup();
         GravityEngine.instance.SetEvolve(true);
     }
-
+    */
 
     public GameState GetGameState()
     {
@@ -645,20 +616,19 @@ public class GameController : MonoBehaviour
 
     public void Dock(GameObject ship, GameObject dock)
     {
-        GravityEngine.instance.SetEvolve(false);
-        GravityEngine.instance.RemoveBody(ship);
-        ship.GetComponent<NBody>().enabled = false;
-        followDock[ship] = dock;
-        GravityEngine.instance.SetEvolve(true);
+        GravityEngine.instance.SetVelocity(ship, GravityEngine.instance.GetVelocity(PhysicsUtils.GetNBodyGameObject(dock)));
+        GravityEngine.instance.InactivateBody(ship);
+        ship.transform.parent = dock.transform.parent;
+        ship.transform.position = dock.transform.position;
+        ship.transform.rotation = dock.transform.rotation;
+        ship.transform.GetChild(0).transform.position = dock.transform.GetChild(0).transform.position;
+        ship.transform.GetChild(0).transform.rotation = dock.transform.GetChild(0).transform.rotation;
     }
 
     public void UnDock(GameObject ship)
     {
-        GravityEngine.instance.SetEvolve(false);
-        followDock.Remove(ship);
-        ship.GetComponent<NBody>().enabled = true;
-        GravityEngine.instance.AddBody(ship);
-        GravityEngine.instance.SetEvolve(true);
+        ship.transform.parent = null;
+        GravityEngine.instance.AddBody(ship); // activate body?
         GravityEngine.instance.ApplyImpulse(PhysicsUtils.GetNBodyGameObject(ship).GetComponent<NBody>(), UndockVelocity * -ship.transform.forward);
     }
 

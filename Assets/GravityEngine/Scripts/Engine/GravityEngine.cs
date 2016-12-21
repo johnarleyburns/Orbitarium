@@ -607,6 +607,14 @@ public class GravityEngine : MonoBehaviour {
 	// Adds one game object - checking if it is fixed or should be evolved in the 
 	// standard or massless engine. 
 	private void SetupOneGameObject(GameObject gameObject, NBody nbody) {
+        // don't double-add
+        for (int i = 0; i < numBodies; i++)
+        {
+            if (bodies[i] == gameObject)
+            {
+                return;
+            }
+        }
 
 		bool fixedObject = false; 
 		IFixedOrbit fixedOrbit = gameObject.GetComponent<IFixedOrbit>();
@@ -832,36 +840,60 @@ public class GravityEngine : MonoBehaviour {
 		}
 	}
 
-	/// <summary>
-	/// Gets the velocity of the body in "Physics Space". 
-	/// May be different from world co-ordinates if physToWorldFactor is not 1. 
-	/// </summary>
-	/// <returns>The velocity.</returns>
-	/// <param name="body">Body</param>
-	public Vector3 GetVelocity(GameObject body) {
-		NBody nbody = body.GetComponent<NBody>();
-		if (nbody == null) {
-			Debug.LogError("No NBody found on " + body.name + " cannot get velocity"); 
-			return Vector3.zero;
-		}
+    /// <summary>
+    /// Gets the velocity of the body in "Physics Space". 
+    /// May be different from world co-ordinates if physToWorldFactor is not 1. 
+    /// </summary>
+    /// <returns>The velocity.</returns>
+    /// <param name="body">Body</param>
+    public Vector3 GetVelocity(GameObject body)
+    {
+        NBody nbody = body.GetComponent<NBody>();
+        if (nbody == null)
+        {
+            Debug.LogError("No NBody found on " + body.name + " cannot get velocity");
+            return Vector3.zero;
+        }
         if (nbody.engineRef == null)
         {
             Debug.LogError("No NBody engine ref found on " + body.name + " cannot get velocity");
             return Vector3.zero;
         }
-        if (nbody.engineRef.bodyType == BodyType.MASSLESS) {
-			return masslessEngine.GetVelocity(body);
-		} 
-		return integrator.GetVelocityForIndex(nbody.engineRef.index);
-	}
+        if (nbody.engineRef.bodyType == BodyType.MASSLESS)
+        {
+            return masslessEngine.GetVelocity(body);
+        }
+        return integrator.GetVelocityForIndex(nbody.engineRef.index);
+    }
 
-	/// <summary>
-	/// Gets the acceleration of the body in "Physics Space". 
-	/// May be different from world co-ordinates if physToWorldFactor is not 1. 
-	/// </summary>
-	/// <returns>The acceleration.</returns>
-	/// <param name="body">Body.</param>
-	public Vector3 GetAcceleration(GameObject body) {
+    public void SetVelocity(GameObject body, Vector3 vel)
+    {
+        NBody nbody = body.GetComponent<NBody>();
+        if (nbody == null)
+        {
+            Debug.LogError("No NBody found on " + body.name + " cannot get velocity");
+            return;
+        }
+        if (nbody.engineRef == null)
+        {
+            Debug.LogError("No NBody engine ref found on " + body.name + " cannot get velocity");
+            return;
+        }
+        if (nbody.engineRef.bodyType == BodyType.MASSLESS)
+        {
+            masslessEngine.SetVelocity(body, vel);
+            return;
+        }
+        integrator.SetVelocityForIndex(nbody.engineRef.index, vel);
+    }
+
+    /// <summary>
+    /// Gets the acceleration of the body in "Physics Space". 
+    /// May be different from world co-ordinates if physToWorldFactor is not 1. 
+    /// </summary>
+    /// <returns>The acceleration.</returns>
+    /// <param name="body">Body.</param>
+    public Vector3 GetAcceleration(GameObject body) {
 		NBody nbody = body.GetComponent<NBody>();
 		if (nbody == null) {
 			Debug.LogError("No NBody found on " + body.name + " cannot get velocity"); 
