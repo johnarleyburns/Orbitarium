@@ -16,6 +16,8 @@ public class MFDDockingController : IPropertyChangeObserver
     private Text DockAngleRollText;
     private Text DockAngleYawText;
     private RectTransform DockingX;
+    private CanvasGroup DockedGroup;
+    private Button UndockButton;
     private List<GameObject> dockTargets = new List<GameObject>();
     private GameObject dockTarget;
 
@@ -34,6 +36,8 @@ public class MFDDockingController : IPropertyChangeObserver
         DockAngleRollText = panel.transform.Search("DockAngleRollText").GetComponent<Text>();
         DockAngleYawText = panel.transform.Search("DockAngleYawText").GetComponent<Text>();
         DockingX = panel.transform.Search("DockingX").GetComponent<RectTransform>();
+        DockedGroup = panel.transform.Search("DockedGroup").GetComponent<CanvasGroup>();
+        UndockButton = panel.transform.Search("UndockButton").GetComponent<Button>();
 
         inputController.AddObserver("TargetList", this);
         inputController.AddObserver("ClosingDistText", this);
@@ -44,15 +48,31 @@ public class MFDDockingController : IPropertyChangeObserver
         inputController.AddObserver("DockAngleYawText", this);
         inputController.AddObserver("DockingX", this);
         inputController.AddObserver("DockingXRoll", this);
+        inputController.AddObserver("Dock", this);
+        inputController.AddObserver("Undock", this);
 
         ClosingDistText.text = "INF";
         ClosingVText.text = "INF";
         ClosingTimeText.text = "INF";
         DockingX.anchoredPosition = Vector2.zero;
+        HideGroup(DockedGroup);
 
         DockTargetSelectorDropdown.onValueChanged.AddListener(delegate { DockTargetSelectorDropdownOnValueChanged(); });
         DockTargetSelectorDropdown.value = 0;
+        UndockButton.onClick.AddListener(delegate { gameController.GetPlayerShip().Undock(); });
         SyncDockTarget();
+    }
+
+    private void ShowGroup(CanvasGroup group)
+    {
+        group.alpha = 1;
+        group.blocksRaycasts = true;
+    }
+
+    private void HideGroup(CanvasGroup group)
+    {
+        group.alpha = 0;
+        group.blocksRaycasts = false;
     }
 
     public void PropertyChanged(string name, object value)
@@ -107,6 +127,12 @@ public class MFDDockingController : IPropertyChangeObserver
                 float? roll = value as float?;
                 float r = roll == null ? 0 : roll.Value;
                 UpdateDockingXRoll(r);
+                break;
+            case "Dock":
+                ShowGroup(DockedGroup);
+                break;
+            case "Undock":
+                HideGroup(DockedGroup);
                 break;
         }
     }

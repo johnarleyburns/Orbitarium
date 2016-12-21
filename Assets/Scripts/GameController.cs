@@ -2,7 +2,6 @@
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
-using Crosstales.RTVoice;
 
 public class GameController : MonoBehaviour
 {
@@ -37,13 +36,10 @@ public class GameController : MonoBehaviour
     public float UndockVelocity = 1f;
     public Material StrobeMaterial;
     public string StrobeTag = "Strobe";
-    public AudioSource StartMusic;
-    public AudioSource RunningBackgroundMusic;
-    public AudioSource GameOverMusic;
-    public AudioSource AS;
 
     private HUDController hudController;
     private InputController inputController;
+    private MusicController musicController;
     private TargetDB targetDB;
     private EnemyTracker enemyTracker;
     private GameObject player;
@@ -69,6 +65,7 @@ public class GameController : MonoBehaviour
     {
         hudController = GetComponent<HUDController>();
         inputController = GetComponent<InputController>();
+        musicController = GetComponent<MusicController>();
         targetDB = GetComponent<TargetDB>();
         enemyTracker = GetComponent<EnemyTracker>();
         targetDB.gameController = this;
@@ -145,14 +142,8 @@ public class GameController : MonoBehaviour
         GamePauseCanvas.SetActive(false);
         GameOverCanvas.SetActive(false);
         SetupStrobes();
-        //Speak(DialogText.ReadyPlayerOne);
-        StartMusic.Play();
+        musicController.StartMusic.Play();
         gameState = GameState.START_NOT_ACCEPTING_INPUT;
-    }
-
-    private void Speak(string text)
-    {
-        Speaker.Speak(text, AS, Speaker.VoiceForCulture("en", 1), false, 1, 0.4f, null, 3f);
     }
 
     private void SetupStrobes()
@@ -171,7 +162,7 @@ public class GameController : MonoBehaviour
                 SpriteLights.CreateLights("Strobes", lightData, StrobeMaterial, strobes[i]);
             }
         }
-        strobePositionTimer = 0;
+        //strobePositionTimer = 0;
         float SecBetweenFlash = 1;
         float strobeTimeStep = lightData.Length == 0 ? 20 : SecBetweenFlash / lightData.Length;
         float globalBrightnessOffset = 0;
@@ -181,8 +172,8 @@ public class GameController : MonoBehaviour
     }
 
     private GameObject[] strobes = new GameObject[0];
-    private float strobePositionTimer = 0;
-    private float secondsBetweenStrobeUpdate = 1;
+    //private float strobePositionTimer = 0;
+    //private float secondsBetweenStrobeUpdate = 1;
     private SpriteLights.LightData[] lightData = new SpriteLights.LightData[0];
 
     private void TransitionToRunning()
@@ -199,8 +190,8 @@ public class GameController : MonoBehaviour
         FPSCamera.enabled = true;
         OverviewCamera.enabled = false;
         OverShoulderCamera.enabled = false;
-        StartMusic.Stop();
-        RunningBackgroundMusic.Play();
+        musicController.StartMusic.Stop();
+        musicController.RunningBackgroundMusic.Play();
         gameState = GameState.RUNNING;
     }
 
@@ -214,7 +205,7 @@ public class GameController : MonoBehaviour
         FPSCamera.enabled = true;
         OverviewCamera.enabled = false;
         OverShoulderCamera.enabled = false;
-        RunningBackgroundMusic.Stop();
+        musicController.RunningBackgroundMusic.Stop();
         gameState = GameState.PAUSED;
     }
 
@@ -228,7 +219,7 @@ public class GameController : MonoBehaviour
         OverviewCamera.enabled = false;
         OverShoulderCamera.enabled = false;
         Time.timeScale = 1.0f;
-        RunningBackgroundMusic.Play();
+        musicController.RunningBackgroundMusic.Play();
         gameState = GameState.RUNNING;
     }
 
@@ -264,19 +255,19 @@ public class GameController : MonoBehaviour
         GameStartCanvas.SetActive(false);
         GamePauseCanvas.SetActive(false);
         FPSCanvas.SetActive(false);
-        RunningBackgroundMusic.Stop();
+        musicController.RunningBackgroundMusic.Stop();
         gameState = GameState.GAME_OVER_NOT_ACCEPTING_INPUT;
     }
 
     private void TransitionToGameOverAwaitInput()
     {
-        GameOverMusic.Play();
+        musicController.GameOverMusic.Play();
         gameState = GameState.GAME_OVER_AWAIT_INPUT;
     }
 
     private void TransitionToStartingFromGameOver()
     {
-        GameOverMusic.Stop();
+        musicController.GameOverMusic.Stop();
         CleanupScene();
         SceneManager.UnloadScene(SceneManager.GetActiveScene().name);
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
@@ -623,13 +614,15 @@ public class GameController : MonoBehaviour
         ship.transform.rotation = dock.transform.rotation;
         ship.transform.GetChild(0).transform.position = dock.transform.GetChild(0).transform.position;
         ship.transform.GetChild(0).transform.rotation = dock.transform.GetChild(0).transform.rotation;
+        inputController.PropertyChanged("Dock", true);
     }
 
-    public void UnDock(GameObject ship)
+    public void Undock(GameObject ship)
     {
         ship.transform.parent = null;
-        GravityEngine.instance.AddBody(ship); // activate body?
+        GravityEngine.instance.ActivateBody(ship);
         GravityEngine.instance.ApplyImpulse(PhysicsUtils.GetNBodyGameObject(ship).GetComponent<NBody>(), UndockVelocity * -ship.transform.forward);
+        inputController.PropertyChanged("Undock", true);
     }
 
 }

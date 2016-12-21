@@ -39,9 +39,6 @@ public class MFDControlController : IPropertyChangeObserver
     private bool rotatePointerDown = false;
     private bool isPrimaryPanel = false;
 
-    private enum RCSMode { Rotate, Translate };
-    private RCSMode currentRCSMode;
-
     public void Connect(GameObject controlPanel, InputController input, GameController game, bool panelIsPrimaryPanel)
     {
         panel = controlPanel;
@@ -79,8 +76,7 @@ public class MFDControlController : IPropertyChangeObserver
         inputController.AddObserver("RCSFineOnButton", this);
         inputController.AddObserver("TranslateButton", this);
         inputController.AddObserver("RotateButton", this);
-        inputController.AddObserver("TranslateButtonNoAudio", this);
-        inputController.AddObserver("RotateButtonNoAudio", this);
+        inputController.AddObserver("RCSModeAudio", this);
 
         inputController.AddObserver("Circle1Up_OnPointerDown", this);
         inputController.AddObserver("Circle1Up_OnPointerUp", this);
@@ -116,8 +112,8 @@ public class MFDControlController : IPropertyChangeObserver
         MainOnButton.onClick.AddListener(delegate { if (inputController.ControlsEnabled) { gameController.GetPlayerShip().ToggleEngine(); } });
         AuxOnButton.onClick.AddListener(delegate { if (inputController.ControlsEnabled) { gameController.GetPlayerShip().ToggleAuxEngine(); } });
         RCSFineOnButton.onClick.AddListener(delegate { gameController.GetPlayerShip().ToggleRCSFineControl(); });
-        TranslateButton.onClick.AddListener(delegate { ToggleRCSMode(); });
-        RotateButton.onClick.AddListener(delegate { ToggleRCSMode(); });
+        TranslateButton.onClick.AddListener(delegate { gameController.GetPlayerShip().SetRCSMode(PlayerShip.RCSMode.Translate); });
+        RotateButton.onClick.AddListener(delegate { gameController.GetPlayerShip().SetRCSMode(PlayerShip.RCSMode.Rotate); });
         Circle1Up.GetComponent<RCSButton>().inputController = inputController;
         Circle1Down.GetComponent<RCSButton>().inputController = inputController;
         Circle1Left.GetComponent<RCSButton>().inputController = inputController;
@@ -138,24 +134,20 @@ public class MFDControlController : IPropertyChangeObserver
                 inputController.PropertyChanged("Circle2Kill_OnClick", null);
             }
         });
-
-        currentRCSMode = RCSMode.Rotate;
     }
 
-    public void ToggleRCSMode()
+    private void ToggleRCSModeFromKey()
     {
-        switch (currentRCSMode)
+        switch (gameController.GetPlayerShip().currentRCSMode)
         {
-            case RCSMode.Rotate:
-                currentRCSMode = RCSMode.Translate;
+            case PlayerShip.RCSMode.Rotate:
+                gameController.GetPlayerShip().SetRCSMode(PlayerShip.RCSMode.Translate);
                 break;
-            case RCSMode.Translate:
+            case PlayerShip.RCSMode.Translate:
             default:
-                currentRCSMode = RCSMode.Rotate;
+                gameController.GetPlayerShip().SetRCSMode(PlayerShip.RCSMode.Rotate);
                 break;
         }
-        inputController.PropertyChanged("TranslateButton", currentRCSMode == RCSMode.Translate);
-        inputController.PropertyChanged("RotateButton", currentRCSMode == RCSMode.Rotate);
     }
 
     public void Speak(string text)
@@ -177,7 +169,7 @@ public class MFDControlController : IPropertyChangeObserver
         {
             HandleFuelPropertyChanged(name, value);
         }
-        else if (name.StartsWith("Translate") || name.StartsWith("Rotate"))
+        else if (name.StartsWith("Translate") || name.StartsWith("Rotate") || name.StartsWith("RCSModeAudio"))
         {
             HandleRCSModePropertyChanged(name, value);
         }
@@ -231,20 +223,24 @@ public class MFDControlController : IPropertyChangeObserver
             case "TranslateButton":
                 bool? rot2 = value as bool?;
                 TranslateButton.isToggled = rot2 != null ? rot2.Value : false;
-                if (TranslateButton.isToggled && isPrimaryPanel) { Speak(DialogText.Translation); }
                 break;
             case "RotateButton":
                 bool? rot = value as bool?;
                 RotateButton.isToggled = rot != null ? rot.Value : false;
-                if (RotateButton.isToggled && isPrimaryPanel) { Speak(DialogText.Rotation); }
                 break;
-            case "TranslateButtonNoAudio":
-                bool? rot2a = value as bool?;
-                TranslateButton.isToggled = rot2a != null ? rot2a.Value : false;
-                break;
-            case "RotateButtonNoAudio":
-                bool? rota = value as bool?;
-                RotateButton.isToggled = rota != null ? rota.Value : false;
+            case "RCSModeAudio":
+                if (isPrimaryPanel)
+                {
+                    PlayerShip.RCSMode? mode = value as PlayerShip.RCSMode?;
+                    if (mode != null && mode.Value == PlayerShip.RCSMode.Rotate)
+                    {
+                        Speak(DialogText.Rotation);
+                    }
+                    else if (mode != null && mode.Value == PlayerShip.RCSMode.Translate)
+                    {
+                        Speak(DialogText.Translation);
+                    }
+                }
                 break;
         }
     }
@@ -462,12 +458,12 @@ public class MFDControlController : IPropertyChangeObserver
 
     private void UpdateKeyInputTranslateRotate()
     {
-        switch (currentRCSMode)
+        switch (gameController.GetPlayerShip().currentRCSMode)
         {
-            case RCSMode.Rotate:
+            case PlayerShip.RCSMode.Rotate:
                 UpdateKeyInputRotate();
                 break;
-            case RCSMode.Translate:
+            case PlayerShip.RCSMode.Translate:
                 UpdateKeyInputTranslate();
                 break;
         }
@@ -499,7 +495,7 @@ public class MFDControlController : IPropertyChangeObserver
     {
         if (Input.GetKeyDown(KeyCode.KeypadDivide))
         {
-            ToggleRCSMode();
+            ToggleRCSModeFromKey();
         }
     }
 
@@ -637,10 +633,7 @@ public class MFDControlController : IPropertyChangeObserver
         {
             playerShip.ExecuteAutopilotCommand(Autopilot.Command.OFF);
             ship.RCSBurst(translateVec, ship.RCSBurnMinSec);
-            if (currentRCSMode != RCSMode.Translate)
-            {
-                ToggleRCSMode();
-            }
+            playerShip.SetRCSMode(PlayerShip.RCSMode.Translate);
         }
         if (translatePointerUp)
         {
@@ -658,10 +651,7 @@ public class MFDControlController : IPropertyChangeObserver
             Quaternion q = Quaternion.Euler(rotateVec.x, rotateVec.y, rotateVec.z);
             playerShip.ExecuteAutopilotCommand(Autopilot.Command.OFF);
             playerShip.ApplyRCSSpin(q);
-            if (currentRCSMode != RCSMode.Rotate)
-            {
-                ToggleRCSMode();
-            }
+            playerShip.SetRCSMode(PlayerShip.RCSMode.Rotate);
         }
         if (playerShip.CurrentAutopilotCommand() != Autopilot.Command.KILL_ROTATION && IsKillRotMarked())
         {

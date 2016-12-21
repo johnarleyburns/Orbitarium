@@ -73,7 +73,24 @@ public class MasslessBodyEngine  {
 		return Vector3.zero;
 	}
 
-	public void AddBody(GameObject gameObject) {
+    public Vector3 ActivateBody(GameObject toActivate)
+    {
+        for (int i = 0; i < numBodies; i++)
+        {
+            if (toActivate == bodies[i])
+            {
+                unchecked
+                {
+                    info[i] &= (byte)~GravityEngine.INACTIVE;
+                }
+                return Vector3.zero;
+            }
+        }
+        Debug.LogWarning("Did not find " + toActivate.name);
+        return Vector3.zero;
+    }
+
+    public void AddBody(GameObject gameObject) {
 		if (numBodies+1 >= arraySize) {
 			GrowArrays(GROW_ARRAY);
 		}

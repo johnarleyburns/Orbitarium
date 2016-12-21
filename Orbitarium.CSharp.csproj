@@ -226,6 +226,7 @@
     <Compile Include="Assets\Scripts\MFDController.cs" />
     <Compile Include="Assets\Scripts\MFDDockingController.cs" />
     <Compile Include="Assets\Scripts\MFDWeaponsController.cs" />
+    <Compile Include="Assets\Scripts\MusicController.cs" />
     <Compile Include="Assets\Scripts\PerlinShake.cs" />
     <Compile Include="Assets\Scripts\PhysicsUtils.cs" />
     <Compile Include="Assets\Scripts\PlayerShip.cs" />

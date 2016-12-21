@@ -753,18 +753,42 @@ public class GravityEngine : MonoBehaviour {
 		}
 	}
 
+    public void ActivateBody(GameObject toActivate)
+    {
+        NBody nbody = toActivate.GetComponent<NBody>();
+        if (nbody == null)
+        {
+            Debug.LogWarning("Not an NBody - cannot activate");
+            return;
+        }
+        if (nbody.engineRef.bodyType == BodyType.MASSLESS)
+        {
+            masslessEngine.ActivateBody(toActivate);
+        }
+        else {
+            int i = nbody.engineRef.index;
+            unchecked
+            {
+                info[i] &= (byte)~INACTIVE;
+            }
+#pragma warning disable 162     // disable unreachable code warning
+            if (DEBUG)
+                Debug.Log("Activate body " + toActivate.name);
+#pragma warning restore 162       // disable unreachable code warning
+        }
+    }
 
-	/// <summary>
-	/// Update physics based on collisionType between body1 and body2. 
-	///
-	/// In all cases except bounce, the handling is a "hit and stick" and body2 is assumed to be
-	/// removed. It's momtm is not updated. body1 velocity is adjusted based on conservation of momtm.
-	///
-	/// </summary>
-	/// <param name="body1">Body1.</param>
-	/// <param name="body2">Body2.</param>
-	/// <param name="collisionType">Collision type.</param>
-	public void Collision(GameObject body1, GameObject body2, NBodyCollision.CollisionType collisionType, float bounce) {
+    /// <summary>
+    /// Update physics based on collisionType between body1 and body2. 
+    ///
+    /// In all cases except bounce, the handling is a "hit and stick" and body2 is assumed to be
+    /// removed. It's momtm is not updated. body1 velocity is adjusted based on conservation of momtm.
+    ///
+    /// </summary>
+    /// <param name="body1">Body1.</param>
+    /// <param name="body2">Body2.</param>
+    /// <param name="collisionType">Collision type.</param>
+    public void Collision(GameObject body1, GameObject body2, NBodyCollision.CollisionType collisionType, float bounce) {
 		NBody nbody1 = body1.GetComponent<NBody>();
 		NBody nbody2 = body2.GetComponent<NBody>();
 		int index1 = nbody1.engineRef.index;

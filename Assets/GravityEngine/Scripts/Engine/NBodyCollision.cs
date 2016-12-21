@@ -140,7 +140,7 @@ public class NBodyCollision : MonoBehaviour {
         if (myNBodyChild.tag == "Player")
         {
             PlayerShip ship = myNBodyChild.GetComponent<PlayerShip>();
-            ship.PerformDock(otherBody);
+            ship.Dock(otherBody);
             // attach ship to dock
         }
         else

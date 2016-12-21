@@ -14,6 +14,9 @@ public class PlayerShip : MonoBehaviour
     public float minRelVtoDamage = 1;
     public float LowFuelThreshold = 0.1f;
 
+    public enum RCSMode { Rotate, Translate };
+    public RCSMode currentRCSMode;
+
     //! Thrust scale
     private RocketShip ship;
     private Autopilot autopilot;
@@ -40,8 +43,8 @@ public class PlayerShip : MonoBehaviour
         health = healthMax;
         rotInput = false;
         inputController.ControlsEnabled = true;
-        inputController.PropertyChanged("TranslateButtonNoAudio", false);
-        inputController.PropertyChanged("RotateButtonNoAudio", true);
+        inputController.PropertyChanged("RotateButton", true);
+        inputController.PropertyChanged("TranslateButton", false);
     }
 
     public void UpdateShip()
@@ -73,6 +76,17 @@ public class PlayerShip : MonoBehaviour
     {
         PlayTranslateSounds();
         PlayRotateSounds();
+    }
+
+    public void SetRCSMode(RCSMode rcsMode)
+    {
+        if (currentRCSMode != rcsMode)
+        {
+            currentRCSMode = rcsMode;
+            inputController.PropertyChanged("TranslateButton", currentRCSMode == RCSMode.Translate);
+            inputController.PropertyChanged("RotateButton", currentRCSMode == RCSMode.Rotate);
+            inputController.PropertyChanged("RCSModeAudio", currentRCSMode);
+        }
     }
 
     private void PlayTranslateSounds()
@@ -133,11 +147,13 @@ public class PlayerShip : MonoBehaviour
                 case CameraMode.FPS:
                     gameController.FPSCamera.enabled = true;
                     gameController.OverShoulderCamera.enabled = false;
+                    gameController.HUD().ShowTargetIndicator();
                     break;
                 case CameraMode.ThirdParty:
                     gameController.FPSCamera.enabled = false;
                     gameController.OverShoulderCamera.enabled = true;
                     gameController.OverShoulderCamera.GetComponent<CameraSpin>().UpdateTarget(gameObject);
+                    gameController.HUD().HideTargetIndicator();
                     break;
             }
         }
@@ -277,7 +293,7 @@ public class PlayerShip : MonoBehaviour
         }
     }
 
-    public void PerformDock(GameObject dockModel)
+    public void Dock(GameObject dockModel)
     {
         GameObject shipNbodyBody = transform.parent.gameObject;
         GameObject dockGhost = dockModel.transform.GetChild(0).gameObject;
@@ -286,6 +302,14 @@ public class PlayerShip : MonoBehaviour
         ship.NullSpin();
         gameController.Dock(shipNbodyBody, dockGhost);
         //cameraController.PlayCollisionShake();
+        audioController.Play(FPSAudioController.AudioClipEnum.SPACESHIP_DOCK);
+    }
+
+    public void Undock()
+    {
+        GameObject shipNBodyBody = PhysicsUtils.GetNBodyGameObject(gameObject);
+        inputController.ControlsEnabled = true;
+        gameController.Undock(shipNBodyBody);
         audioController.Play(FPSAudioController.AudioClipEnum.SPACESHIP_DOCK);
     }
 
