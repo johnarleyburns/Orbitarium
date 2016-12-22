@@ -22,14 +22,15 @@ public class GameController : MonoBehaviour
     //public GameObject EezoApproachGhost;
     public GameObject EezoDock;
     public GameObject EezoDockGhost;
-    public Transform SpawnPoint;
+    public GameObject EezoDockingPort;
+    public Transform PlayerSpawn;
+    public Transform EnemySpawn;
     public float PlayerInitialImpulse;
     public float PlayerShipRadiusM = 20;
     public float EnemyShipRadiusM = 20;
     public float DidymosRadiusM = 500;
     public float DidymoonRadiusM = 100;
     public float EezoDockingPortRadiusM = 20;
-    public float EnemyDistanceMeters = 500;
     public float EnemyRandomSpreadMeters = 200;
     public float EnemyInitialCount = 3;
     public float EnemyInitialImpulse = 10;
@@ -47,6 +48,7 @@ public class GameController : MonoBehaviour
     private float gameStartInputTimer = -1;
     private float gameOverInputTimer = -1;
     private GameState gameState;
+    private bool doInitPlayer = false;
 
     public enum GameState
     {
@@ -411,8 +413,25 @@ public class GameController : MonoBehaviour
         GameObject playerModel = controller.GetShipModel();
         SetupCameras(playerModel);
         playerModel.GetComponent<PlayerShip>().StartShip();
-        player.transform.position = SpawnPoint.position;
-        playerModel.transform.rotation = SpawnPoint.rotation;
+        /*
+        player.transform.position = PlayerSpawn.position;
+        playerModel.transform.rotation = PlayerSpawn.rotation;
+        NBody playerNBody = PhysicsUtils.GetNBodyGameObject(player).GetComponent<NBody>();
+        */
+        player.transform.position = EezoDock.transform.position;
+        player.transform.rotation = EezoDock.transform.rotation;
+        playerModel.transform.position = EezoDock.transform.GetChild(0).transform.position;
+        playerModel.transform.rotation = EezoDock.transform.GetChild(0).transform.rotation;
+        doInitPlayer = true; // must init GravityEngine stuff after first FixedUpdate so auto-detect finishes
+    }
+
+    public void LateUpdate()
+    {
+        if (doInitPlayer)
+        {
+            GetPlayerShip().Dock(EezoDockingPort.transform.GetChild(0).gameObject, false);
+            doInitPlayer = false;
+        }
     }
 
     private void SetupInitialVelocities()
@@ -421,8 +440,9 @@ public class GameController : MonoBehaviour
         GravityEngine.instance.ApplyImpulse(player.GetComponent<NBody>(), playerImpulse * player.transform.forward);
         foreach (GameObject enemyShip in targetDB.GetTargets(TargetDB.TargetType.ENEMY))
         {
-            float enemyImpulse = Random.Range(0, EnemyInitialImpulse);
-            GravityEngine.instance.ApplyImpulse(enemyShip.GetComponent<NBody>(), enemyImpulse * -player.transform.forward);
+            float enemyImpulse = Random.Range(0.1f * EnemyInitialImpulse, EnemyInitialImpulse);
+            GravityEngine.instance.ApplyImpulse(enemyShip.GetComponent<NBody>(), enemyImpulse * enemyShip.transform.GetChild(0).transform.forward);
+            GameObject Model = enemyShip.GetComponent<EnemyShipController>().GetShipModel();
         }
     }
 
@@ -437,8 +457,11 @@ public class GameController : MonoBehaviour
     private void InstantiateEnemy(string suffix)
     {
         Vector3 enemyOffset = EnemyRandomSpreadMeters * Random.insideUnitSphere;
-        Vector3 enemySpawnPoint = new Vector3(0, 0, EnemyDistanceMeters) + enemyOffset;
-        Quaternion enemySpawnRotation = Quaternion.Euler(0, 180, 0);
+        Vector3 enemySpawnPoint = EnemySpawn.position + enemyOffset;
+        Quaternion enemyRandomRotation = Quaternion.AngleAxis(Random.Range(0, 360), Random.onUnitSphere);
+        Quaternion enemyLookRotation = Quaternion.LookRotation(enemySpawnPoint - player.transform.position); // facePlayer
+        Quaternion enemyOffsetRotation = Quaternion.RotateTowards(enemyLookRotation, enemyRandomRotation, 90f);
+        Quaternion enemySpawnRotation = enemyOffsetRotation * enemyLookRotation;
         GameObject enemyShip = Instantiate(EnemyShipPrefab, enemySpawnPoint, enemySpawnRotation) as GameObject;
         GravityEngine.instance.AddBody(enemyShip);
         EnemyShipController controller = enemyShip.GetComponent<EnemyShipController>();

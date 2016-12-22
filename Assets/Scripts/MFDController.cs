@@ -94,8 +94,8 @@ public class MFDController : MonoBehaviour
         SetMFDPanels(MFDPanelType.CONTROL);
 
         MFDDropdown2.onValueChanged.AddListener(delegate { MFDDropdownOnValueChanged2(); });
-        MFDDropdown2.value = Convert.ToInt32(MFDPanelType.AUTOPILOT);
-        SetMFDPanels2(MFDPanelType.AUTOPILOT);
+        MFDDropdown2.value = Convert.ToInt32(MFDPanelType.DOCKING);
+        SetMFDPanels2(MFDPanelType.DOCKING);
 
         speakerVoice = Speaker.Voices.Count > 0 ? Speaker.Voices[Speaker.Voices.Count - 1] : null;
     }

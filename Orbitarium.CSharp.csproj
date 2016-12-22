@@ -219,6 +219,8 @@
     <Compile Include="Assets\Scripts\FPSCameraController.cs" />
     <Compile Include="Assets\Scripts\GameController.cs" />
     <Compile Include="Assets\Scripts\HUDController.cs" />
+    <Compile Include="Assets\Scripts\IControlableShip.cs" />
+    <Compile Include="Assets\Scripts\IControllableShip.cs" />
     <Compile Include="Assets\Scripts\IPropertyChangeObserver.cs" />
     <Compile Include="Assets\Scripts\InputController.cs" />
     <Compile Include="Assets\Scripts\MFDAutopilotController.cs" />
@@ -233,6 +235,7 @@
     <Compile Include="Assets\Scripts\PlayerShipController.cs" />
     <Compile Include="Assets\Scripts\RCSButton.cs" />
     <Compile Include="Assets\Scripts\RocketShip.cs" />
+    <Compile Include="Assets\Scripts\ShipWeapons.cs" />
     <Compile Include="Assets\Scripts\Standard Assets\Characters\FirstPersonCharacter\Scripts\FirstPersonController.cs" />
     <Compile Include="Assets\Scripts\Standard Assets\Characters\FirstPersonCharacter\Scripts\HeadBob.cs" />
     <Compile Include="Assets\Scripts\Standard Assets\Characters\FirstPersonCharacter\Scripts\MouseLook.cs" />

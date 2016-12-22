@@ -23,6 +23,7 @@ public class Autopilot : MonoBehaviour
     private float NavigationalConstantAPNG = 10;
 
     private RocketShip ship;
+    private ShipWeapons weapons;
     private Weapon mainGun;
     private bool cmgActive = false;
     private Command currentCommand = Command.OFF;
@@ -75,7 +76,8 @@ public class Autopilot : MonoBehaviour
     {
         currentCommand = Command.OFF;
         ship = GetComponent<RocketShip>();
-        mainGun = GetComponent<PlayerShip>().MainGun;
+        weapons = GetComponent<ShipWeapons>();
+        mainGun = weapons.MainGun;
     }
 
     public Command CurrentCommand()
@@ -342,8 +344,6 @@ public class Autopilot : MonoBehaviour
         }
     }
 
-    private float MainGunRangeM = 1000;
-
     IEnumerator RotShootTargetAPNG(GameObject target)
     {
         bool breakable = true;
@@ -370,7 +370,7 @@ public class Autopilot : MonoBehaviour
             bool aligned = targetAngle <= MinFireTargetAngle;
             float dist;
             PhysicsUtils.CalcDistance(transform, target, out dist);
-            bool inRange = dist <= MainGunRangeM;
+            bool inRange = dist <= weapons.MainGunRangeM;
             bool targetActive = gameController.IsEnemyActive(target);
             if (aligned && inRange && targetActive)
             {

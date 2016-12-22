@@ -4,12 +4,11 @@ using System.Collections.Generic;
 using Greyman;
 using System.Collections;
 
-public class PlayerShip : MonoBehaviour
+public class PlayerShip : MonoBehaviour, IControllableShip
 {
 
     public GameController gameController;
     public GameObject ShipExplosion;
-    public Weapon MainGun;
     public int healthMax = 3;
     public float minRelVtoDamage = 1;
     public float LowFuelThreshold = 0.1f;
@@ -293,7 +292,7 @@ public class PlayerShip : MonoBehaviour
         }
     }
 
-    public void Dock(GameObject dockModel)
+    public void Dock(GameObject dockModel, bool withSound = true)
     {
         GameObject shipNbodyBody = transform.parent.gameObject;
         GameObject dockGhost = dockModel.transform.GetChild(0).gameObject;
@@ -302,7 +301,10 @@ public class PlayerShip : MonoBehaviour
         ship.NullSpin();
         gameController.Dock(shipNbodyBody, dockGhost);
         //cameraController.PlayCollisionShake();
-        audioController.Play(FPSAudioController.AudioClipEnum.SPACESHIP_DOCK);
+        if (withSound)
+        {
+            audioController.Play(FPSAudioController.AudioClipEnum.SPACESHIP_DOCK);
+        }
     }
 
     public void Undock()

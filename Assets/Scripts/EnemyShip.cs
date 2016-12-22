@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class EnemyShip : MonoBehaviour {
+public class EnemyShip : MonoBehaviour, IControllableShip {
 
     public GameController gameController;
     public string VisibleName;
@@ -14,12 +14,14 @@ public class EnemyShip : MonoBehaviour {
 
     private float health;
     private RocketShip ship;
+    private Autopilot autopilot;
     private float secMainEngineBurnLeft;
 
     void Start()
     {
         health = healthMax;
         ship = GetComponent<RocketShip>();
+        autopilot = GetComponent<Autopilot>();
 //        if (hasRandomRotation)
 //        {
 //            InitRandomRotation();
@@ -29,7 +31,8 @@ public class EnemyShip : MonoBehaviour {
 
     void Update()
     {
-        UpdateTimedMainEngineBurn();
+        //UpdateTimedMainEngineBurn();
+        UpdateGoal();
     }
 
 //    private void InitRandomRotation()
@@ -38,7 +41,7 @@ public class EnemyShip : MonoBehaviour {
 //        Quaternion rot = Quaternion.Euler(r);
 //        transform.rotation = rot;
 //    }
-
+/*
     private void StartTimedMainEngineBurn(float timeSec)
     {
         secMainEngineBurnLeft = timeSec;
@@ -62,7 +65,7 @@ public class EnemyShip : MonoBehaviour {
     {
         ship.MainEngineCutoff();
     }
-
+    */
     void OnTriggerEnter(Collider collider)
     {
         if (gameController != null)
@@ -84,6 +87,15 @@ public class EnemyShip : MonoBehaviour {
                 gameObject.SetActive(false);
                 gameController.DestroyEnemyShipByCollision(transform.parent.gameObject);
             }
+        }
+    }
+
+    private void UpdateGoal()
+    {
+        if (autopilot.CurrentCommand() == Autopilot.Command.OFF)
+        {
+            GameObject target = gameController.GetPlayer();
+            autopilot.ExecuteCommand(Autopilot.Command.FACE_TARGET, target);
         }
     }
 

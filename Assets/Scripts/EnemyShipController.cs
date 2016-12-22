@@ -15,10 +15,17 @@ public class EnemyShipController : MonoBehaviour {
     {
         ShipModel.GetComponent<EnemyShip>().gameController = controller;
         ShipModel.GetComponent<RocketShip>().gameController = controller;
+        ShipModel.GetComponent<Autopilot>().gameController = controller;
     }
 
     public GameObject GetShipModel()
     {
         return ShipModel;
     }
+
+    public EnemyShip EnemyShip()
+    {
+        return ShipModel.GetComponent<EnemyShip>();
+    }
+
 }
