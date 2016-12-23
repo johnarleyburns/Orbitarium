@@ -18,6 +18,7 @@ public class Autopilot : MonoBehaviour
     public float StrafeDistM = 150f;
     public float GunRangeM = 1000f;
     public float MinFireTargetAngle = 0.5f;
+    public bool IsPlayer = false;
 
     private float NavigationalConstant = 3;
     private float NavigationalConstantAPNG = 10;
@@ -80,6 +81,23 @@ public class Autopilot : MonoBehaviour
         mainGun = weapons.MainGun;
     }
 
+    void Update()
+    {
+        if (gameController != null)
+        {
+            switch (gameController.GetGameState())
+            {
+                case GameController.GameState.RUNNING:
+                    break;
+                case GameController.GameState.PAUSED:
+                    break;
+                default:
+                    StopAll();
+                    break;
+            }
+        }
+    }
+
     public Command CurrentCommand()
     {
         return currentCommand;
@@ -91,7 +109,7 @@ public class Autopilot : MonoBehaviour
         ship.MainEngineCutoff();
         PushAndStartCoroutine(KillRotCo());
     }
-
+    
     private void AutopilotOff()
     {
         StopAll();
@@ -224,7 +242,10 @@ public class Autopilot : MonoBehaviour
         if (callStack.Count == 0 && currentCommand != Command.OFF)
         {
             ExecuteCommand(Command.OFF, null);
-            gameController.InputControl().PropertyChanged("CommandExecuted", Command.OFF);
+            if (IsPlayer)
+            {
+                gameController.InputControl().PropertyChanged("CommandExecuted", Command.OFF);
+            }
         }
     }
 
@@ -371,7 +392,7 @@ public class Autopilot : MonoBehaviour
             float dist;
             PhysicsUtils.CalcDistance(transform, target, out dist);
             bool inRange = dist <= weapons.MainGunRangeM;
-            bool targetActive = gameController.IsEnemyActive(target);
+            bool targetActive = gameController.IsTargetActive(target);
             if (aligned && inRange && targetActive)
             {
                 yield return PushAndStartCoroutine(FireGunCo());

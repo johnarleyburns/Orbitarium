@@ -88,6 +88,16 @@ public class PlayerShip : MonoBehaviour, IControllableShip
         }
     }
 
+    public void RCSBurst(Vector3 translateVec)
+    {
+        ship.RCSBurst(translateVec, ship.RCSBurnMinSec);
+    }
+
+    public void RCSCutoff()
+    {
+        ship.RCSCutoff();
+    }
+
     private void PlayTranslateSounds()
     {
         if (ship.IsRCSFiring() && !audioController.IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_RCS))
@@ -114,11 +124,6 @@ public class PlayerShip : MonoBehaviour, IControllableShip
     public bool IsLowFuel()
     {
         return ship.NormalizedFuel() < LowFuelThreshold;
-    }
-
-    public RocketShip RocketShip()
-    {
-        return ship;
     }
 
     public void ToggleCamera()
@@ -300,7 +305,7 @@ public class PlayerShip : MonoBehaviour, IControllableShip
         StopAllThrust();
         ship.NullSpin();
         gameController.Dock(shipNbodyBody, dockGhost);
-        //cameraController.PlayCollisionShake();
+        cameraController.PlayCollisionShake();
         if (withSound)
         {
             audioController.Play(FPSAudioController.AudioClipEnum.SPACESHIP_DOCK);

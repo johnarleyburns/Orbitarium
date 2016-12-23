@@ -185,6 +185,7 @@ public class GameController : MonoBehaviour
         InstantiateEnemies();
         SetupInitialVelocities();
         hudController.SelectNextTargetPreferClosestEnemy();
+        inputController.PropertyChanged("SelectDockTarget", EezoDock);
         FPSCanvas.SetActive(true);
         GameStartCanvas.SetActive(false);
         GamePauseCanvas.SetActive(false);
@@ -271,6 +272,7 @@ public class GameController : MonoBehaviour
     {
         musicController.GameOverMusic.Stop();
         CleanupScene();
+        //FIXME always have base menu screen scene
         SceneManager.UnloadScene(SceneManager.GetActiveScene().name);
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
@@ -577,12 +579,25 @@ public class GameController : MonoBehaviour
         enemyTracker.KillEnemy(enemyShip);
     }
 
-    public bool IsEnemyActive(GameObject target)
+    public bool IsTargetActive(GameObject target)
     {
+        bool active;
         TargetDB.TargetType t = targetDB.GetTargetType(target);
         bool isEnemy = t == TargetDB.TargetType.ENEMY;
         bool isDying = enemyTracker.IsEnemyDying(target);
-        return isEnemy && !isDying;
+        if (target == player)
+        {
+            active = true;
+        }
+        else if (isEnemy && !isDying)
+        {
+            active = true;
+        }
+        else
+        {
+            active = false;
+        }
+        return active;
     }
 
     public void DestroyEnemy(GameObject enemyShip)

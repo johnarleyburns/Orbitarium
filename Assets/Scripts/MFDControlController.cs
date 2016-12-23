@@ -628,16 +628,15 @@ public class MFDControlController : IPropertyChangeObserver
     private void UpdateTranslate()
     {
         PlayerShip playerShip = gameController.GetPlayerShip();
-        RocketShip ship = playerShip.RocketShip();
         if (translatePointerDown)
         {
             playerShip.ExecuteAutopilotCommand(Autopilot.Command.OFF);
-            ship.RCSBurst(translateVec, ship.RCSBurnMinSec);
+            playerShip.RCSBurst(translateVec);
             playerShip.SetRCSMode(PlayerShip.RCSMode.Translate);
         }
         if (translatePointerUp)
         {
-            ship.RCSCutoff();
+            playerShip.RCSCutoff();
             translatePointerUp = false;
         }
     }
@@ -645,7 +644,6 @@ public class MFDControlController : IPropertyChangeObserver
     private void UpdateRotate()
     {
         PlayerShip playerShip = gameController.GetPlayerShip();
-        RocketShip ship = playerShip.RocketShip();
         if (rotatePointerDown)
         {
             Quaternion q = Quaternion.Euler(rotateVec.x, rotateVec.y, rotateVec.z);

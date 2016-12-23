@@ -40,6 +40,7 @@ public class MFDDockingController : IPropertyChangeObserver
         UndockButton = panel.transform.Search("UndockButton").GetComponent<Button>();
 
         inputController.AddObserver("TargetList", this);
+        inputController.AddObserver("SelectDockTarget", this);
         inputController.AddObserver("ClosingDistText", this);
         inputController.AddObserver("ClosingVText", this);
         inputController.AddObserver("ClosingTimeText", this);
@@ -98,6 +99,17 @@ public class MFDDockingController : IPropertyChangeObserver
                     DockTargetSelectorDropdown.ClearOptions();
                     DockTargetSelectorDropdown.AddOptions(names);
                     DockTargetSelectorDropdown.value = 0;
+                }
+                break;
+            case "SelectDockTarget":
+                dockTarget = value as GameObject;
+                for (int i = 0; i < dockTargets.Count; i++)
+                {
+                    GameObject g = dockTargets[i];
+                    if (g == dockTarget)
+                    {
+                        DockTargetSelectorDropdown.value = i + 1;
+                    }
                 }
                 break;
             case "ClosingDistText":

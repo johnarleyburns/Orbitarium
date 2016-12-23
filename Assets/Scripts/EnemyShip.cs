@@ -90,12 +90,16 @@ public class EnemyShip : MonoBehaviour, IControllableShip {
         }
     }
 
+    private Autopilot.Command currentGoalCommand = Autopilot.Command.OFF;
+
     private void UpdateGoal()
     {
-        if (autopilot.CurrentCommand() == Autopilot.Command.OFF)
+//        currentGoalCommand = Autopilot.Command.FACE_TARGET;
+        if (currentGoalCommand == Autopilot.Command.OFF)
         {
+            currentGoalCommand = Autopilot.Command.STRAFE;
             GameObject target = gameController.GetPlayer();
-            autopilot.ExecuteCommand(Autopilot.Command.FACE_TARGET, target);
+            autopilot.ExecuteCommand(currentGoalCommand, target);
         }
     }
 
