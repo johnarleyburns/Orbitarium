@@ -59,7 +59,7 @@ public class EnemyTracker : MonoBehaviour {
         }
         foreach (GameObject g in pruneEnemies)
         {
-            gameController.DestroyEnemy(g);
+            gameController.DestroyNPC(g);
         }
     }
 

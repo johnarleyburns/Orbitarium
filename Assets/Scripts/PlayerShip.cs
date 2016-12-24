@@ -62,11 +62,13 @@ public class PlayerShip : MonoBehaviour, IControllableShip
 
     private void AddMissiles()
     {
+        int i = 0;
         foreach (GameObject missileSlotPosition in MissileSlotPositions)
         {
             if (!MissileSlots.ContainsKey(missileSlotPosition))
             {
                 GameObject missile = Instantiate(MissilePrefab, missileSlotPosition.transform) as GameObject;
+                missile.name = "Missile " + (i + 1);
                 missile.transform.localPosition = Vector3.zero;
                 missile.transform.localRotation = Quaternion.identity;
                 missile.transform.GetChild(0).transform.localPosition = Vector3.zero;
@@ -76,6 +78,7 @@ public class PlayerShip : MonoBehaviour, IControllableShip
                 missile.GetComponent<MissileShipController>().SetGameController(gameController);
                 MissileSlots[missileSlotPosition] = missile;
             }
+            i++;
         }
         inputController.PropertyChanged("MissileCountText", MissileSlots.Count.ToString());
         initMissilesOnLateUpdate = true;
@@ -107,6 +110,8 @@ public class PlayerShip : MonoBehaviour, IControllableShip
             if (success)
             {
                 MissileSlots.Remove(missileSlot);
+                gameController.TargetData().AddTarget(missile, TargetDB.TargetType.FRIEND, 1);
+                gameController.HUD().AddTargetIndicator(missile);
                 inputController.PropertyChanged("MissileCountText", MissileSlots.Count.ToString());
             }
         }
@@ -346,7 +351,7 @@ public class PlayerShip : MonoBehaviour, IControllableShip
         {
             GameObject otherBody = collider.attachedRigidbody.gameObject;
             float relVel;
-            if (PhysicsUtils.ShouldBounce(gameObject, otherBody, out relVel))
+            if (!PhysicsUtils.Fused(otherBody) && PhysicsUtils.ShouldBounce(gameObject, otherBody, out relVel))
             {
                 if (relVel >= minRelVtoDamage)
                 {

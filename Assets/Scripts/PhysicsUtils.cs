@@ -9,6 +9,21 @@ public class PhysicsUtils : MonoBehaviour {
     public static float maxThetatoDock = 5f;
     public static float maxDistToDock = 2f;
     public static string NeverBounceTag = "Projectile";
+    public static string[] FusedExplosionTags = { "Missile" };
+
+    public static bool Fused(GameObject g)
+    {
+        bool explodes = false;
+        foreach (string tag in FusedExplosionTags)
+        {
+            if (g.tag == tag)
+            {
+                explodes = true;
+                break;
+            }
+        }
+        return explodes;
+    }
 
     public static bool ShouldBounce(GameObject myNBodyChild, GameObject otherBody)
     {

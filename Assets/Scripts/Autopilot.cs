@@ -14,6 +14,7 @@ public class Autopilot : MonoBehaviour
     public float MinRotToTargetDeltaTheta = 0.2f;
     public float MinAPNGDeltaTheta = 1f;
     public float MinMainEngineBurnSec = 0.5f;
+    public float MinAuxEngineBurnSec = 0.01f;
     public float RendezvousDistM = 50f;
     public float StrafeDistM = 150f;
     public float GunRangeM = 1000f;
@@ -470,7 +471,7 @@ public class Autopilot : MonoBehaviour
         Vector3 relVelUnit;
         PhysicsUtils.CalcRelV(transform.parent.transform, target, out targetVec, out relv, out relVelUnit);
         Vector3 negVec = -1f * relVelUnit;
-        float sec = CalcDeltaVBurnSec(relv);
+        float sec = CalcDeltaVMainBurnSec(relv);
         if (sec >= MinMainEngineBurnSec)
         {
             yield return PushAndStartCoroutine(RotThenBurn(negVec, sec));
@@ -509,25 +510,40 @@ public class Autopilot : MonoBehaviour
         PhysicsUtils.CalcRelV(transform.parent.transform, target, out targetVec, out relv, out relVelUnit);
         Vector3 f = relVelUnit;
         Vector3 a = CalcAPNG(target.transform.position, relv, relVelUnit);
+        Vector3 goalForward;
+        float goalDeltaV;
         if (relv < 0f)
         {
-            f = -f;
-            a = Vector3.zero;
+            goalForward = -f;
+            goalDeltaV = Mathf.Abs(relv);
         }
-        float deltaVA = a.magnitude;
-        float deltaVF;
-        float deltaV = ship.CurrentMainEngineAccPerSec();
-        if (deltaVA >= deltaV)
+        else if (relv < InterceptDeltaV)
         {
-            deltaVA = deltaV;
-            deltaVF = 0f;
+            goalForward = (target.transform.position - transform.parent.transform.position).normalized;
+            goalDeltaV = InterceptDeltaV - relv;
         }
         else
         {
-            deltaVF = deltaV - deltaVA;
+            goalForward = a.normalized;
+            goalDeltaV = a.magnitude;            
         }
-        Vector3 thrust = ((deltaVA / deltaV) * a.normalized + (deltaVF / deltaV) * f).normalized;
-        yield return PushAndStartCoroutine(RotToUnitVec(thrust, MinAPNGDeltaTheta));
+        float mainSec = CalcDeltaVMainBurnSec(goalDeltaV);
+        float auxSec = CalcDeltaVAuxBurnSec(goalDeltaV);
+        if (mainSec > 0f)
+        {
+            yield return PushAndStartCoroutine(RotToUnitVec(goalForward, MinAPNGDeltaTheta));
+            ship.MainEngineGo();
+            yield return new WaitForSeconds(mainSec);
+            ship.MainEngineCutoff();
+        }
+        else if (auxSec > 0f)
+        {
+            yield return PushAndStartCoroutine(RotToUnitVec(goalForward, MinAPNGDeltaTheta));
+            ship.AuxEngineGo();
+            yield return new WaitForSeconds(auxSec);
+            ship.AuxEngineCutoff();
+        }
+        yield break;
     }
 
     IEnumerator StrafeCo(GameObject target)
@@ -849,7 +865,10 @@ public class Autopilot : MonoBehaviour
 
     IEnumerator APNGToTargetCo(GameObject target)
     {
-        ship.MainEngineGo();
+        //yield return PushAndStartCoroutine(RotToTarget(target));
+        //float sec = CalcDeltaVBurnSec(InterceptDeltaV);
+        //ship.MainEngineBurst(sec);
+        //yield return new WaitForSeconds(sec);
         for (;;)
         {
             yield return PushAndStartCoroutine(APNGRotateBurnCo(target));
@@ -886,12 +905,19 @@ public class Autopilot : MonoBehaviour
         return b;
     }
 
-    private float CalcDeltaVBurnSec(float deltaV)
+    private float CalcDeltaVMainBurnSec(float deltaV)
     {
         float mainEngineA = ship.CurrentMainEngineAccPerSec();
         float sec = deltaV / mainEngineA;
-        //sec = sec > MinMainEngineBurnSec ? sec : 0;
-        sec = sec > 0.1f ? sec : 0;
+        sec = sec > MinMainEngineBurnSec ? sec : 0;
+        return sec;
+    }
+
+    private float CalcDeltaVAuxBurnSec(float deltaV)
+    {
+        float mainEngineA = ship.CurrentAuxAccPerSec();
+        float sec = deltaV / mainEngineA;
+        sec = sec > MinAuxEngineBurnSec ? sec : 0;
         return sec;
     }
 

@@ -58,22 +58,31 @@ public class MFDWeaponsController : IPropertyChangeObserver
             case "TargetList":
                 GameObject oldTarget = weaponTarget;
                 List<GameObject> targets = value as List<GameObject>;
+                GameObject closestEnemy = gameController.NextClosestTarget(gameController.GetPlayer(), TargetDB.TargetType.ENEMY);
                 if (targets != null)
                 {
                     List<string> names = new List<string>();
                     names.Add("No Target");
                     weaponTargets.Clear();
+                    int closestEnemyIndex = 0;
+                    int i = 0;
                     foreach (GameObject g in targets)
                     {
                         if (gameController.TargetData().GetTargetType(g) == TargetDB.TargetType.ENEMY)
                         {
                             names.Add(g.name);
                             weaponTargets.Add(g);
+                            if (g == closestEnemy)
+                            {
+                                closestEnemyIndex = i + 1;
+                                weaponTarget = closestEnemy;
+                            }
+                            i++;
                         }
                     }
                     WeaponTargetSelectorDropdown.ClearOptions();
                     WeaponTargetSelectorDropdown.AddOptions(names);
-                    WeaponTargetSelectorDropdown.value = 0;
+                    WeaponTargetSelectorDropdown.value = closestEnemyIndex;
                 }
                 break;
             case "SelectWeaponTarget":

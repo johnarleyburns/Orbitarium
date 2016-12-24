@@ -1,12 +1,13 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class MissileShip : MonoBehaviour {
+public class MissileShip : MonoBehaviour
+{
 
     public GameController gameController;
     public GameObject ShipExplosion;
     public float MissileEjectV = 5f;
-    
+
     private RocketShip ship;
     private Autopilot autopilot;
     private Collider capsuleCollider;
@@ -51,7 +52,7 @@ public class MissileShip : MonoBehaviour {
         GravityEngine.instance.SetPosition(nBody, nBody.transform.position);
         GravityEngine.instance.ActivateBody(nBody);
         GravityEngine.instance.ApplyImpulse(nBody.GetComponent<NBody>(), MissileEjectV * nBody.transform.forward);
-        yield return new WaitForSeconds(3);
+        yield return new WaitForSeconds(1);
         capsuleCollider.enabled = true;
         currentGoalCommand = Autopilot.Command.INTERCEPT;
         yield break;
@@ -61,18 +62,9 @@ public class MissileShip : MonoBehaviour {
     {
         if (gameController != null)
         {
-            GameObject otherBody = collider.attachedRigidbody.gameObject;
-            float relVel;
-            if (PhysicsUtils.ShouldBounce(gameObject, otherBody, out relVel))
-            {
-                //                gameController.FPSCamera.GetComponent<FPSCameraController>().PlayMainEngineShake();
-            }
-            else
-            {
-                ShipExplosion.GetComponent<ParticleSystem>().Play();
-                gameObject.SetActive(false);
-                gameController.DestroyEnemyShipByCollision(transform.parent.gameObject);
-            }
+            ShipExplosion.GetComponent<ParticleSystem>().Play();
+            gameObject.SetActive(false);
+            gameController.DestroyMissileByCollision(transform.parent.gameObject);
         }
     }
 

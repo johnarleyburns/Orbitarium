@@ -31,7 +31,7 @@ public class EnemyShip : MonoBehaviour, IControllableShip {
         {
             GameObject otherBody = collider.attachedRigidbody.gameObject;
             float relVel;
-            if (PhysicsUtils.ShouldBounce(gameObject, otherBody, out relVel))
+            if (!PhysicsUtils.Fused(otherBody) && PhysicsUtils.ShouldBounce(gameObject, otherBody, out relVel))
             {
 //                gameController.FPSCamera.GetComponent<FPSCameraController>().PlayMainEngineShake();
                 if (relVel >= minRelVtoDamage)
@@ -55,8 +55,8 @@ public class EnemyShip : MonoBehaviour, IControllableShip {
     {
         if (currentGoalCommand == Autopilot.Command.OFF)
         {
-            //currentGoalCommand = Autopilot.Command.STRAFE;
-            currentGoalCommand = Autopilot.Command.ACTIVE_TRACK;
+            currentGoalCommand = Autopilot.Command.STRAFE;
+            //currentGoalCommand = Autopilot.Command.ACTIVE_TRACK;
             GameObject target = gameController.GetPlayer();
             autopilot.ExecuteCommand(currentGoalCommand, target);
         }

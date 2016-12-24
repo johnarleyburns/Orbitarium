@@ -98,7 +98,7 @@ public class GameController : MonoBehaviour
         
         //virtualChildOffset = VirtualChild.transform.position - VirtualParent.transform.position;
         //virtualChildOffsetQ = VirtualParent.transform.rotation;
-        UpdateFollows();
+        //UpdateFollows();
     }
 
     private void UpdateFollows()
@@ -112,6 +112,8 @@ public class GameController : MonoBehaviour
             shadow.transform.GetChild(0).localScale = ghost.transform.GetChild(0).localScale;
             shadow.transform.GetChild(0).position = ghost.transform.GetChild(0).position;
             shadow.transform.GetChild(0).rotation = ghost.transform.GetChild(0).rotation;
+            GravityEngine.instance.SetPosition(shadow, ghost.transform.position);
+            GravityEngine.instance.SetVelocity(shadow, GravityEngine.instance.GetVelocity(PhysicsUtils.GetNBodyGameObject(ghost)));
         }
     }
 
@@ -573,10 +575,15 @@ public class GameController : MonoBehaviour
         enemyTracker.ClearTimeToLive();
         DestroyPlayer();
     }
-    
+
     public void DestroyEnemyShipByCollision(GameObject enemyShip)
     {
         enemyTracker.KillEnemy(enemyShip);
+    }
+
+    public void DestroyMissileByCollision(GameObject missile)
+    {
+        DestroyNPC(missile);
     }
 
     public bool IsTargetActive(GameObject target)
@@ -600,21 +607,21 @@ public class GameController : MonoBehaviour
         return active;
     }
 
-    public void DestroyEnemy(GameObject enemyShip)
+    public void DestroyNPC(GameObject ship)
     {
-        if (enemyShip != null)
+        if (ship != null)
         {
-            if (enemyShip == HUD().GetSelectedTarget())
+            if (ship == HUD().GetSelectedTarget())
             {
                 GetPlayerShip().ExecuteAutopilotCommand(Autopilot.Command.OFF);
             }
-            hudController.RemoveIndicator(enemyShip.transform);
-            targetDB.RemoveTarget(enemyShip);
+            hudController.RemoveIndicator(ship.transform);
+            targetDB.RemoveTarget(ship);
             hudController.SelectNextTargetPreferClosestEnemy();
-            //GravityEngine.instance.RemoveBody(enemyShip);     
-            //Destroy(enemyShip);
-            GravityEngine.instance.InactivateBody(enemyShip);
-            enemyShip.SetActive(false);
+            //GravityEngine.instance.RemoveBody(ship);     
+            //Destroy(ship);
+            GravityEngine.instance.InactivateBody(ship);
+            ship.SetActive(false);
         }
     }
 
@@ -657,9 +664,13 @@ public class GameController : MonoBehaviour
 
     public void Undock(GameObject ship)
     {
+        GameObject nBodyObj = PhysicsUtils.GetNBodyGameObject(ship);
+        GameObject parent = ship.transform.parent.gameObject;
+        GameObject dockGhost = parent.transform.GetChild(0).gameObject;
         ship.transform.parent = null;
-        GravityEngine.instance.ActivateBody(ship);
-        GravityEngine.instance.ApplyImpulse(PhysicsUtils.GetNBodyGameObject(ship).GetComponent<NBody>(), UndockVelocity * -ship.transform.forward);
+        GravityEngine.instance.ActivateBody(nBodyObj);
+        GravityEngine.instance.SetPosition(nBodyObj, dockGhost.transform.position); ;
+        GravityEngine.instance.ApplyImpulse(nBodyObj.GetComponent<NBody>(), UndockVelocity * -nBodyObj.transform.forward);
         inputController.PropertyChanged("Undock", true);
     }
 
