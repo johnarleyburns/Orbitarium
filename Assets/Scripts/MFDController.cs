@@ -77,7 +77,7 @@ public class MFDController : MonoBehaviour
         MFDAutopilotPanelController = new MFDAutopilotController();
         MFDAutopilotPanelController.Connect(MFDAutopilotPanel, inputController, gameController, true);
         MFDWeaponsPanelController = new MFDWeaponsController();
-        MFDWeaponsPanelController.Connect(MFDWeaponsPanel, inputController, true);
+        MFDWeaponsPanelController.Connect(MFDWeaponsPanel, inputController, gameController, true);
         MFDDockingPanelController = new MFDDockingController();
         MFDDockingPanelController.Connect(MFDDockingPanel, inputController, gameController, true);
         MFDControlPanelController2 = new MFDControlController();
@@ -85,7 +85,7 @@ public class MFDController : MonoBehaviour
         MFDAutopilotPanelController2 = new MFDAutopilotController();
         MFDAutopilotPanelController2.Connect(MFDAutopilotPanel2, inputController, gameController, false);
         MFDWeaponsPanelController2 = new MFDWeaponsController();
-        MFDWeaponsPanelController2.Connect(MFDWeaponsPanel2, inputController, false);
+        MFDWeaponsPanelController2.Connect(MFDWeaponsPanel2, inputController, gameController, false);
         MFDDockingPanelController2 = new MFDDockingController();
         MFDDockingPanelController2.Connect(MFDDockingPanel2, inputController, gameController, false);
 

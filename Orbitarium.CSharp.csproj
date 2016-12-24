@@ -228,6 +228,8 @@
     <Compile Include="Assets\Scripts\MFDController.cs" />
     <Compile Include="Assets\Scripts\MFDDockingController.cs" />
     <Compile Include="Assets\Scripts\MFDWeaponsController.cs" />
+    <Compile Include="Assets\Scripts\MissileShip.cs" />
+    <Compile Include="Assets\Scripts\MissileShipController.cs" />
     <Compile Include="Assets\Scripts\MusicController.cs" />
     <Compile Include="Assets\Scripts\PerlinShake.cs" />
     <Compile Include="Assets\Scripts\PhysicsUtils.cs" />

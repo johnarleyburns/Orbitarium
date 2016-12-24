@@ -306,15 +306,26 @@ public class MasslessBodyEngine  {
 		return new Vector3((float) v[i,0], (float) v[i,1], (float) v[i,2]);
 	}
 
-	public void SetVelocity(GameObject body, Vector3 velocity) {
-		NBody nbody = body.GetComponent<NBody>();
-		int i = nbody.engineRef.index;
-		v[i,0] = velocity.x;
-		v[i,1] = velocity.y;
-		v[i,2] = velocity.z;
-	}
+    public void SetVelocity(GameObject body, Vector3 velocity)
+    {
+        NBody nbody = body.GetComponent<NBody>();
+        int i = nbody.engineRef.index;
+        v[i, 0] = velocity.x;
+        v[i, 1] = velocity.y;
+        v[i, 2] = velocity.z;
+    }
 
-	public Vector3 GetAcceleration(GameObject body) {
+    public void SetPosition(GameObject body, Vector3 position, float physicalScale)
+    {
+        NBody nbody = body.GetComponent<NBody>();
+        int i = nbody.engineRef.index;
+        r[i, 0] = position.x / physicalScale;
+        r[i, 1] = position.y / physicalScale;
+        r[i, 2] = position.z / physicalScale;
+        bodies[i].transform.position = position;
+    }
+
+    public Vector3 GetAcceleration(GameObject body) {
 		NBody nbody = body.GetComponent<NBody>();
 		int i = nbody.engineRef.index;
 		return new Vector3((float) a[i,0], (float) a[i,1], (float) a[i,2]);

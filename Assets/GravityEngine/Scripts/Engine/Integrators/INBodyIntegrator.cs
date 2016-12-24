@@ -40,11 +40,13 @@ public interface INBodyIntegrator {
 	/// <param name="growBy">Grow by.</param>
 	void GrowArrays(int growBy);
 			
-	Vector3 GetVelocityForIndex(int i); 
+	Vector3 GetVelocityForIndex(int i);
 
-	void SetVelocityForIndex(int i, Vector3 vel); 
+    void SetVelocityForIndex(int i, Vector3 vel);
 
-	Vector3 GetAccelerationForIndex(int i); 
+    void SetPositionForIndex(int i, Vector3 pos);
+
+    Vector3 GetAccelerationForIndex(int i); 
 
 	// Call ONCE after all game objects have been added to allow integrator to pre-calc
 	// starting quantities required for integration

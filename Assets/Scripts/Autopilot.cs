@@ -78,7 +78,10 @@ public class Autopilot : MonoBehaviour
         currentCommand = Command.OFF;
         ship = GetComponent<RocketShip>();
         weapons = GetComponent<ShipWeapons>();
-        mainGun = weapons.MainGun;
+        if (weapons != null)
+        {
+            mainGun = weapons.MainGun;
+        }
     }
 
     void Update()
@@ -391,7 +394,7 @@ public class Autopilot : MonoBehaviour
             bool aligned = targetAngle <= MinFireTargetAngle;
             float dist;
             PhysicsUtils.CalcDistance(transform, target, out dist);
-            bool inRange = dist <= weapons.MainGunRangeM;
+            bool inRange = weapons == null ? true : dist <= weapons.MainGunRangeM;
             bool targetActive = gameController.IsTargetActive(target);
             if (aligned && inRange && targetActive)
             {
@@ -417,8 +420,15 @@ public class Autopilot : MonoBehaviour
 
    IEnumerator FireGunCo()
    {
-       yield return mainGun.AIFiringCo();
-       PopCoroutine();
+        if (mainGun != null)
+        {
+            yield return mainGun.AIFiringCo();
+        }
+        else
+        {
+            yield break;
+        }
+        PopCoroutine();
     }
 
     IEnumerator RotThenBurn(Vector3 b, float sec)

@@ -168,13 +168,21 @@ public sealed class HermiteIntegrator : INBodyIntegrator {
 		return new Vector3( (float)vel[i,0], (float)vel[i,1], (float)vel[i,2]);
 	}
 
-	public void SetVelocityForIndex(int i, Vector3 velocity) {
-		vel[i,0] = velocity.x;
-		vel[i,1] = velocity.y;
-		vel[i,2] = velocity.z;
-	}
+    public void SetVelocityForIndex(int i, Vector3 velocity)
+    {
+        vel[i, 0] = velocity.x;
+        vel[i, 1] = velocity.y;
+        vel[i, 2] = velocity.z;
+    }
 
-	public Vector3 GetAccelerationForIndex(int i) {
+    public void SetPositionForIndex(int i, Vector3 position)
+    {
+        old_pos[i, 0] = position.x;
+        old_pos[i, 1] = position.y;
+        old_pos[i, 2] = position.z;
+    }
+
+    public Vector3 GetAccelerationForIndex(int i) {
 		return new Vector3( (float)acc[i,0], (float)acc[i,1], (float)acc[i,2]);
 	}
 

@@ -7,65 +7,24 @@ public class EnemyShip : MonoBehaviour, IControllableShip {
     public string VisibleName;
     public float healthMax = 1;
     public float minRelVtoDamage = 5;
-//    public bool hasRandomRotation = true;
-//    public bool hasRandomV = true;
-//    public float randomVMainEngineMaxSec = 5;
     public GameObject ShipExplosion;
 
     private float health;
     private RocketShip ship;
     private Autopilot autopilot;
-    private float secMainEngineBurnLeft;
 
     void Start()
     {
         health = healthMax;
         ship = GetComponent<RocketShip>();
         autopilot = GetComponent<Autopilot>();
-//        if (hasRandomRotation)
-//        {
-//            InitRandomRotation();
-//        }
-//        StartTimedMainEngineBurn(Random.Range(0, randomVMainEngineMaxSec));
     }
 
     void Update()
     {
-        //UpdateTimedMainEngineBurn();
         UpdateGoal();
     }
 
-//    private void InitRandomRotation()
-//    {
-//        Vector3 r = Random.insideUnitSphere;
-//        Quaternion rot = Quaternion.Euler(r);
-//        transform.rotation = rot;
-//    }
-/*
-    private void StartTimedMainEngineBurn(float timeSec)
-    {
-        secMainEngineBurnLeft = timeSec;
-    }
-
-    private void UpdateTimedMainEngineBurn()
-    {
-        if (secMainEngineBurnLeft > 0)
-        {
-            ship.MainEngineGo();
-            secMainEngineBurnLeft -= Time.deltaTime;
-        }
-        else
-        {
-            StopTimedMainEngineBurn();
-            secMainEngineBurnLeft = 0;
-        }
-    }
-
-    private void StopTimedMainEngineBurn()
-    {
-        ship.MainEngineCutoff();
-    }
-    */
     void OnTriggerEnter(Collider collider)
     {
         if (gameController != null)
@@ -94,10 +53,10 @@ public class EnemyShip : MonoBehaviour, IControllableShip {
 
     private void UpdateGoal()
     {
-//        currentGoalCommand = Autopilot.Command.FACE_TARGET;
         if (currentGoalCommand == Autopilot.Command.OFF)
         {
-            currentGoalCommand = Autopilot.Command.STRAFE;
+            //currentGoalCommand = Autopilot.Command.STRAFE;
+            currentGoalCommand = Autopilot.Command.ACTIVE_TRACK;
             GameObject target = gameController.GetPlayer();
             autopilot.ExecuteCommand(currentGoalCommand, target);
         }

@@ -911,6 +911,32 @@ public class GravityEngine : MonoBehaviour {
         integrator.SetVelocityForIndex(nbody.engineRef.index, vel);
     }
 
+    public void SetPosition(GameObject body, Vector3 pos)
+    {
+        NBody nbody = body.GetComponent<NBody>();
+        if (nbody == null)
+        {
+            Debug.LogError("No NBody found on " + body.name + " cannot get velocity");
+            return;
+        }
+        if (nbody.engineRef == null)
+        {
+            Debug.LogError("No NBody engine ref found on " + body.name + " cannot get velocity");
+            return;
+        }
+        // divide by the physics to world scale factor - required for threebody solutions
+        Vector3 physicsPosition = pos / physToWorldFactor;
+        r[nbody.engineRef.index, 0] = physicsPosition.x;
+        r[nbody.engineRef.index, 1] = physicsPosition.y;
+        r[nbody.engineRef.index, 2] = physicsPosition.z;
+        if (nbody.engineRef.bodyType == BodyType.MASSLESS)
+        {
+            masslessEngine.SetPosition(body, pos, physToWorldFactor);
+            return;
+        }
+        integrator.SetPositionForIndex(nbody.engineRef.index, pos);
+    }
+
     /// <summary>
     /// Gets the acceleration of the body in "Physics Space". 
     /// May be different from world co-ordinates if physToWorldFactor is not 1. 

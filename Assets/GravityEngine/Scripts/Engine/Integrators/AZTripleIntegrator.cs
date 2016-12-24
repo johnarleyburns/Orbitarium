@@ -157,11 +157,17 @@ public sealed class AZTripleIntegrator : INBodyIntegrator {
 		return Vector3.zero;
 	}
 
-	public 	void SetVelocityForIndex(int i, Vector3 vel) {
-		Debug.LogError("Not supported in this integrator");
-	}
+    public void SetVelocityForIndex(int i, Vector3 vel)
+    {
+        Debug.LogError("Not supported in this integrator");
+    }
 
-	public Vector3 GetAccelerationForIndex(int i) {
+    public void SetPositionForIndex(int i, Vector3 pos)
+    {
+        Debug.LogError("Not supported in this integrator");
+    }
+
+    public Vector3 GetAccelerationForIndex(int i) {
 		return Vector3.zero;
 	}
 

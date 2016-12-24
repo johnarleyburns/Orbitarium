@@ -103,7 +103,11 @@ public sealed class LeapFrogIntegrator : INBodyIntegrator {
 		v[i,2] = vel.z;
 	}
 
-	public Vector3 GetAccelerationForIndex(int i) {
+    public void SetPositionForIndex(int i, Vector3 position)
+    {
+    }
+
+    public Vector3 GetAccelerationForIndex(int i) {
 		return new Vector3( (float)a[i,0], (float)a[i,1], (float)a[i,2]);
 	}
 
