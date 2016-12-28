@@ -235,7 +235,7 @@ public class MFDWeaponsController : IPropertyChangeObserver
         }
         else
         {
-            if (gameController.GetPlayerShip().FireFirstAvailableMissile(weaponTarget))
+            if (gameController.GetPlayerWeapons().FireFirstAvailableMissile(weaponTarget))
             {
                 msg = DialogText.FireMissile;
             }
@@ -261,13 +261,13 @@ public class MFDWeaponsController : IPropertyChangeObserver
         {
             msg = DialogText.WeaponsOffline;
         }
-        else if (!gameController.GetPlayerShip().GunsReady())
+        else if (!gameController.GetPlayerWeapons().GunsReady())
         {
             msg = DialogText.GunsTooHot;
         }
         else
         {
-            if (gameController.GetPlayerShip().FireGuns())
+            if (gameController.GetPlayerWeapons().FireGuns())
             {
                 msg = "";
             }

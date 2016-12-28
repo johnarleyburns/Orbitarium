@@ -78,10 +78,6 @@ public class Autopilot : MonoBehaviour
         currentCommand = Command.OFF;
         ship = GetComponent<RocketShip>();
         weapons = GetComponent<ShipWeapons>();
-        if (weapons != null)
-        {
-            weapons.SetGameController(gameController);
-        }
     }
 
     void Update()
@@ -396,7 +392,7 @@ public class Autopilot : MonoBehaviour
             PhysicsUtils.CalcDistance(transform, target, out dist);
             bool inRange = weapons == null ? true : dist <= weapons.MainGunRangeM;
             bool hasAmmo = weapons == null ? false : weapons.CurrentAmmo() > 0;
-            bool gunsReady = GunsReady();
+            bool gunsReady = weapons.GunsReady();
             bool targetActive = gameController.IsTargetActive(target);
             if (aligned && inRange && hasAmmo && gunsReady && targetActive)
             {
@@ -419,26 +415,9 @@ public class Autopilot : MonoBehaviour
         }
     }
 
-    public void UserFireGun()
-    {
-        PushAndStartCoroutine(FireGunCo());
-    }
-
-    public bool GunsReady()
-    {
-        return weapons != null && weapons.MainGun != null && weapons.MainGun.ReadyToFire();
-    }
-
     IEnumerator FireGunCo()
     {
-        if (weapons != null && weapons.MainGun != null)
-        {
-            yield return weapons.MainGun.AIFiringCo();
-        }
-        else
-        {
-            yield break;
-        }
+        yield return weapons.FireGunsCo();
         PopCoroutine();
     }
 

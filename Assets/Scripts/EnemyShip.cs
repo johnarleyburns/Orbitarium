@@ -8,16 +8,23 @@ public class EnemyShip : MonoBehaviour, IControllableShip {
     public float healthMax = 1;
     public float minRelVtoDamage = 5;
     public GameObject ShipExplosion;
+    public Autopilot.Command InitialGoal = Autopilot.Command.OFF;
 
     private float health;
     private RocketShip ship;
     private Autopilot autopilot;
+    private Autopilot.Command currentGoalCommand = Autopilot.Command.OFF;
 
     void Start()
+    {
+    }
+
+    public void StartShip()
     {
         health = healthMax;
         ship = GetComponent<RocketShip>();
         autopilot = GetComponent<Autopilot>();
+        GetComponent<ShipWeapons>().AddMissiles();
     }
 
     void Update()
@@ -49,13 +56,11 @@ public class EnemyShip : MonoBehaviour, IControllableShip {
         }
     }
 
-    private Autopilot.Command currentGoalCommand = Autopilot.Command.OFF;
-
     private void UpdateGoal()
     {
-        if (currentGoalCommand == Autopilot.Command.OFF)
+        if (currentGoalCommand == Autopilot.Command.OFF && currentGoalCommand != InitialGoal)
         {
-            currentGoalCommand = Autopilot.Command.STRAFE;
+            currentGoalCommand = InitialGoal;
             //currentGoalCommand = Autopilot.Command.ACTIVE_TRACK;
             GameObject target = gameController.GetPlayer();
             autopilot.ExecuteCommand(currentGoalCommand, target);

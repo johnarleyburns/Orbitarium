@@ -3,24 +3,23 @@ using System.Collections;
 
 public class EnemyShipController : MonoBehaviour {
 
-    private static int SHIP_MODEL_INDEX = 0;
-    private GameObject ShipModel;
+    public GameObject ShipModel;
+    private GameController _gameController;
 
-    void Awake()
+    public GameController gameController
     {
-        ShipModel = transform.GetChild(SHIP_MODEL_INDEX).gameObject;
-    }
-
-    public void SetGameController(GameController controller)
-    {
-        ShipModel.GetComponent<EnemyShip>().gameController = controller;
-        ShipModel.GetComponent<RocketShip>().gameController = controller;
-        ShipModel.GetComponent<Autopilot>().gameController = controller;
-    }
-
-    public GameObject GetShipModel()
-    {
-        return ShipModel;
+        get
+        {
+            return _gameController;
+        }
+        set
+        {
+            _gameController = value;
+            ShipModel.GetComponent<EnemyShip>().gameController = value;
+            ShipModel.GetComponent<RocketShip>().gameController = value;
+            ShipModel.GetComponent<Autopilot>().gameController = value;
+            ShipModel.GetComponent<ShipWeapons>().gameController = value;
+        }
     }
 
     public EnemyShip EnemyShip()

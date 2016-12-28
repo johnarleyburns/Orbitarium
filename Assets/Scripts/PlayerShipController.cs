@@ -2,23 +2,23 @@
 
 public class PlayerShipController : MonoBehaviour {
 
-    private static int SHIP_MODEL_INDEX = 0;
-    private GameObject ShipModel;
+    public GameObject ShipModel;
+    private GameController _gameController;
 
-    void Awake()
+    public GameController gameController
     {
-        ShipModel = transform.GetChild(SHIP_MODEL_INDEX).gameObject;
+        get
+        {
+            return _gameController;
+        }
+        set
+        {
+            _gameController = value;
+            ShipModel.GetComponent<PlayerShip>().gameController = value;
+            ShipModel.GetComponent<RocketShip>().gameController = value;
+            ShipModel.GetComponent<Autopilot>().gameController = value;
+            ShipModel.GetComponent<ShipWeapons>().gameController = value;
+        }
     }
 
-    public void SetGameController(GameController controller)
-    {
-        ShipModel.GetComponent<PlayerShip>().gameController = controller;
-        ShipModel.GetComponent<RocketShip>().gameController = controller;
-        ShipModel.GetComponent<Autopilot>().gameController = controller;
-    }
-
-    public GameObject GetShipModel()
-    {
-        return ShipModel;
-    }
 }

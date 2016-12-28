@@ -427,21 +427,24 @@ public class GameController : MonoBehaviour
     {
         DestroyPlayer();
         player = Instantiate(PlayerShipPrefab, Vector3.zero, Quaternion.identity) as GameObject;
-        PlayerShipController controller = player.GetComponent<PlayerShipController>();
-        controller.SetGameController(this);
+        player.GetComponent<PlayerShipController>().gameController = this;
         GravityEngine.instance.AddBody(player);
-        GameObject playerModel = controller.GetShipModel();
+
+        GameObject playerModel = player.GetComponent<PlayerShipController>().ShipModel;
         SetupCameras(playerModel);
         playerModel.GetComponent<PlayerShip>().StartShip();
+
         /*
         player.transform.position = PlayerSpawn.position;
         playerModel.transform.rotation = PlayerSpawn.rotation;
         NBody playerNBody = PhysicsUtils.GetNBodyGameObject(player).GetComponent<NBody>();
         */
+
         player.transform.position = EezoDock.transform.position;
         player.transform.rotation = EezoDock.transform.rotation;
         playerModel.transform.position = EezoDock.transform.GetChild(0).transform.position;
         playerModel.transform.rotation = EezoDock.transform.GetChild(0).transform.rotation;
+
         doInitPlayer = true; // must init GravityEngine stuff after first FixedUpdate so auto-detect finishes
     }
 
@@ -462,7 +465,7 @@ public class GameController : MonoBehaviour
         {
             float enemyImpulse = Random.Range(0.1f * EnemyInitialImpulse, EnemyInitialImpulse);
             GravityEngine.instance.ApplyImpulse(enemyShip.GetComponent<NBody>(), enemyImpulse * enemyShip.transform.GetChild(0).transform.forward);
-            GameObject Model = enemyShip.GetComponent<EnemyShipController>().GetShipModel();
+            GameObject Model = enemyShip.GetComponent<EnemyShipController>().ShipModel;
         }
     }
 
@@ -476,25 +479,33 @@ public class GameController : MonoBehaviour
 
     private void InstantiateEnemy(string suffix)
     {
+        KeyValuePair<Vector3, Quaternion> spawn = NextEnemySpawn();
+        GameObject enemy = Instantiate(EnemyShipPrefab, spawn.Key, spawn.Value) as GameObject;
+        GravityEngine.instance.AddBody(enemy);
+
+        enemy.GetComponent<EnemyShipController>().gameController = this;
+        GameObject enemyModel = enemy.GetComponent<EnemyShipController>().ShipModel;
+        enemyModel.GetComponent<EnemyShip>().StartShip();
+        string nameRoot = enemyModel.GetComponent<EnemyShip>().VisibleName;
+        enemy.name = string.Format("{0}-{1}", nameRoot, suffix);
+        targetDB.AddTarget(enemy, TargetDB.TargetType.ENEMY, EnemyShipRadiusM);
+        hudController.AddTargetIndicator(enemy);
+    }
+
+    private KeyValuePair<Vector3, Quaternion> NextEnemySpawn()
+    {
         Vector3 enemyOffset = EnemyRandomSpreadMeters * Random.insideUnitSphere;
         Vector3 enemySpawnPoint = EnemySpawn.position + enemyOffset;
         Quaternion enemyRandomRotation = Quaternion.AngleAxis(Random.Range(0, 360), Random.onUnitSphere);
         Quaternion enemyLookRotation = Quaternion.LookRotation(enemySpawnPoint - player.transform.position); // facePlayer
         Quaternion enemyOffsetRotation = Quaternion.RotateTowards(enemyLookRotation, enemyRandomRotation, 90f);
         Quaternion enemySpawnRotation = enemyOffsetRotation * enemyLookRotation;
-        GameObject enemyShip = Instantiate(EnemyShipPrefab, enemySpawnPoint, enemySpawnRotation) as GameObject;
-        GravityEngine.instance.AddBody(enemyShip);
-        EnemyShipController controller = enemyShip.GetComponent<EnemyShipController>();
-        controller.SetGameController(this);
-        string nameRoot = controller.GetShipModel().GetComponent<EnemyShip>().VisibleName;
-        enemyShip.name = string.Format("{0}-{1}", nameRoot, suffix);
-        targetDB.AddTarget(enemyShip, TargetDB.TargetType.ENEMY, EnemyShipRadiusM);
-        hudController.AddTargetIndicator(enemyShip);
+        return new KeyValuePair<Vector3, Quaternion>(enemySpawnPoint, enemySpawnRotation);
     }
 
     private void EnableOverviewCamera()
     {
-        GameObject playerModel = player.GetComponent<PlayerShipController>().GetShipModel();
+        GameObject playerModel = player.GetComponent<PlayerShipController>().ShipModel;
         OverviewCamera.enabled = true;
         FPSCamera.enabled = false;
         OverShoulderCamera.enabled = false;
@@ -508,7 +519,12 @@ public class GameController : MonoBehaviour
 
     public PlayerShip GetPlayerShip()
     {
-        return player.GetComponent<PlayerShipController>().GetShipModel().GetComponent<PlayerShip>();
+        return player.GetComponent<PlayerShipController>().ShipModel.GetComponent<PlayerShip>();
+    }
+
+    public ShipWeapons GetPlayerWeapons()
+    {
+        return player.GetComponent<PlayerShipController>().ShipModel.GetComponent<ShipWeapons>();
     }
 
     public GameObject ClosestTarget()

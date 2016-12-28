@@ -9,11 +9,9 @@ public class PlayerShip : MonoBehaviour, IControllableShip
 
     public GameController gameController;
     public GameObject ShipExplosion;
-    public GameObject MissilePrefab;
     public int healthMax = 3;
     public float minRelVtoDamage = 1;
     public float LowFuelThreshold = 0.1f;
-    public GameObject[] MissileSlotPositions;
     public enum RCSMode { Rotate, Translate };
     public RCSMode currentRCSMode;
 
@@ -27,9 +25,6 @@ public class PlayerShip : MonoBehaviour, IControllableShip
     private CameraMode currentCameraMode;
     private int health;
     private bool rotInput = false;
-    private bool initMissilesOnLateUpdate = false;
-
-    private Dictionary<GameObject, GameObject> MissileSlots = new Dictionary<GameObject, GameObject>();
 
     public void StartShip()
     {
@@ -48,7 +43,7 @@ public class PlayerShip : MonoBehaviour, IControllableShip
         inputController.ControlsEnabled = true;
         inputController.PropertyChanged("RotateButton", true);
         inputController.PropertyChanged("TranslateButton", false);
-        AddMissiles();
+        GetComponent<ShipWeapons>().AddMissiles();
     }
 
     public void UpdateShip()
@@ -60,89 +55,6 @@ public class PlayerShip : MonoBehaviour, IControllableShip
         //UpdateSpinUI();
     }
 
-    private void AddMissiles()
-    {
-        int i = 0;
-        foreach (GameObject missileSlotPosition in MissileSlotPositions)
-        {
-            if (!MissileSlots.ContainsKey(missileSlotPosition))
-            {
-                GameObject missile = Instantiate(MissilePrefab, missileSlotPosition.transform) as GameObject;
-                missile.name = "Missile " + (i + 1);
-                missile.transform.localPosition = Vector3.zero;
-                missile.transform.localRotation = Quaternion.identity;
-                missile.transform.GetChild(0).transform.localPosition = Vector3.zero;
-                missile.transform.GetChild(0).transform.localRotation = Quaternion.identity;
-                missile.transform.GetChild(1).transform.localPosition = Vector3.zero;
-                missile.transform.GetChild(1).transform.localRotation = Quaternion.identity;
-                missile.GetComponent<MissileShipController>().SetGameController(gameController);
-                MissileSlots[missileSlotPosition] = missile;
-            }
-            i++;
-        }
-        inputController.PropertyChanged("MissileCount", MissileSlots.Count);
-        initMissilesOnLateUpdate = true;
-    }
-
-    void LateUpdate()
-    {
-        if (initMissilesOnLateUpdate)
-        {
-            foreach (GameObject missile in MissileSlots.Values)
-            {
-                GravityEngine.instance.InactivateBody(missile);
-            }
-            initMissilesOnLateUpdate = false;
-        }
-    }
-
-    public bool FireGuns()
-    {
-        autopilot.UserFireGun();
-        return true;
-    }
-
-    public bool GunsReady()
-    {
-        return autopilot.GunsReady();
-    }
-
-    public bool FireFirstAvailableMissile(GameObject target)
-    {
-        bool success = false;
-        KeyValuePair<GameObject, GameObject> available = GetFirstAvailableMissile();
-        GameObject missileSlot = available.Key;
-        GameObject missile = available.Value;
-        if (missile != null)
-        {
-            MissileShip missileShip = missile.GetComponent<MissileShipController>().MissileShip();
-            missileShip.SetTarget(target);
-            success = missileShip.Fire();
-            if (success)
-            {
-                MissileSlots.Remove(missileSlot);
-                gameController.TargetData().AddTarget(missile, TargetDB.TargetType.FRIEND, 1);
-                gameController.HUD().AddTargetIndicator(missile);
-                inputController.PropertyChanged("MissileCount", MissileSlots.Count);
-            }
-        }
-        return success;
-    }
-
-    private KeyValuePair<GameObject, GameObject> GetFirstAvailableMissile()
-    {
-        GameObject missile = null;
-        GameObject missileSlot = null;
-        foreach (GameObject missileSlotPosition in MissileSlotPositions)
-        {
-            if (MissileSlots.TryGetValue(missileSlotPosition, out missile))
-            {
-                missileSlot = missileSlotPosition;
-                break;
-            }
-        }
-        return new KeyValuePair<GameObject, GameObject>(missileSlot, missile);
-    }
 
     private void HaltAudio()
     {
