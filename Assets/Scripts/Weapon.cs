@@ -208,8 +208,29 @@ public class Weapon : MonoBehaviour
 	public AudioClip dryFireSound;						// Sound to play when the user tries to fire but is out of ammo
 
 	// Other
-	private bool canFire = true;						// Whether or not the weapon can currently fire (used for semi-auto weapons)
+	//private bool canFire = true;						// Whether or not the weapon can currently fire (used for semi-auto weapons)
+    private GameController gameController;
 
+    public void SetGameController(GameController c)
+    {
+        gameController = c;
+    }
+
+    private void SetCurrentAmmo(int c)
+    {
+        if (c != currentAmmo)
+        {
+            if (c < 0)
+            {
+                c = 0;
+            }
+            if (gameController != null && playerWeapon)
+            {
+                gameController.InputControl().PropertyChanged("AmmoCount", c);
+            }
+            currentAmmo = c;
+        }
+    }
 
 	// Use this for initialization
 	void Start()
@@ -228,8 +249,8 @@ public class Weapon : MonoBehaviour
 		// Make sure the fire timer starts at 0
 		fireTimer = 0.0f;
 
-		// Start the weapon off with a full magazine
-		currentAmmo = ammoCapacity;
+        // Start the weapon off with a full magazine
+        SetCurrentAmmo(ammoCapacity);
 
 		// Give this weapon an audio source component if it doesn't already have one
 		if (GetComponent<AudioSource>() == null)
@@ -296,7 +317,7 @@ public class Weapon : MonoBehaviour
 		// CheckForUserInput() handles the firing based on user input
 		if (playerWeapon)
 		{
-			CheckForUserInput();
+            UpdateUserInput();
 		}
 
 		// Reload if the weapon is out of ammo
@@ -319,71 +340,35 @@ public class Weapon : MonoBehaviour
 		}
 	}
 
+    public bool FireProjectileFromUserInput() // try to fire
+    {
+        // Launch a projectile if this is a projectile type weapon and the user presses the fire button
+        bool launch;
+        if (type == WeaponType.Projectile
+            && fireTimer >= actualROF
+                && burstCounter < burstRate) // && canFire)
+        {
+            Launch();
+            launch = true;
+        }
+        else
+        {
+            launch = false;
+        }
+        return launch;
+    }
+
+    private bool monitorInputButtons = false;
+
 	// Checks for user input to use the weapons - only if this weapon is player-controlled
-	void CheckForUserInput()
+	void UpdateUserInput()
 	{
-
-		// Fire if this is a raycast type weapon and the user presses the fire button
-		if (type == WeaponType.Raycast)
-		{
-			if (fireTimer >= actualROF && burstCounter < burstRate && canFire)
-			{
-				if (Input.GetButton("Fire1"))
-				{
-					if (!warmup)	// Normal firing when the user holds down the fire button
-					{
-						Fire();
-					}
-					else if (heat < maxWarmup)	// Otherwise just add to the warmup until the user lets go of the button
-					{
-						heat += Time.deltaTime;
-					}
-				}
-				if (warmup && Input.GetButtonUp("Fire1"))
-				{
-					if (allowCancel && Input.GetButton("Cancel"))
-					{
-						heat = 0.0f;
-					}
-					else
-					{
-						Fire();
-					}
-				}
-			}
-		}
-		// Launch a projectile if this is a projectile type weapon and the user presses the fire button
-		if (type == WeaponType.Projectile)
-		{
-			if (fireTimer >= actualROF && burstCounter < burstRate && canFire)
-			{
-				if (Input.GetButton("Fire1"))
-				{
-					if (!warmup)	// Normal firing when the user holds down the fire button
-					{
-						Launch();
-					}
-					else if (heat < maxWarmup)	// Otherwise just add to the warmup until the user lets go of the button
-					{
-						heat += Time.deltaTime;
-					}
-				}
-				if (warmup && Input.GetButtonUp("Fire1"))
-				{
-					if (allowCancel && Input.GetButton("Cancel"))
-					{
-						heat = 0.0f;
-					}
-					else
-					{
-						Launch();
-					}
-				}
-			}
-
-		}
-		// Reset the Burst
-		if (burstCounter >= burstRate)
+        if (monitorInputButtons)
+        {
+            HandleUserInput();
+        }
+        // Reset the Burst
+        if (burstCounter >= burstRate)
 		{
 			burstTimer += Time.deltaTime;
 			if (burstTimer >= burstPause)
@@ -392,49 +377,126 @@ public class Weapon : MonoBehaviour
 				burstTimer = 0.0f;
 			}
 		}
-		// Shoot a beam if this is a beam type weapon and the user presses the fire button
-		if (type == WeaponType.Beam)
-		{
-			if (Input.GetButton("Fire1") && beamHeat <= maxBeamHeat && !coolingDown)
-			{
-				Beam();
-			}
-			else
-			{
-				// Stop the beaming
-				StopBeam();
-			}
-			if (beamHeat >= maxBeamHeat)
-			{
-				coolingDown = true;
-			}
-			else if (beamHeat <= maxBeamHeat - (maxBeamHeat / 2))
-			{
-				coolingDown = false;
-			}
-		}
-
-		// Reload if the "Reload" button is pressed
-		if (Input.GetButtonDown("Reload"))
-			Reload();
-
-		// If the weapon is semi-auto and the user lets up on the button, set canFire to true
-		if (Input.GetButtonUp("Fire1"))
-			canFire = true;
 	}
 
-	// A public method that causes the weapon to fire - can be called from other scripts - calls AI Firing for now
-	public void RemoteFire()
+    private void HandleUserInput()
+    {
+        // Fire if this is a raycast type weapon and the user presses the fire button
+        if (type == WeaponType.Raycast)
+        {
+            if (fireTimer >= actualROF && burstCounter < burstRate) // && canFire)
+            {
+                if (Input.GetButton("Fire1"))
+                {
+                    if (!warmup)    // Normal firing when the user holds down the fire button
+                    {
+                        Fire();
+                    }
+                    else if (heat < maxWarmup)  // Otherwise just add to the warmup until the user lets go of the button
+                    {
+                        heat += Time.deltaTime;
+                    }
+                }
+                if (warmup && Input.GetButtonUp("Fire1"))
+                {
+                    if (allowCancel && Input.GetButton("Cancel"))
+                    {
+                        heat = 0.0f;
+                    }
+                    else
+                    {
+                        Fire();
+                    }
+                }
+            }
+        }
+        // Launch a projectile if this is a projectile type weapon and the user presses the fire button
+        if (type == WeaponType.Projectile)
+        {
+            if (fireTimer >= actualROF && burstCounter < burstRate) // && canFire)
+            {
+                if (Input.GetButton("Fire1"))
+                {
+                    if (!warmup)    // Normal firing when the user holds down the fire button
+                    {
+                        Launch();
+                    }
+                    else if (heat < maxWarmup)  // Otherwise just add to the warmup until the user lets go of the button
+                    {
+                        heat += Time.deltaTime;
+                    }
+                }
+                if (warmup && Input.GetButtonUp("Fire1"))
+                {
+                    if (allowCancel && Input.GetButton("Cancel"))
+                    {
+                        heat = 0.0f;
+                    }
+                    else
+                    {
+                        Launch();
+                    }
+                }
+            }
+
+        }
+        // Shoot a beam if this is a beam type weapon and the user presses the fire button
+        if (type == WeaponType.Beam)
+        {
+            if (Input.GetButton("Fire1") && beamHeat <= maxBeamHeat && !coolingDown)
+            {
+                Beam();
+            }
+            else
+            {
+                // Stop the beaming
+                StopBeam();
+            }
+            if (beamHeat >= maxBeamHeat)
+            {
+                coolingDown = true;
+            }
+            else if (beamHeat <= maxBeamHeat - (maxBeamHeat / 2))
+            {
+                coolingDown = false;
+            }
+        }
+
+        // Reload if the "Reload" button is pressed
+        if (Input.GetButtonDown("Reload"))
+            Reload();
+
+        // If the weapon is semi-auto and the user lets up on the button, set canFire to true
+//        if (Input.GetButtonUp("Fire1"))
+  //          canFire = true;
+    }
+
+    // A public method that causes the weapon to fire - can be called from other scripts - calls AI Firing for now
+    public void RemoteFire()
 	{
 		AIFiring();
 	}
+
+    public bool ReadyToFire()
+    {
+        bool ready = false;
+        if (type == WeaponType.Raycast)
+        {
+            ready = fireTimer >= actualROF && burstCounter < burstRate;
+        }
+        if (type == WeaponType.Projectile)
+        {
+            ready = fireTimer >= actualROF && burstCounter < burstRate;
+        }
+        return ready;
+    }
 
     public IEnumerator AIFiringCo()
     {
         // Fire if this is a raycast type weapon
         if (type == WeaponType.Raycast)
         {
-            if (fireTimer >= actualROF && burstCounter < burstRate && canFire)
+            if (fireTimer >= actualROF && burstCounter < burstRate) // && canFire)
             {
                 yield return DelayFire();    // Fires after the amount of time specified in delayBeforeFire
             }
@@ -442,7 +504,7 @@ public class Weapon : MonoBehaviour
         // Launch a projectile if this is a projectile type weapon
         if (type == WeaponType.Projectile)
         {
-            if (fireTimer >= actualROF && burstCounter < burstRate && canFire)
+            if (fireTimer >= actualROF && burstCounter < burstRate) // && canFire)
 //                if (fireTimer >= actualROF && canFire)
             {
                 yield return DelayLaunch();
@@ -458,7 +520,7 @@ public class Weapon : MonoBehaviour
                 burstTimer = 0.0f;
             }
         }
-        canFire = true;
+        //canFire = true;
         yield break;
     }
 
@@ -469,7 +531,7 @@ public class Weapon : MonoBehaviour
 		// Fire if this is a raycast type weapon
 		if (type == WeaponType.Raycast)
 		{
-			if (fireTimer >= actualROF && burstCounter < burstRate && canFire)
+			if (fireTimer >= actualROF && burstCounter < burstRate) // && canFire)
 			{
 				StartCoroutine(DelayFire());	// Fires after the amount of time specified in delayBeforeFire
 			}
@@ -477,7 +539,7 @@ public class Weapon : MonoBehaviour
 		// Launch a projectile if this is a projectile type weapon
 		if (type == WeaponType.Projectile)
 		{
-			if (fireTimer >= actualROF && canFire)
+			if (fireTimer >= actualROF) // && canFire)
 			{
 				StartCoroutine(DelayLaunch());
 			}
@@ -524,8 +586,8 @@ public class Weapon : MonoBehaviour
 		burstCounter++;
 
 		// If this is a semi-automatic weapon, set canFire to false (this means the weapon can't fire again until the player lets up on the fire button)
-		if (auto == Auto.Semi)
-			canFire = false;
+		//if (auto == Auto.Semi)
+	//		canFire = false;
 
 		// Send a messsage so that users can do other actions whenever this happens
 		SendMessageUpwards("OnEasyWeaponsFire", SendMessageOptions.DontRequireReceiver);
@@ -542,8 +604,8 @@ public class Weapon : MonoBehaviour
 		burstCounter++;
 
 		// If this is a semi-automatic weapon, set canFire to false (this means the weapon can't fire again until the player lets up on the fire button)
-		if (auto == Auto.Semi)
-			canFire = false;
+		//if (auto == Auto.Semi)
+		//	canFire = false;
 
 		// Send a messsage so that users can do other actions whenever this happens
 		SendMessageUpwards("OnEasyWeaponsLaunch", SendMessageOptions.DontRequireReceiver);
@@ -596,6 +658,10 @@ public class Weapon : MonoBehaviour
 		}
 	}
 
+    public int CurrentAmmo()
+    {
+        return currentAmmo;
+    }
 
 	// Raycasting system
 	void Fire()
@@ -607,8 +673,8 @@ public class Weapon : MonoBehaviour
 		burstCounter++;
 
 		// If this is a semi-automatic weapon, set canFire to false (this means the weapon can't fire again until the player lets up on the fire button)
-		if (auto == Auto.Semi)
-			canFire = false;
+		//if (auto == Auto.Semi)
+		//	canFire = false;
 
 		// First make sure there is ammo
 		if (currentAmmo <= 0)
@@ -619,8 +685,9 @@ public class Weapon : MonoBehaviour
 
 		// Subtract 1 from the current ammo
 		if (!infiniteAmmo)
-			currentAmmo--;
-
+        {
+            SetCurrentAmmo(currentAmmo - 1);
+        }
 
 		// Fire once for each shotPerRound value
 		for (int i = 0; i < shotPerRound; i++)
@@ -848,8 +915,8 @@ public class Weapon : MonoBehaviour
 		burstCounter++;
 
 		// If this is a semi-automatic weapon, set canFire to false (this means the weapon can't fire again until the player lets up on the fire button)
-		if (auto == Auto.Semi)
-			canFire = false;
+		//if (auto == Auto.Semi)
+		//	canFire = false;
 
 		// First make sure there is ammo
 		if (currentAmmo <= 0)
@@ -860,7 +927,9 @@ public class Weapon : MonoBehaviour
 
 		// Subtract 1 from the current ammo
 		if (!infiniteAmmo)
-			currentAmmo--;
+        {
+            SetCurrentAmmo(currentAmmo - 1);
+        }
 		
 		// Fire once for each shotPerRound value
 		for (int i = 0; i < shotPerRound; i++)
@@ -1098,7 +1167,8 @@ public class Weapon : MonoBehaviour
 	// Reload the weapon
 	void Reload()
 	{
-		currentAmmo = ammoCapacity;
+		SetCurrentAmmo(ammoCapacity);
+        
 		fireTimer = -reloadTime;
 		GetComponent<AudioSource>().PlayOneShot(reloadSound);
 

@@ -107,12 +107,13 @@ public class MFDController : MonoBehaviour
             Speaker.Speak(text, AS, speakerVoice, false, 1, 0.4f, null, 3f);
         }
     }
-
+    
     private void MFDDropdownOnValueChanged()
     {
         int val = MFDDropdown.value;
         MFDPanelType panel = MFDPanelTypeFromInt(val);
         SetMFDPanels(panel);
+        Speak(panel.ToString());
     }
 
     private void SetMFDPanels(MFDPanelType panel)
@@ -208,6 +209,14 @@ public class MFDController : MonoBehaviour
         MFDControlPanelController2.Update();
         MFDAutopilotPanelController.Update();
         MFDAutopilotPanelController2.Update();
+        MFDWeaponsPanelController.Update();
+        MFDWeaponsPanelController2.Update();
+    }
+
+    public void DisarmForDocking()
+    {
+        MFDWeaponsPanelController.DisarmForDocking();
+        MFDWeaponsPanelController2.DisarmForDocking();
     }
 
     public void HideMFD()

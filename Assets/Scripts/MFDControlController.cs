@@ -150,7 +150,7 @@ public class MFDControlController : IPropertyChangeObserver
         }
     }
 
-    public void Speak(string text)
+    private void Speak(string text)
     {
         gameController.GetComponent<MFDController>().Speak(text);
     }
@@ -447,9 +447,9 @@ public class MFDControlController : IPropertyChangeObserver
     private void UpdateKeyInput()
     {
         UpdateCameraInput();
-        UpdateKeyInputToggleMode();
         if (inputController.ControlsEnabled)
         {
+            UpdateKeyInputToggleMode();
             UpdateKeyInputTranslateRotate();
             UpdateEngineInput();
             UpdateKeyInputKillRot();

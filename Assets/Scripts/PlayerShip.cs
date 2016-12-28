@@ -80,7 +80,7 @@ public class PlayerShip : MonoBehaviour, IControllableShip
             }
             i++;
         }
-        inputController.PropertyChanged("MissileCountText", MissileSlots.Count.ToString());
+        inputController.PropertyChanged("MissileCount", MissileSlots.Count);
         initMissilesOnLateUpdate = true;
     }
 
@@ -94,6 +94,17 @@ public class PlayerShip : MonoBehaviour, IControllableShip
             }
             initMissilesOnLateUpdate = false;
         }
+    }
+
+    public bool FireGuns()
+    {
+        autopilot.UserFireGun();
+        return true;
+    }
+
+    public bool GunsReady()
+    {
+        return autopilot.GunsReady();
     }
 
     public bool FireFirstAvailableMissile(GameObject target)
@@ -112,7 +123,7 @@ public class PlayerShip : MonoBehaviour, IControllableShip
                 MissileSlots.Remove(missileSlot);
                 gameController.TargetData().AddTarget(missile, TargetDB.TargetType.FRIEND, 1);
                 gameController.HUD().AddTargetIndicator(missile);
-                inputController.PropertyChanged("MissileCountText", MissileSlots.Count.ToString());
+                inputController.PropertyChanged("MissileCount", MissileSlots.Count);
             }
         }
         return success;
@@ -370,7 +381,7 @@ public class PlayerShip : MonoBehaviour, IControllableShip
             else
             {
                 health = 0; // boom
-                GameOverCollision(otherBody.transform.parent.name);
+                GameOverCollision(otherBody.name);
             }
         }
     }
@@ -382,6 +393,7 @@ public class PlayerShip : MonoBehaviour, IControllableShip
         inputController.ControlsEnabled = false;
         StopAllThrust();
         ship.NullSpin();
+        gameController.GetComponent<MFDController>().DisarmForDocking();
         gameController.Dock(shipNbodyBody, dockGhost);
         cameraController.PlayCollisionShake();
         if (withSound)
@@ -415,8 +427,7 @@ public class PlayerShip : MonoBehaviour, IControllableShip
         RemoveBody();
         HaltAudio();
         PlayExplosion();
-        string msg = string.Format("Smashed into {0}", otherName);
-        gameController.TransitionToGameOverFromDeath(msg);
+        gameController.TransitionToGameOverFromDeath(otherName);
     }
 
     private void RemoveBody()

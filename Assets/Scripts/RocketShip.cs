@@ -352,4 +352,14 @@ public class RocketShip : MonoBehaviour {
         return converged;
     }
 
+    public float MainEngineExhaustVelocity()
+    {
+        return EngineThrustNewtons / EngineFuelKgPerSec;
+    }
+
+    public float MainEngineISP()
+    {
+        return MainEngineExhaustVelocity() / PhysicsUtils.g;
+    }
+
 }

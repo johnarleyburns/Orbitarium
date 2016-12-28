@@ -148,6 +148,7 @@ public class GameController : MonoBehaviour
         SetupStrobes();
         musicController.StartMusic.Play();
         gameState = GameState.START_NOT_ACCEPTING_INPUT;
+        Speak(DialogText.ReadyPlayerOne);
     }
 
     private void SetupStrobes()
@@ -248,13 +249,16 @@ public class GameController : MonoBehaviour
         gameState = GameState.GAME_OVER_NOT_ACCEPTING_INPUT;
     }
 
-    public void TransitionToGameOverFromDeath(string reason)
+    public void TransitionToGameOverFromDeath(string otherName)
     {
         gameState = GameState.START_GAME_OVER;
         hudController.RemoveIndicators();
         Time.timeScale = 0.5f;
         gameOverInputTimer = 1f;
-        GameOverText.text = reason + "\nTry again? (Y/N)";
+        string visibleName = DialogText.VisibleName(otherName);
+        string msg = string.Format("Destroyed by {0}", visibleName);
+        nextMsg = msg;
+        GameOverText.text = msg + "\nTry again? (Y/N)";
         EnableOverviewCamera();
         GameOverCanvas.SetActive(true);
         GameStartCanvas.SetActive(false);
@@ -264,9 +268,21 @@ public class GameController : MonoBehaviour
         gameState = GameState.GAME_OVER_NOT_ACCEPTING_INPUT;
     }
 
+    private string nextMsg = "";
+
+    public void Speak(string text)
+    {
+        GetComponent<MFDController>().Speak(text);
+    }
+
     private void TransitionToGameOverAwaitInput()
     {
         musicController.GameOverMusic.Play();
+        if (!string.IsNullOrEmpty(nextMsg))
+        {
+            Speak(nextMsg);
+            nextMsg = "";
+        }
         gameState = GameState.GAME_OVER_AWAIT_INPUT;
     }
 
@@ -579,6 +595,9 @@ public class GameController : MonoBehaviour
     public void DestroyEnemyShipByCollision(GameObject enemyShip)
     {
         enemyTracker.KillEnemy(enemyShip);
+        string visibleName = DialogText.VisibleName(enemyShip.name);
+        string msg = string.Format("{0} destroyed.", visibleName);
+        Speak(msg);
     }
 
     public void DestroyMissileByCollision(GameObject missile)

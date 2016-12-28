@@ -10,7 +10,7 @@ public class Autopilot : MonoBehaviour
     public float UpdateTrackTime = 0.2f;
     public float MaxRCSAutoBurnSec = 60f;
     public float MinDeltaVforBurn = 0.1f;
-    public float InterceptDeltaV = 30f;
+    public float MaxStrafeSpeed = 30f;
     public float MinRotToTargetDeltaTheta = 0.2f;
     public float MinAPNGDeltaTheta = 1f;
     public float MinMainEngineBurnSec = 0.5f;
@@ -26,7 +26,6 @@ public class Autopilot : MonoBehaviour
 
     private RocketShip ship;
     private ShipWeapons weapons;
-    private Weapon mainGun;
     private bool cmgActive = false;
     private Command currentCommand = Command.OFF;
 
@@ -81,7 +80,7 @@ public class Autopilot : MonoBehaviour
         weapons = GetComponent<ShipWeapons>();
         if (weapons != null)
         {
-            mainGun = weapons.MainGun;
+            weapons.SetGameController(gameController);
         }
     }
 
@@ -113,7 +112,7 @@ public class Autopilot : MonoBehaviour
         ship.MainEngineCutoff();
         PushAndStartCoroutine(KillRotCo());
     }
-    
+
     private void AutopilotOff()
     {
         StopAll();
@@ -125,7 +124,7 @@ public class Autopilot : MonoBehaviour
     {
         return cmgActive;
     }
-    
+
     public void ExecuteCommand(Command command, GameObject target)
     {
         currentCommand = command;
@@ -396,8 +395,10 @@ public class Autopilot : MonoBehaviour
             float dist;
             PhysicsUtils.CalcDistance(transform, target, out dist);
             bool inRange = weapons == null ? true : dist <= weapons.MainGunRangeM;
+            bool hasAmmo = weapons == null ? false : weapons.CurrentAmmo() > 0;
+            bool gunsReady = GunsReady();
             bool targetActive = gameController.IsTargetActive(target);
-            if (aligned && inRange && targetActive)
+            if (aligned && inRange && hasAmmo && gunsReady && targetActive)
             {
                 yield return PushAndStartCoroutine(FireGunCo());
             }
@@ -418,12 +419,21 @@ public class Autopilot : MonoBehaviour
         }
     }
 
+    public void UserFireGun()
+    {
+        PushAndStartCoroutine(FireGunCo());
+    }
 
-   IEnumerator FireGunCo()
-   {
-        if (mainGun != null)
+    public bool GunsReady()
+    {
+        return weapons != null && weapons.MainGun != null && weapons.MainGun.ReadyToFire();
+    }
+
+    IEnumerator FireGunCo()
+    {
+        if (weapons != null && weapons.MainGun != null)
         {
-            yield return mainGun.AIFiringCo();
+            yield return weapons.MainGun.AIFiringCo();
         }
         else
         {
@@ -510,38 +520,11 @@ public class Autopilot : MonoBehaviour
         PhysicsUtils.CalcRelV(transform.parent.transform, target, out targetVec, out relv, out relVelUnit);
         Vector3 f = relVelUnit;
         Vector3 a = CalcAPNG(target.transform.position, relv, relVelUnit);
-        Vector3 goalForward;
-        float goalDeltaV;
-        if (relv < 0f)
+        float maxRCSBurn = 1f;
+        float sec = Mathf.Max(CalcDeltaVBurnRCSSec(a.magnitude), maxRCSBurn);
+        if (sec > 0f)
         {
-            goalForward = -f;
-            goalDeltaV = Mathf.Abs(relv);
-        }
-        else if (relv < InterceptDeltaV)
-        {
-            goalForward = (target.transform.position - transform.parent.transform.position).normalized;
-            goalDeltaV = InterceptDeltaV - relv;
-        }
-        else
-        {
-            goalForward = a.normalized;
-            goalDeltaV = a.magnitude;            
-        }
-        float mainSec = CalcDeltaVMainBurnSec(goalDeltaV);
-        float auxSec = CalcDeltaVAuxBurnSec(goalDeltaV);
-        if (mainSec > 0f)
-        {
-            yield return PushAndStartCoroutine(RotToUnitVec(goalForward, MinAPNGDeltaTheta));
-            ship.MainEngineGo();
-            yield return new WaitForSeconds(mainSec);
-            ship.MainEngineCutoff();
-        }
-        else if (auxSec > 0f)
-        {
-            yield return PushAndStartCoroutine(RotToUnitVec(goalForward, MinAPNGDeltaTheta));
-            ship.AuxEngineGo();
-            yield return new WaitForSeconds(auxSec);
-            ship.AuxEngineCutoff();
+            ship.RCSBurst(a.normalized, sec);
         }
         yield break;
     }
@@ -557,10 +540,10 @@ public class Autopilot : MonoBehaviour
 
         // break if close enough
         float timeToRot = Turn180Sec(); // swing pass
-        float timeToTgt = (dist - StrafeDistM)/ Mathf.Abs(relv);
+        float timeToTgt = (dist - StrafeDistM) / Mathf.Abs(relv);
         float mecoTime = NavigationalConstant * timeToRot; // include aim
         //if (relv > 0 && mecoTime > timeToTgt)
-        if (dist <= GunRangeM || (relv > 0 && mecoTime > timeToTgt))
+        if (dist <= GunRangeM || (relv > 0 && mecoTime > timeToTgt) || relv > MaxStrafeSpeed)
         {
             ship.MainEngineCutoff();
             yield break;
@@ -698,14 +681,14 @@ public class Autopilot : MonoBehaviour
         //float planeTimeToStop = planeRelv / ship.CurrentRCSAccelerationPerSec();
         //float planeTimeToCenter = planeDist / planeRelv;
         //float timeBeforeStop = planeTimeToStop;
-   //     if (planeRelVec.magnitude <= MaxCenteredRelv)
-     //   {
-            // close enough
-         //   rcsDir = Vector3.zero;
-       //     rcsBurnSec = 0;
-     //   }
+        //     if (planeRelVec.magnitude <= MaxCenteredRelv)
+        //   {
+        // close enough
+        //   rcsDir = Vector3.zero;
+        //     rcsBurnSec = 0;
+        //   }
         //else
-            if (planeRelVec.magnitude > MaxCenteredRelv)
+        if (planeRelVec.magnitude > MaxCenteredRelv)
         {
             // stop
             rcsDir = -planeRelVec.normalized;
@@ -757,10 +740,10 @@ public class Autopilot : MonoBehaviour
             Vector3 relunitvec;
             PhysicsUtils.CalcRelV(transform.parent.transform, targetDock, out targetVec, out relv, out relunitvec);
             float targetAngle = Quaternion.Angle(transform.rotation, Quaternion.LookRotation(approachVec, transform.up));
-//            Vector3 targetVec = CalcVectorToTarget(targetDock);
-//            float relvecAngle = Quaternion.Angle(Quaternion.LookRotation(transform.forward), Quaternion.LookRotation(relvec));
-//            float stopSec = relv < 0 ? 0 : relv / ship.CurrentRCSAccelerationPerSec();
-//            float stopDist = 0.5f * ship.CurrentRCSAccelerationPerSec() * Mathf.Pow(stopSec, 2);
+            //            Vector3 targetVec = CalcVectorToTarget(targetDock);
+            //            float relvecAngle = Quaternion.Angle(Quaternion.LookRotation(transform.forward), Quaternion.LookRotation(relvec));
+            //            float stopSec = relv < 0 ? 0 : relv / ship.CurrentRCSAccelerationPerSec();
+            //            float stopDist = 0.5f * ship.CurrentRCSAccelerationPerSec() * Mathf.Pow(stopSec, 2);
             float MinDeltaVForRCSBurn = ship.CurrentRCSAccelerationPerSec() * ship.RCSBurnMinSec;
             float dist = targetVec.magnitude;
 
@@ -865,10 +848,18 @@ public class Autopilot : MonoBehaviour
 
     IEnumerator APNGToTargetCo(GameObject target)
     {
-        //yield return PushAndStartCoroutine(RotToTarget(target));
-        //float sec = CalcDeltaVBurnSec(InterceptDeltaV);
-        //ship.MainEngineBurst(sec);
-        //yield return new WaitForSeconds(sec);
+        float maxDeltaV = CalcMainEngineMaxDeltaV();
+        float secToMax = CalcDeltaVMainBurnSec(maxDeltaV);
+        float dist;
+        PhysicsUtils.CalcDistance(transform, target, out dist);
+        float speedupDist = 0.1f * dist;
+        float secSpeedup = Mathf.Sqrt(2f * speedupDist / ship.CurrentMainEngineAccPerSec());
+        float sec = Mathf.Min(secSpeedup, secToMax);
+
+        yield return PushAndStartCoroutine(RotToTarget(target));
+        ship.MainEngineBurst(sec);
+        yield return new WaitForSeconds(sec);
+
         for (;;)
         {
             yield return PushAndStartCoroutine(APNGRotateBurnCo(target));
@@ -903,6 +894,15 @@ public class Autopilot : MonoBehaviour
     {
         Vector3 b = target.transform.position - transform.parent.transform.position;
         return b;
+    }
+
+    private float CalcMainEngineMaxDeltaV()
+    {
+        float ve = ship.MainEngineExhaustVelocity();
+        float massStart = ship.EmptyMassKg + ship.CurrentFuelKg();
+        float massEnd = ship.EmptyMassKg;
+        float deltaV = Mathf.Log(massStart / massEnd) * ve;
+        return deltaV;
     }
 
     private float CalcDeltaVMainBurnSec(float deltaV)

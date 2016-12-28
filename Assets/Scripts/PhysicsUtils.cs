@@ -3,6 +3,7 @@ using System.Collections;
 
 public class PhysicsUtils : MonoBehaviour {
 
+    public static readonly float g = 9.81f; // m/s^2
     public static float minRelVtoExplode = 5f;
     public static float minRelVtoDock = 0.1f;
     public static float maxRelVtoDock = 1f;
