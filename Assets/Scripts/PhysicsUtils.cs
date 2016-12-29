@@ -58,6 +58,8 @@ public class PhysicsUtils : MonoBehaviour {
         bool dock = false;
         if (otherBody.tag == "Dock" && (myNBodyChild.tag == "Player" || myNBodyChild.tag == "Enemy"))
         {
+            RocketShip rocket = myNBodyChild.GetComponent<RocketShip>();
+            float dist = Vector3.Distance(rocket.DockingPort.transform.position, otherBody.transform.position);
             GameObject otherNBody = GetNBodyGameObject(otherBody);
             GameObject myNBody = GetNBodyGameObject(myNBodyChild);
             Vector3 relVelVec =
@@ -68,7 +70,7 @@ public class PhysicsUtils : MonoBehaviour {
             Transform dockGhostModel = otherBody.transform.GetChild(0).GetChild(0).transform;
             float relTheta = Quaternion.Angle(myNBodyChild.transform.rotation, dockGhostModel.rotation);
             bool isRelv = relVel >= minRelVtoDock && relVel <= maxRelVtoDock;
-            bool isPos = Vector3.Distance(myNBody.transform.position, dockGhostModel.position) <= maxDistToDock;
+            bool isPos = dist <= maxDistToDock;
             bool isAligned = relTheta <= maxThetatoDock;
             if (isRelv && isPos && isAligned)
             {
