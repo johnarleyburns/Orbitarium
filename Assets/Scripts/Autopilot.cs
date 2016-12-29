@@ -167,7 +167,7 @@ public class Autopilot : MonoBehaviour
     private void TurnToTarget(GameObject target)
     {
         AutopilotOff();
-        PushAndStartCoroutine(RotToTargetCo(target));
+        PushAndStartCoroutine(FaceTargetCo(target));
     }
 
     private void KillRelV(GameObject target)
@@ -315,7 +315,7 @@ public class Autopilot : MonoBehaviour
         }
     }
 
-    IEnumerator RotToTargetCo(GameObject target)
+    IEnumerator RotToTargetWithLeadCo(GameObject target)
     {
         Vector3 prevTVec = (target.transform.position - transform.parent.transform.position).normalized;
         float prevTimer = UpdateTrackTime;
@@ -348,12 +348,33 @@ public class Autopilot : MonoBehaviour
         }
     }
 
-    IEnumerator RotToTarget(GameObject target)
+    IEnumerator FaceTargetCo(GameObject target)
     {
         for (;;)
         {
             Vector3 b = CalcVectorToTarget(target).normalized;
-            Quaternion q = Quaternion.LookRotation(b);
+            Vector3 up = target.transform.childCount > 0 ? target.transform.GetChild(0).transform.up : target.transform.up;
+            Quaternion q = Quaternion.LookRotation(b, target.transform.GetChild(0).transform.up);
+            bool converged = ship.ConvergeSpin(q);
+            if (converged)
+            {
+                cmgActive = false;
+                PopCoroutine();
+                yield break;
+            }
+            else
+            {
+                cmgActive = true;
+            }
+            yield return new WaitForEndOfFrame();
+        }
+    }
+
+    IEnumerator AlignToTarget(GameObject target)
+    {
+        for (;;)
+        {
+            Quaternion q = Quaternion.FromToRotation(transform.forward, target.transform.forward) * transform.rotation;
             bool converged = ship.ConvergeSpin(q);
             if (converged)
             {
@@ -599,6 +620,14 @@ public class Autopilot : MonoBehaviour
 
     private float AimTimeSec = 3.45f;
 
+    private Vector3 CreateVirtualApproach(GameObject target)
+    {
+        float radius = gameController.TargetData().GetTargetRadius(target);
+        float dist = radius + RendezvousDistM;
+        Vector3 approachVec = PointForwardVec(target, dist);
+        return approachVec;
+    }
+
     private GameObject CreateVirtualApproachTarget(GameObject target) // destroy g after using
     {
         float radius = gameController.TargetData().GetTargetRadius(target);
@@ -610,9 +639,11 @@ public class Autopilot : MonoBehaviour
     private GameObject PointForward(GameObject target, float dist) // destroy g after using
     {
         Vector3 approachPos = PointForwardVec(target, dist);
-        Quaternion forwardQ = target.transform.GetChild(0).transform.rotation;
-        bool isDock = gameController.TargetData().GetTargetType(target) == TargetDB.TargetType.DOCK;
-        Quaternion approachRot = isDock ? forwardQ : Quaternion.Euler(0f, 180f, 0f) * forwardQ;
+        Quaternion forwardQ = target.transform.rotation;
+//        Quaternion forwardQ = target.transform.GetChild(0).transform.rotation;
+        //bool isDock = gameController.TargetData().GetTargetType(target) == TargetDB.TargetType.DOCK;
+        //Quaternion approachRot = isDock ? forwardQ : Quaternion.Euler(0f, 180f, 0f) * forwardQ;
+        Quaternion approachRot = Quaternion.Euler(0f, 180f, 0f) * forwardQ;
         GameObject g = new GameObject();
         g.transform.position = approachPos;
         g.transform.rotation = approachRot;
@@ -623,7 +654,8 @@ public class Autopilot : MonoBehaviour
     {
         bool isDock = gameController.TargetData().GetTargetType(target) == TargetDB.TargetType.DOCK;
         float approachDir = isDock ? -1 : 1;
-        Vector3 approachForward = approachDir * target.transform.GetChild(0).transform.forward;
+//        Vector3 approachForward = approachDir * target.transform.GetChild(0).transform.forward;
+        Vector3 approachForward = approachDir * target.transform.forward;
         Vector3 approachPos = target.transform.position + dist * approachForward;
         return approachPos;
     }
@@ -678,11 +710,12 @@ public class Autopilot : MonoBehaviour
             {
                 ship.RCSCutoff();
             }
+            //GameObject targetApproach = CreateVirtualApproachTarget(target);
+            Vector3 targetApproach = CreateVirtualApproach(target);
             yield return PushAndStartCoroutine(KillRelVCo(target));
-            GameObject targetApproach = CreateVirtualApproachTarget(target);
-            Vector3 b = (targetApproach.transform.position - transform.position).normalized;
+            Vector3 b = (targetApproach - transform.position).normalized;
             float dist;
-            PhysicsUtils.CalcDistance(transform, targetApproach, out dist);
+            PhysicsUtils.CalcDistance(transform.position, targetApproach, out dist);
             float minMainBurnDist = MinMainBurnDist(MinRendezvousBurnSec);
             float minAuxBurnDist = MinAuxBurnDist(MinRendezvousBurnSec);
             float minRCSBurnDist = MinRCSBurnDist(MinRendezvousBurnSec);
@@ -690,27 +723,23 @@ public class Autopilot : MonoBehaviour
             bool fireMain = dist >= minMainBurnDist;
             bool fireAux = dist >= minAuxBurnDist && dist > RCSDist;
             bool fireRCS = dist >= minRCSBurnDist && dist > MinRendezvousEpsilonM;
-            if (closeEnough)
-            {
-                yield return PushAndStartCoroutine(RotToTarget(target));
-                yield break;
-            }
-            else if (fireMain)
+            if (!closeEnough && fireMain)
             {
                 float idealBurnSec = IdealMainBurnSec(dist);
                 float burnSec = Mathf.Max(MinRendezvousBurnSec, idealBurnSec);
                 yield return PushAndStartCoroutine(RotThenBurnMain(b, burnSec));
                 yield return PushAndStartCoroutine(KillRelVCo(target));
             }
-            else if (fireAux)
+            else if (!closeEnough && fireAux)
             {
                 float idealBurnSec = IdealAuxBurnSec(dist);
                 float burnSec = Mathf.Max(MinRendezvousBurnSec, idealBurnSec);
                 yield return PushAndStartCoroutine(RotThenBurnAux(b, burnSec));
                 yield return PushAndStartCoroutine(KillRelVCo(target));
             }
-            else if (fireRCS)
+            else if (!closeEnough && fireRCS)
             {
+                yield return PushAndStartCoroutine(FaceTargetCo(target));
                 float idealBurnSec = IdealRCSBurnSec(dist);
                 float burnSec = Mathf.Max(ship.RCSBurnMinSec, idealBurnSec);
                 ship.RCSBurst(b, burnSec);
@@ -718,10 +747,13 @@ public class Autopilot : MonoBehaviour
                 ship.RCSBurst(-b, burnSec);
                 yield return new WaitForSeconds(burnSec);
                 yield return PushAndStartCoroutine(KillRelVCo(target));
-                yield return PushAndStartCoroutine(RotToTarget(target));
+                closeEnough = true;
+            }
+            if (closeEnough)
+            {
+                yield return PushAndStartCoroutine(FaceTargetCo(target));
                 yield break;
             }
-            Destroy(targetApproach);
         }
     }
 
@@ -938,7 +970,7 @@ public class Autopilot : MonoBehaviour
         float secSpeedup = Mathf.Sqrt(2f * speedupDist / ship.CurrentMainEngineAccPerSec());
         float sec = Mathf.Min(secSpeedup, secToMax);
 
-        yield return PushAndStartCoroutine(RotToTarget(target));
+        yield return PushAndStartCoroutine(FaceTargetCo(target));
         ship.MainEngineBurst(sec);
         yield return new WaitForSeconds(sec);
 

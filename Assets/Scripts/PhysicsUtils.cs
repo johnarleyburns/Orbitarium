@@ -108,6 +108,11 @@ public class PhysicsUtils : MonoBehaviour {
         dist = (target.transform.position - source.transform.position).magnitude;
     }
 
+    public static void CalcDistance(Vector3 s, Vector3 t, out float dist)
+    {
+        dist = (t - s).magnitude;
+    }
+
     public static void CalcDockPlanar(Transform source, GameObject targetDock, float relv, Vector3 relunitvec, out float closingDist, out float closingRelv, out Vector2 planarVec)
     {
         Transform dockGhostModel = targetDock.transform.GetChild(0);
