@@ -91,6 +91,14 @@ public class PhysicsUtils : MonoBehaviour {
         return body;
     }
 
+    public static Vector3 CalcRelV(Transform source, GameObject target)
+    {
+        Vector3 myVel = GravityEngine.instance.GetVelocity(PhysicsUtils.GetNBodyGameObject(source.gameObject));
+        Vector3 targetVel = GravityEngine.instance.GetVelocity(PhysicsUtils.GetNBodyGameObject(target));
+        Vector3 relVec = myVel - targetVel;
+        return relVec;
+    }
+
     public static void CalcRelV(Transform source, GameObject target, out Vector3 targetVec, out float relv, out Vector3 relVelUnit)
     {
         Vector3 myVel = GravityEngine.instance.GetVelocity(PhysicsUtils.GetNBodyGameObject(source.gameObject));

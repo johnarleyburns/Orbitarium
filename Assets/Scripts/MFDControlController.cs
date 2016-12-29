@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using System.Collections.Generic;
 
 public class MFDControlController : IPropertyChangeObserver
 {
@@ -11,6 +12,18 @@ public class MFDControlController : IPropertyChangeObserver
     private ToggleButton RCSFineOnButton;
     private ToggleButton TranslateButton;
     private ToggleButton RotateButton;
+
+    private enum RotToggle
+    {
+        FACE,
+        KILL,
+        NML_POS,
+        NML_NEG,
+        POS,
+        NEG,
+        NONE
+    }
+    private Dictionary<RotToggle, ToggleButton> toggleMap = new Dictionary<RotToggle, ToggleButton>();
 
     private Transform Circle1Up;
     private Transform Circle1Down;
@@ -52,6 +65,16 @@ public class MFDControlController : IPropertyChangeObserver
         TranslateButton = panel.transform.Search("TranslateButton").GetComponent<ToggleButton>();
         RotateButton = panel.transform.Search("RotateButton").GetComponent<ToggleButton>();
 
+        toggleMap = new Dictionary<RotToggle, ToggleButton>()
+        {
+            { RotToggle.FACE, panel.transform.Search("FaceRotButton").GetComponent<ToggleButton>() },
+            { RotToggle.KILL, panel.transform.Search("KillRotToggleButton").GetComponent<ToggleButton>() },
+            { RotToggle.NML_POS, panel.transform.Search("RotNmlPosToggleButton").GetComponent<ToggleButton>() },
+            { RotToggle.NML_NEG, panel.transform.Search("RotNmlNegToggleButton").GetComponent<ToggleButton>() },
+            { RotToggle.POS, panel.transform.Search("RotPosToggleButton").GetComponent<ToggleButton>() },
+            { RotToggle.NEG, panel.transform.Search("RotNegToggleButton").GetComponent<ToggleButton>() }
+        };
+
         Circle1Up = panel.transform.Search("Circle1Up");
         Circle1Down = panel.transform.Search("Circle1Down");
         Circle1Left = panel.transform.Search("Circle1Left");
@@ -77,6 +100,7 @@ public class MFDControlController : IPropertyChangeObserver
         inputController.AddObserver("TranslateButton", this);
         inputController.AddObserver("RotateButton", this);
         inputController.AddObserver("RCSModeAudio", this);
+        inputController.AddObserver("CommandExecuted", this);
 
         inputController.AddObserver("Circle1Up_OnPointerDown", this);
         inputController.AddObserver("Circle1Up_OnPointerUp", this);
@@ -111,9 +135,30 @@ public class MFDControlController : IPropertyChangeObserver
 
         MainOnButton.onClick.AddListener(delegate { if (inputController.ControlsEnabled) { gameController.GetPlayerShip().ToggleEngine(); } });
         AuxOnButton.onClick.AddListener(delegate { if (inputController.ControlsEnabled) { gameController.GetPlayerShip().ToggleAuxEngine(); } });
-        RCSFineOnButton.onClick.AddListener(delegate { gameController.GetPlayerShip().ToggleRCSFineControl(); });
-        TranslateButton.onClick.AddListener(delegate { gameController.GetPlayerShip().SetRCSMode(PlayerShip.RCSMode.Translate); });
-        RotateButton.onClick.AddListener(delegate { gameController.GetPlayerShip().SetRCSMode(PlayerShip.RCSMode.Rotate); });
+        RCSFineOnButton.onClick.AddListener(delegate { if (inputController.ControlsEnabled) { gameController.GetPlayerShip().ToggleRCSFineControl(); } });
+        TranslateButton.onClick.AddListener(delegate { if (inputController.ControlsEnabled) { ToggleTranslate(); } });
+        RotateButton.onClick.AddListener(delegate { if (inputController.ControlsEnabled) { ToggleRotate(); } });
+        foreach (KeyValuePair<RotToggle, ToggleButton> tb in toggleMap)
+        {
+            RotToggle selected = tb.Key;
+            tb.Value.onClick.AddListener(delegate (bool isToggled)
+            {
+                if (inputController.ControlsEnabled)
+                {
+                    RotToggle selectRot = selected;
+                    ToggleButton b = toggleMap[selectRot];
+                    if (b.isToggled)
+                    {
+                        ToggleToRot(selectRot);
+                    }
+                    else
+                    {
+                        ToggleToRot(RotToggle.NONE);
+                    }
+                }
+            });
+        }
+
         Circle1Up.GetComponent<RCSButton>().inputController = inputController;
         Circle1Down.GetComponent<RCSButton>().inputController = inputController;
         Circle1Left.GetComponent<RCSButton>().inputController = inputController;
@@ -150,6 +195,78 @@ public class MFDControlController : IPropertyChangeObserver
         }
     }
 
+    private void ToggleTranslate()
+    {
+        if (TranslateButton.isToggled)
+        {
+            RotateButton.isToggled = true;
+            gameController.GetPlayerShip().SetRCSMode(PlayerShip.RCSMode.Rotate);
+        }
+        else
+        {
+            RotateButton.isToggled = false;
+            gameController.GetPlayerShip().SetRCSMode(PlayerShip.RCSMode.Translate);
+        }
+    }
+
+    private void ToggleRotate()
+    {
+        if (RotateButton.isToggled)
+        {
+            TranslateButton.isToggled = true;
+            gameController.GetPlayerShip().SetRCSMode(PlayerShip.RCSMode.Translate);
+        }
+        else
+        {
+            TranslateButton.isToggled = false;
+            gameController.GetPlayerShip().SetRCSMode(PlayerShip.RCSMode.Rotate);
+        }
+    }
+
+    private void ToggleToRot(RotToggle t)
+    {
+        SetToggleButtons(t);
+        switch (t)
+        {
+            case RotToggle.FACE:
+                gameController.GetPlayerShip().ExecuteAutopilotCommand(Autopilot.Command.FACE_TARGET);
+                break;
+            case RotToggle.KILL:
+                gameController.GetPlayerShip().ExecuteAutopilotCommand(Autopilot.Command.KILL_ROTATION);
+                break;
+            case RotToggle.NML_POS:
+                gameController.GetPlayerShip().ExecuteAutopilotCommand(Autopilot.Command.FACE_NML_POS);
+                break;
+            case RotToggle.NML_NEG:
+                gameController.GetPlayerShip().ExecuteAutopilotCommand(Autopilot.Command.FACE_NML_NEG);
+                break;
+            case RotToggle.POS:
+                gameController.GetPlayerShip().ExecuteAutopilotCommand(Autopilot.Command.FACE_POS);
+                break;
+            case RotToggle.NEG:
+                gameController.GetPlayerShip().ExecuteAutopilotCommand(Autopilot.Command.FACE_NEG);
+                break;
+            case RotToggle.NONE:
+                gameController.GetPlayerShip().ExecuteAutopilotCommand(Autopilot.Command.OFF);
+                break;
+        }
+    }
+
+    private void SetToggleButtons(RotToggle t)
+    {
+        foreach (KeyValuePair<RotToggle, ToggleButton> tb in toggleMap)
+        {
+            if (tb.Key == t)
+            {
+                tb.Value.isToggled = true;
+            }
+            else
+            {
+                tb.Value.isToggled = false;
+            }
+        }
+    }
+
     private void Speak(string text)
     {
         gameController.GetComponent<MFDController>().Speak(text);
@@ -175,11 +292,11 @@ public class MFDControlController : IPropertyChangeObserver
         }
         else
         {
-            HandleEnginePropertyChanged(name, value);
+            HandleOtherPropertyChanged(name, value);
         }
     }
 
-    private void HandleEnginePropertyChanged(string name, object value)
+    private void HandleOtherPropertyChanged(string name, object value)
     {
         switch (name)
         {
@@ -211,6 +328,14 @@ public class MFDControlController : IPropertyChangeObserver
                 if (isPrimaryPanel)
                 {
                     Speak(rcsFineText);
+                }
+                break;
+            case "CommandExecuted":
+                Autopilot.Command? commandP = value as Autopilot.Command?;
+                Autopilot.Command command = commandP == null ? Autopilot.Command.OFF : commandP.Value;
+                if (command == Autopilot.Command.OFF)
+                {
+                    SetToggleButtons(RotToggle.NONE);
                 }
                 break;
         }
@@ -393,7 +518,7 @@ public class MFDControlController : IPropertyChangeObserver
                 break;
         }
     }
- 
+
     private bool IsKillRotMarked()
     {
         return Circle2Kill.GetChild(0).GetComponent<Image>().color != BUTTON_GREY;
@@ -402,10 +527,10 @@ public class MFDControlController : IPropertyChangeObserver
     private void MarkKillRot()
     {
         Circle2Kill.GetChild(0).GetComponent<Image>().color = HUD_GREEN;
-//        if (currentRCSMode != RCSMode.Rotate)
-//        {
-//            ToggleRCSMode();
-//        }
+        //        if (currentRCSMode != RCSMode.Rotate)
+        //        {
+        //            ToggleRCSMode();
+        //        }
     }
 
     private void UnmarkKillRot()

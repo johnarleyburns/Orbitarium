@@ -14,6 +14,7 @@ public class MFDAutopilotController : IPropertyChangeObserver
     private Text TimeToTargetText;
     private Dropdown CommandDropdown;
     private Button CommandButton;
+    private Button CommandOffButton;
     private bool isPrimaryPanel = false;
 
     public void Connect(GameObject autoPanel, InputController input, GameController game, bool panelIsPrimaryPanel)
@@ -30,6 +31,7 @@ public class MFDAutopilotController : IPropertyChangeObserver
         TimeToTargetText = panel.transform.Search("TimeToTargetText").GetComponent<Text>();
         CommandDropdown = panel.transform.Search("CommandDropdown").GetComponent<Dropdown>();
         CommandButton = panel.transform.Search("CommandButton").GetComponent<Button>();
+        CommandOffButton = panel.transform.Search("CommandOffButton").GetComponent<Button>();
 
         inputController.AddObserver("TargetList", this);
         inputController.AddObserver("SelectTarget", this);
@@ -42,6 +44,7 @@ public class MFDAutopilotController : IPropertyChangeObserver
         TargetSelectorDropdown.onValueChanged.AddListener(delegate { TargetSelectorDropdownOnValueChanged(); });
         TargetSelectorDropdown.value = 0;
         CommandButton.onClick.AddListener(delegate { CommandButtonClicked(); });
+        CommandOffButton.onClick.AddListener(delegate { CommandOffButtonClicked(); });
     }
 
     public void Update()
@@ -165,6 +168,11 @@ public class MFDAutopilotController : IPropertyChangeObserver
         gameController.GetPlayerShip().ExecuteAutopilotCommand(command);
     }
 
+    private void CommandOffButtonClicked()
+    {
+        gameController.GetPlayerShip().ExecuteAutopilotCommand(Autopilot.Command.OFF);
+    }
+
     /*
   //public float DoubleTapInterval = 0.2f;
 //private float doubleTapEngineTimer;
@@ -210,89 +218,6 @@ private void UpdateDoubleTap(KeyCode keyCode, ref float timer, TapFunc singleTap
 //      float burnTime = DoubleTapInterval;
 //        ship.MainEngineBurst(burnTime);
 //    }
-
-public void RotateTowardsTarget()
-{
-    if (gameController != null)
-    {
-        autopilot.ExecuteCommand(Autopilot.Command.ACTIVE_TRACK, gameController.HUD().GetSelectedTarget());
-        inputController.PropertyChanged("CommandExecuted", Autopilot.Command.ACTIVE_TRACK);
-    }
-}
-
-public void KillRot()
-{
-    if (gameController != null)
-    {
-        autopilot.ExecuteCommand(Autopilot.Command.KILL_ROTATION, null);
-        inputController.PropertyChanged("CommandExecuted", Autopilot.Command.KILL_ROTATION);
-    }
-}
-
-public void KillVTarget()
-{
-    if (gameController != null)
-    {
-        autopilot.ExecuteCommand(Autopilot.Command.KILL_REL_V, gameController.HUD().GetSelectedTarget());
-        inputController.PropertyChanged("CommandExecuted", Autopilot.Command.KILL_REL_V);
-    }
-}
-
-private void UpdateRotatePlus()
-{
-    UpdateDoubleTap(KeyCode.KeypadPlus, ref doubleTapRotatePlusTimer, RotateToPos, StrafeTarget);
-    if (Input.GetKeyDown(KeyCode.KeypadPlus))
-    {
-        RotateToPos();
-    }
-}
-
-private void RotateToPos()
-{
-    if (gameController != null)
-    {
-        autopilot.ExecuteCommand(Autopilot.Command.FACE_TARGET, gameController.GetComponent<InputController>().RelativeVelocityDirectionIndicator);
-        inputController.PropertyChanged("CommandExecuted", Autopilot.Command.FACE_TARGET);
-    }
-}
-
-private void UpdateRotateMinus()
-{
-    //        UpdateDoubleTap(KeyCode.KeypadMinus, ref doubleTapRotateMinusTimer, RotateToMinus, KillVTarget);
-    if (Input.GetKeyDown(KeyCode.KeypadMinus))
-    {
-        RotateToMinus();
-    }
-}
-
-private void RotateToMinus()
-{
-    if (gameController != null)
-    {
-        autopilot.ExecuteCommand(Autopilot.Command.FACE_TARGET, gameController.GetComponent<InputController>().RelativeVelocityAntiDirectionIndicator);
-        inputController.PropertyChanged("CommandExecuted", Autopilot.Command.FACE_TARGET);
-    }
-}
-
-private void APNGToTarget()
-{
-    if (gameController != null)
-    {
-        autopilot.ExecuteCommand(Autopilot.Command.INTERCEPT, gameController.HUD().GetSelectedTarget());
-        inputController.PropertyChanged("CommandExecuted", Autopilot.Command.INTERCEPT);
-    }
-
-}
-
-private void StrafeTarget()
-{
-    if (gameController != null)
-    {
-        autopilot.ExecuteCommand(Autopilot.Command.STRAFE, gameController.HUD().GetSelectedTarget());
-        inputController.PropertyChanged("CommandExecuted", Autopilot.Command.STRAFE);
-    }
-
-}
 */
 
 }

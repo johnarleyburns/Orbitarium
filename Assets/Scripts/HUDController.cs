@@ -123,18 +123,14 @@ public class HUDController : MonoBehaviour, IPropertyChangeObserver
 
     public void UpdateRelativeVelocityIndicators(Vector3 relVUnitVec)
     {
-        Vector3 relVIndicatorScaled = RelVIndicatorScaled(relVUnitVec);
-        Transform trans = gameController.GetPlayer().transform;
-        Vector3 myPos = trans.position;
-        Vector3 posPos = myPos + relVIndicatorScaled;
-        Vector3 negPos = myPos - relVIndicatorScaled;
-        float sqrt05 = Mathf.Sqrt(0.5f);
-        Vector3 nmlPlusPos = myPos + Quaternion.AngleAxis(90f, trans.up) * relVIndicatorScaled;
-        Vector3 nmlMinusPos = myPos + Quaternion.AngleAxis(-90f, trans.up) * relVIndicatorScaled;
-        inputController.RelativeVelocityDirectionIndicator.transform.position = posPos;
-        inputController.RelativeVelocityAntiDirectionIndicator.transform.position = negPos;
-        inputController.RelativeVelocityNormalPlusDirectionIndicator.transform.position = nmlPlusPos;
-        inputController.RelativeVelocityNormalMinusDirectionIndicator.transform.position = nmlMinusPos;
+        Vector3 p = gameController.GetPlayerShip().transform.position;
+        Vector3 a = relVUnitVec;
+        Vector3 b = gameController.GetPlayerShip().transform.up;
+        Vector3 nmlPos = -Vector3.Cross(a, b).normalized; // left handed coordinate system
+        inputController.RelativeVelocityDirectionIndicator.transform.position = p + RelVIndicatorScaled(a);
+        inputController.RelativeVelocityAntiDirectionIndicator.transform.position = p + RelVIndicatorScaled(-a);
+        inputController.RelativeVelocityNormalPlusDirectionIndicator.transform.position = p + RelVIndicatorScaled(nmlPos);
+        inputController.RelativeVelocityNormalMinusDirectionIndicator.transform.position = p + RelVIndicatorScaled(-nmlPos);
     }
 
     private void SelectTarget(GameObject target)
