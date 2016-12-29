@@ -11,11 +11,10 @@ public class Autopilot : MonoBehaviour
     public float MaxRCSAutoBurnSec = 60f;
     public float MinDeltaVforBurn = 0.1f;
     public float MaxStrafeSpeed = 30f;
-    public float MinRotToTargetDeltaTheta = 0.2f;
-    public float MinAPNGDeltaTheta = 1f;
+    public float MinSpinDeltaTheta = 1f;
     public float MinMainEngineBurnSec = 0.5f;
-    public float MinAuxEngineBurnSec = 0.01f;
-    public float RendezvousDistM = 50f;
+    public float MinAuxEngineBurnSec = 0.5f;
+    public float RendezvousDistM = 100f;
     public float StrafeDistM = 150f;
     public float GunRangeM = 1000f;
     public float MinFireTargetAngle = 0.5f;
@@ -162,13 +161,13 @@ public class Autopilot : MonoBehaviour
     private void ActiveTrackTarget(GameObject target)
     {
         AutopilotOff();
-        PushAndStartCoroutine(RotTrackTarget(target, false));
+        PushAndStartCoroutine(ActiveTrackTargetCo(target));
     }
 
     private void TurnToTarget(GameObject target)
     {
         AutopilotOff();
-        PushAndStartCoroutine(RotTrackTarget(target, true));
+        PushAndStartCoroutine(RotToTargetCo(target));
     }
 
     private void KillRelV(GameObject target)
@@ -273,15 +272,10 @@ public class Autopilot : MonoBehaviour
 
     IEnumerator RotToUnitVec(Vector3 b)
     {
-        return RotToUnitVec(b, MinRotToTargetDeltaTheta);
-    }
-
-    IEnumerator RotToUnitVec(Vector3 b, float deltaTheta)
-    {
         for (;;)
         {
             Quaternion q = Quaternion.LookRotation(b);
-            bool converged = ship.ConvergeSpin(q, MinRotToTargetDeltaTheta);
+            bool converged = ship.ConvergeSpin(q);
             if (converged)
             {
                 cmgActive = false;
@@ -296,17 +290,7 @@ public class Autopilot : MonoBehaviour
         }
     }
 
-    IEnumerator RotTrackTarget(GameObject target, bool breakable)
-    {
-        return RotTrackTarget(target, breakable, MinRotToTargetDeltaTheta);
-    }
-
-    IEnumerator RotTrackTargetAPNG(GameObject target)
-    {
-        return RotTrackTarget(target, true, MinAPNGDeltaTheta);
-    }
-
-    IEnumerator RotTrackTarget(GameObject target, bool breakable, float deltaTheta)
+    IEnumerator ActiveTrackTargetCo(GameObject target)
     {
         Vector3 prevTVec = (target.transform.position - transform.parent.transform.position).normalized;
         float prevTimer = UpdateTrackTime;
@@ -325,21 +309,42 @@ public class Autopilot : MonoBehaviour
             Vector3 deltaB = (tVec - prevTVec) / UpdateTrackTime;
             Vector3 b = tVec + NavigationalConstant * deltaB;
             Quaternion q = Quaternion.LookRotation(b);
-            bool converged = ship.ConvergeSpin(q, MinRotToTargetDeltaTheta);
-            if (converged)
+            bool converged = ship.ConvergeSpin(q);
+            cmgActive = !converged;
+            yield return new WaitForEndOfFrame();
+        }
+    }
+
+    IEnumerator RotToTargetCo(GameObject target)
+    {
+        Vector3 prevTVec = (target.transform.position - transform.parent.transform.position).normalized;
+        float prevTimer = UpdateTrackTime;
+        for (;;)
+        {
+            Vector3 tVec = (target.transform.position - transform.parent.transform.position).normalized;
+            if (prevTimer <= 0)
             {
-                cmgActive = false;
-                if (breakable)
-                {
-                    PopCoroutine();
-                    yield break;
-                }
+                prevTVec = tVec;
+                prevTimer = UpdateTrackTime;
             }
             else
             {
-                cmgActive = true;
+                prevTimer -= Time.deltaTime;
             }
-            yield return new WaitForEndOfFrame();
+            Vector3 deltaB = (tVec - prevTVec) / UpdateTrackTime;
+            Vector3 b = tVec + NavigationalConstant * deltaB;
+            Quaternion q = Quaternion.LookRotation(b);
+            bool converged = ship.ConvergeSpin(q);
+            cmgActive = !converged;
+            if (converged)
+            {
+                PopCoroutine();
+                yield break;
+            }
+            else
+            {
+                yield return new WaitForEndOfFrame();
+            }
         }
     }
 
@@ -349,7 +354,7 @@ public class Autopilot : MonoBehaviour
         {
             Vector3 b = CalcVectorToTarget(target).normalized;
             Quaternion q = Quaternion.LookRotation(b);
-            bool converged = ship.ConvergeSpin(q, MinAPNGDeltaTheta);
+            bool converged = ship.ConvergeSpin(q);
             if (converged)
             {
                 cmgActive = false;
@@ -367,7 +372,6 @@ public class Autopilot : MonoBehaviour
     IEnumerator RotShootTargetAPNG(GameObject target)
     {
         bool breakable = true;
-        float deltaTheta = MinAPNGDeltaTheta;
         Vector3 prevTVec = (target.transform.position - transform.parent.transform.position).normalized;
         float prevTimer = UpdateTrackTime;
         for (;;)
@@ -385,7 +389,7 @@ public class Autopilot : MonoBehaviour
             Vector3 deltaB = (tVec - prevTVec) / UpdateTrackTime;
             Vector3 b = tVec + NavigationalConstant * deltaB;
             Quaternion q = Quaternion.LookRotation(b);
-            bool converged = ship.ConvergeSpin(q, MinRotToTargetDeltaTheta);
+            bool converged = ship.ConvergeSpin(q);
             float targetAngle = Quaternion.Angle(transform.rotation, q);
             bool aligned = targetAngle <= MinFireTargetAngle;
             float dist;
@@ -421,16 +425,16 @@ public class Autopilot : MonoBehaviour
         PopCoroutine();
     }
 
-    IEnumerator RotThenBurn(Vector3 b, float sec)
+    IEnumerator RotThenBurnMain(Vector3 b, float sec)
     {
         yield return PushAndStartCoroutine(RotToUnitVec(b));
         yield return PushAndStartCoroutine(MainEngineBurnSec(sec));
     }
 
-    IEnumerator RotThenBurnAPNG(Vector3 b, float sec)
+    IEnumerator RotThenBurnAux(Vector3 b, float sec)
     {
-        yield return PushAndStartCoroutine(RotToUnitVec(b, MinAPNGDeltaTheta));
-        yield return PushAndStartCoroutine(MainEngineBurnSec(sec));
+        yield return PushAndStartCoroutine(RotToUnitVec(b));
+        yield return PushAndStartCoroutine(AuxEngineBurnSec(sec));
     }
 
     IEnumerator MainEngineBurnSec(float sec)
@@ -453,17 +457,54 @@ public class Autopilot : MonoBehaviour
         }
     }
 
+    IEnumerator AuxEngineBurnSec(float sec)
+    {
+        float burnTimer = sec;
+        if (burnTimer > 0f)
+        {
+            ship.AuxEngineGo();
+        }
+        for (;;)
+        {
+            if (burnTimer <= 0f)
+            {
+                ship.AuxEngineCutoff();
+                PopCoroutine();
+                yield break;
+            }
+            burnTimer -= Time.deltaTime;
+            yield return new WaitForEndOfFrame();
+        }
+    }
+
+    float RCSDist = 150f;
+
     IEnumerator KillRelVCo(GameObject target)
     {
         Vector3 targetVec;
         float relv;
         Vector3 relVelUnit;
         PhysicsUtils.CalcRelV(transform.parent.transform, target, out targetVec, out relv, out relVelUnit);
+        float dist;
+        PhysicsUtils.CalcDistance(transform, target, out dist);
+
+        float arelv = Mathf.Abs(relv);
         Vector3 negVec = -1f * relVelUnit;
-        float sec = CalcDeltaVMainBurnSec(relv);
-        if (sec >= MinMainEngineBurnSec)
+        float secMain = CalcDeltaVMainBurnSec(arelv);
+        float secAux = CalcDeltaVAuxBurnSec(arelv);
+        float secRCS = CalcDeltaVBurnRCSSec(arelv);
+        if (secMain >= MinMainEngineBurnSec)
         {
-            yield return PushAndStartCoroutine(RotThenBurn(negVec, sec));
+            yield return PushAndStartCoroutine(RotThenBurnMain(negVec, secMain));
+        }
+        else if (secAux >= MinAuxEngineBurnSec && dist > RCSDist)
+        {
+            yield return PushAndStartCoroutine(RotThenBurnAux(negVec, secAux));
+        }
+        else if (secRCS >= ship.RCSBurnMinSec)
+        {
+            ship.RCSBurst(negVec, secRCS);
+            yield return new WaitForSeconds(secRCS);
         }
         else
         {
@@ -552,7 +593,7 @@ public class Autopilot : MonoBehaviour
                 deltaVF = deltaV - deltaVA;
             }
             Vector3 thrust = ((deltaVA / deltaV) * a.normalized + (deltaVF / deltaV) * f).normalized;
-            yield return PushAndStartCoroutine(RotToUnitVec(thrust, MinAPNGDeltaTheta));
+            yield return PushAndStartCoroutine(RotToUnitVec(thrust));
         }
     }
 
@@ -583,10 +624,12 @@ public class Autopilot : MonoBehaviour
         return approachPos;
     }
 
-    private float MinRendezvousBurnSec = 2f;
+    private float MinRendezvousBurnSec = 0.5f;
 
     IEnumerator ApproachCo(GameObject targetDock)
     {
+        yield break;
+        /*
         for (;;)
         {
             if (ship.IsMainEngineGo())
@@ -610,33 +653,64 @@ public class Autopilot : MonoBehaviour
                 yield return PushAndStartCoroutine(KillRelVCo(targetDock));
             }
         }
+        */
     }
 
-    IEnumerator RendezvousCo(GameObject targetDock)
+    IEnumerator RendezvousCo(GameObject target)
     {
         for (;;)
         {
-            GameObject targetApproach = CreateVirtualApproachTarget(targetDock);
             if (ship.IsMainEngineGo())
             {
                 ship.MainEngineCutoff();
             }
-            yield return PushAndStartCoroutine(KillRelVCo(targetDock));
+            if (ship.IsAuxEngineGo())
+            {
+                ship.AuxEngineCutoff();
+            }
+            if (ship.IsRCSFiring())
+            {
+                ship.RCSCutoff();
+            }
+            yield return PushAndStartCoroutine(KillRelVCo(target));
+            GameObject targetApproach = CreateVirtualApproachTarget(target);
+            Vector3 b = (targetApproach.transform.position - transform.position).normalized;
             float dist;
             PhysicsUtils.CalcDistance(transform, targetApproach, out dist);
-            float minBurnDist = MinBurnDist(MinRendezvousBurnSec);
-            if (dist < minBurnDist)
+            float minMainBurnDist = MinMainBurnDist(MinRendezvousBurnSec);
+            float minAuxBurnDist = MinAuxBurnDist(MinRendezvousBurnSec);
+            float minRCSBurnDist = MinRCSBurnDist(MinRendezvousBurnSec);
+            bool closeEnough = dist < minRCSBurnDist;
+            bool fireMain = dist >= minMainBurnDist;
+            bool fireAux = dist >= minAuxBurnDist && dist > RCSDist;
+            bool fireRCS = dist >= minRCSBurnDist;
+            if (closeEnough)
             {
-                yield return PushAndStartCoroutine(RotToTarget(targetDock));
+                yield return PushAndStartCoroutine(RotToTarget(target));
                 yield break;
             }
-            else
+            else if (fireMain)
             {
-                float idealBurnSec = IdealBurnSec(dist);
-                float burnSec = Mathf.Max(1f, idealBurnSec);
-                yield return PushAndStartCoroutine(RotToTarget(targetApproach));
-                yield return PushAndStartCoroutine(MainEngineBurnSec(burnSec));
-                yield return PushAndStartCoroutine(KillRelVCo(targetDock));
+                float idealBurnSec = IdealMainBurnSec(dist);
+                float burnSec = Mathf.Max(MinRendezvousBurnSec, idealBurnSec);
+                yield return PushAndStartCoroutine(RotThenBurnMain(b, burnSec));
+                yield return PushAndStartCoroutine(KillRelVCo(target));
+            }
+            else if (fireAux)
+            {
+                float idealBurnSec = IdealAuxBurnSec(dist);
+                float burnSec = Mathf.Max(MinRendezvousBurnSec, idealBurnSec);
+                yield return PushAndStartCoroutine(RotThenBurnAux(b, burnSec));
+                yield return PushAndStartCoroutine(KillRelVCo(target));
+            }
+            else if (fireRCS)
+            {
+                float idealBurnSec = IdealRCSBurnSec(dist);
+                float burnSec = Mathf.Max(ship.RCSBurnMinSec, idealBurnSec);
+                ship.RCSBurst(b, burnSec);
+                yield return new WaitForSeconds(burnSec);
+                ship.RCSBurst(-b, burnSec);
+                yield return new WaitForSeconds(burnSec);
             }
             Destroy(targetApproach);
         }
@@ -776,9 +850,19 @@ public class Autopilot : MonoBehaviour
         PopCoroutine();
     }
 
-    public float MinBurnDist(float sec)
+    public float MinMainBurnDist(float sec)
     {
-        return MinBurnDist(sec, ship.CurrentRCSAccelerationPerSec(), ship.CurrentRCSAngularDegPerSec());
+        return MinBurnDist(sec, ship.CurrentMainEngineAccPerSec(), ship.CurrentRCSAngularDegPerSec());
+    }
+
+    public float MinAuxBurnDist(float sec)
+    {
+        return MinBurnDist(sec, ship.CurrentAuxAccPerSec(), ship.CurrentRCSAngularDegPerSec());
+    }
+
+    public float MinRCSBurnDist(float sec)
+    {
+        return MinBurnDist(sec, ship.CurrentRCSAccelerationPerSec(), 0);
     }
 
     public float MinBurnDist(float sec, float mainEngineAcc, float angularAcc)
@@ -788,21 +872,31 @@ public class Autopilot : MonoBehaviour
         float ao = angularAcc;
         float burnDist = 0.5f * a * Mathf.Pow(t, 2f);
         float stopDist = burnDist;
-        float turnDist = Turn180Sec(ao);
+        float turnDist = ao > 0 ? Turn180Sec(ao) : 0;
         float dist = burnDist + turnDist + stopDist;
         return dist;
     }
 
-    public float IdealBurnSec(float dist)
+    public float IdealMainBurnSec(float dist)
     {
         return IdealBurnSec(dist, ship.CurrentMainEngineAccPerSec(), ship.CurrentRCSAngularDegPerSec());
+    }
+
+    public float IdealAuxBurnSec(float dist)
+    {
+        return IdealBurnSec(dist, ship.CurrentAuxAccPerSec(), ship.CurrentRCSAngularDegPerSec());
+    }
+
+    public float IdealRCSBurnSec(float dist)
+    {
+        return IdealBurnSec(dist, ship.CurrentRCSAccelerationPerSec(), 0);
     }
 
     public float IdealBurnSec(float dist, float mainEngineAcc, float angularAcc)
     {
         float d = dist;
         float a = mainEngineAcc;
-        float tr = Turn180Sec(angularAcc);
+        float tr = angularAcc > 0 ? Turn180Sec(angularAcc) : 0;
         float t = (-tr + Mathf.Sqrt(Mathf.Pow(tr, 2f) + 4f * (d / a))) / 2f;
         return t;
     }

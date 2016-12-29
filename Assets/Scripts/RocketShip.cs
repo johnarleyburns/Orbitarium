@@ -319,10 +319,11 @@ public class RocketShip : MonoBehaviour {
         currentSpinPerSec = Quaternion.identity;
     }
 
-    public bool ConvergeSpin(Quaternion targetQ, float minDTheta)
+    private static readonly float minSpinDeltaTheta = 1f; // too small and it snafus
+
+    public bool ConvergeSpin(Quaternion targetQ)
     {
         Quaternion deltaQ = Quaternion.Inverse(transform.rotation) * targetQ;
-        bool converged;
 
         float angleLeft = Mathf.Abs(Quaternion.Angle(transform.rotation, targetQ));
         float spinSpeed = Mathf.Abs(Quaternion.Angle(currentSpinPerSec, Quaternion.identity));
@@ -338,16 +339,12 @@ public class RocketShip : MonoBehaviour {
         {
             currentSpinPerSec = Quaternion.RotateTowards(currentSpinPerSec, Quaternion.identity, RCSAngularDegPerSec * Time.deltaTime);
         }
-        bool convergedSpin = Mathf.Abs(Quaternion.Angle(currentSpinPerSec, Quaternion.identity)) < minDTheta;
-        bool convergedRotation = targetQ == Quaternion.identity || Mathf.Abs(Quaternion.Angle(transform.rotation, targetQ)) < minDTheta;
-        if (convergedSpin && convergedRotation)
-            {
-            currentSpinPerSec = Quaternion.identity;
-            converged = true;
-        }
-        else
+        bool convergedSpin = Mathf.Abs(Quaternion.Angle(currentSpinPerSec, Quaternion.identity)) < minSpinDeltaTheta;
+        bool convergedRotation = targetQ == Quaternion.identity || Mathf.Abs(Quaternion.Angle(transform.rotation, targetQ)) < minSpinDeltaTheta;
+        bool converged = convergedSpin && convergedRotation;
+        if (converged)
         {
-            converged = false;
+            currentSpinPerSec = Quaternion.identity;
         }
         return converged;
     }
