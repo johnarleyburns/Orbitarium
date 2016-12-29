@@ -585,13 +585,13 @@ public class GameController : MonoBehaviour
         targetDB.AddTarget(Didymos, TargetDB.TargetType.ASTEROID, DidymosRadiusM);
         targetDB.AddTarget(Didymoon, TargetDB.TargetType.MOON, DidymoonRadiusM);
         //targetDB.AddTarget(EezoApproach, TargetDB.TargetType.APPROACH, 0);
-        targetDB.AddTarget(EezoDock, TargetDB.TargetType.DOCK, EezoDockingPortRadiusM);
-        //targetDB.AddTarget(EezoDockingPort, TargetDB.TargetType.DOCK, EezoDockingPortRadiusM);
+        targetDB.AddTarget(EezoDock, TargetDB.TargetType.DOCK, 0);
+        //targetDB.AddTarget(EezoDockGhost, TargetDB.TargetType.DOCK, 0);
         hudController.AddTargetIndicator(Didymos);
         hudController.AddTargetIndicator(Didymoon);
         //hudController.AddTargetIndicator(EezoApproach);
         hudController.AddTargetIndicator(EezoDock);
-        //hudController.AddTargetIndicator(EezoDockingPort);
+        //hudController.AddTargetIndicator(EezoDockGhost);
     }
 
     private void AddHUDFixedIndicators()

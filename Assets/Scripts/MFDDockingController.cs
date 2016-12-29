@@ -176,8 +176,9 @@ public class MFDDockingController : IPropertyChangeObserver
             float closingDist = Mathf.Sign(dotZ) * planeVecZ.magnitude;
 
             Vector3 closingRelVec = Vector3.Project(relv * relunitvec, playerShipTransform.forward);
-            float dotClosingZ = Vector3.Dot(relv * relunitvec, playerShipTransform.forward);
-            float closingRelV = Mathf.Sign(dotClosingZ) * closingRelVec.magnitude;
+            //float dotClosingZ = Vector3.Dot(relv * relunitvec, playerShipTransform.forward);
+            float closingRelV = Mathf.Sign(relv) * closingRelVec.magnitude;
+            //float closingRelV = Mathf.Sign(dotClosingZ) * closingRelVec.magnitude;
 
             Transform dockModel = dockTarget.transform.GetChild(0);
             Quaternion dockAlignQ = playerShipTransform.rotation * Quaternion.Inverse(dockModel.rotation);

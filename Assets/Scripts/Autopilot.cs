@@ -599,28 +599,32 @@ public class Autopilot : MonoBehaviour
 
     private float AimTimeSec = 3.45f;
 
-    private GameObject CreateVirtualApproachTarget(GameObject targetDock) // destroy g after using
+    private GameObject CreateVirtualApproachTarget(GameObject target) // destroy g after using
     {
-        float radius = gameController.TargetData().GetTargetRadius(targetDock);
-        float distFromDock = radius + RendezvousDistM;
-        GameObject approach = PointForward(targetDock, distFromDock);
+        float radius = gameController.TargetData().GetTargetRadius(target);
+        float dist = radius + RendezvousDistM;
+        GameObject approach = PointForward(target, dist);
         return approach;
     }
 
-    private GameObject PointForward(GameObject targetDock, float distFromDock) // destroy g after using
+    private GameObject PointForward(GameObject target, float dist) // destroy g after using
     {
-        Vector3 approachPos = PointForwardVec(targetDock, distFromDock);
-        Quaternion dockQ = targetDock.transform.GetChild(0).transform.rotation;
-        Quaternion approachRot = Quaternion.Euler(0f, 180f, 0f) * dockQ;
+        Vector3 approachPos = PointForwardVec(target, dist);
+        Quaternion forwardQ = target.transform.GetChild(0).transform.rotation;
+        bool isDock = gameController.TargetData().GetTargetType(target) == TargetDB.TargetType.DOCK;
+        Quaternion approachRot = isDock ? forwardQ : Quaternion.Euler(0f, 180f, 0f) * forwardQ;
         GameObject g = new GameObject();
         g.transform.position = approachPos;
         g.transform.rotation = approachRot;
         return g;
     }
 
-    private Vector3 PointForwardVec(GameObject targetDock, float distFromDock)
+    private Vector3 PointForwardVec(GameObject target, float dist)
     {
-        Vector3 approachPos = targetDock.transform.position + distFromDock * targetDock.transform.GetChild(0).transform.forward;
+        bool isDock = gameController.TargetData().GetTargetType(target) == TargetDB.TargetType.DOCK;
+        float approachDir = isDock ? -1 : 1;
+        Vector3 approachForward = approachDir * target.transform.GetChild(0).transform.forward;
+        Vector3 approachPos = target.transform.position + dist * approachForward;
         return approachPos;
     }
 
@@ -656,6 +660,8 @@ public class Autopilot : MonoBehaviour
         */
     }
 
+    private float MinRendezvousEpsilonM = 1;
+
     IEnumerator RendezvousCo(GameObject target)
     {
         for (;;)
@@ -680,10 +686,10 @@ public class Autopilot : MonoBehaviour
             float minMainBurnDist = MinMainBurnDist(MinRendezvousBurnSec);
             float minAuxBurnDist = MinAuxBurnDist(MinRendezvousBurnSec);
             float minRCSBurnDist = MinRCSBurnDist(MinRendezvousBurnSec);
-            bool closeEnough = dist < minRCSBurnDist;
+            bool closeEnough = dist < MinRendezvousEpsilonM;
             bool fireMain = dist >= minMainBurnDist;
             bool fireAux = dist >= minAuxBurnDist && dist > RCSDist;
-            bool fireRCS = dist >= minRCSBurnDist;
+            bool fireRCS = dist >= minRCSBurnDist && dist > MinRendezvousEpsilonM;
             if (closeEnough)
             {
                 yield return PushAndStartCoroutine(RotToTarget(target));
@@ -711,6 +717,9 @@ public class Autopilot : MonoBehaviour
                 yield return new WaitForSeconds(burnSec);
                 ship.RCSBurst(-b, burnSec);
                 yield return new WaitForSeconds(burnSec);
+                yield return PushAndStartCoroutine(KillRelVCo(target));
+                yield return PushAndStartCoroutine(RotToTarget(target));
+                yield break;
             }
             Destroy(targetApproach);
         }
