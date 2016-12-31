@@ -1,4 +1,4 @@
-﻿//#define SOLAR_SYSTEM
+﻿#define SOLAR_SYSTEM
 using UnityEngine;
 using UnityEditor;
 using System.Collections;
@@ -16,7 +16,10 @@ public class EllipseBaseEditor : Editor {
 	private static string omega_ucTip = "Rotation of ellipse from x-axis (degrees)\nWhen inclination=0 will act in the same way as \u03c9";
 	
 	private static string inclinationTip = "Inclination angle of ellipse to x-y plane (degrees)";
-	
+
+	// Used by BinaryPAir, OrbitEllipse and DustRing extensions
+	protected bool axisUpdated = false; 
+		
 	public override void OnInspectorGUI()
 	{
 		GUI.changed = false;
@@ -43,13 +46,11 @@ public class EllipseBaseEditor : Editor {
 		EditorGUILayout.Space();
 		EditorGUILayout.LabelField("Ellipse Parameters", EditorStyles.boldLabel);
 
-#if SOLAR_SYSTEM
 		// If there is a SolarBody, it is the one place data can be changed. The EB holds the
 		// orbit scaled per SolarSystem scale. 
 		SolarBody sbody = ellipseBase.GetComponent<SolarBody>();
 		if (sbody != null) {
-			EditorGUILayout.LabelField("\tEllipse parameters controlled by SolarBody");
-			EditorGUILayout.LabelField("\tand Solar System scale settings");
+			EditorGUILayout.LabelField("\tEllipse parameters controlled by SolarBody settings.");
 			EditorGUILayout.LabelField(string.Format("   {0,-25}\t ({1,1})\t  {2}",
 				"Semi-Major Axis", "a", ellipseBase.a), EditorStyles.wordWrappedLabel);
 			EditorGUILayout.LabelField(string.Format("   {0,-25}\t ({1,1})\t  {2}",
@@ -64,17 +65,37 @@ public class EllipseBaseEditor : Editor {
 				"Phase", "M", ellipseBase.phase), EditorStyles.wordWrappedLabel);
 			return;
 		}
-#endif
+
 		paramBy =
 			(EllipseBase.ParamBy)EditorGUILayout.EnumPopup(new GUIContent("Parameter Choice", paramTip), ellipseBase.paramBy);
 
 		ecc = EditorGUILayout.Slider(new GUIContent("Eccentricity", eTip), ellipseBase.ecc, 0f, 0.99f );
 
+
+		axisUpdated = false;
+		// backwards compatibility when loading scenes before unit scaling:
+		if (ellipseBase.a_scaled < 0) {
+			axisUpdated = true;
+		}
+		GravityScaler.Units units = GravityEngine.Instance().units;
 		if (ellipseBase.paramBy == EllipseBase.ParamBy.AXIS_A) {
-			a = EditorGUILayout.FloatField(new GUIContent("Semi-Major Axis (a)", aTip), ellipseBase.a);
+			float oldLabelWidth = EditorGUIUtility.labelWidth;
+			EditorGUIUtility.labelWidth = oldLabelWidth + 30f;
+			string prompt = string.Format("Semi-Major Axis (a) [{0}]", GravityScaler.LengthUnits(units));
+			a = EditorGUILayout.DelayedFloatField(new GUIContent(prompt, aTip), ellipseBase.a);
+			if (a != ellipseBase.a) {
+				axisUpdated = true;
+			}
+			EditorGUILayout.LabelField("Scaled a (Unity units):   " + ellipseBase.a_scaled);
+			EditorGUIUtility.labelWidth = oldLabelWidth;
 			p = a*(1-ecc);
 		} else {
-			p = EditorGUILayout.FloatField(new GUIContent("Pericenter", pTip), ellipseBase.p);
+			string prompt = string.Format("Pericenter [{0}]", GravityScaler.LengthUnits(units));
+			p = EditorGUILayout.DelayedFloatField(new GUIContent(prompt, pTip), ellipseBase.p);
+			if (p != ellipseBase.p) {
+				axisUpdated = true;
+			}
+			EditorGUILayout.LabelField("Scaled p (Unity units) " + ellipseBase.p_scaled);
 			a = p/(1-ecc);
 		}
 		// implementation uses AngleAxis, so degrees are more natural
@@ -83,6 +104,13 @@ public class EllipseBaseEditor : Editor {
 		inclination = EditorGUILayout.Slider(new GUIContent("Inclination", inclinationTip), ellipseBase.inclination, 0f, 180f);
 		// physics uses radians - but ask user for degrees to be consistent
 		phase = EditorGUILayout.Slider(new GUIContent("Starting Phase", phaseTip), ellipseBase.phase, 0, 360f);
+
+		// Checking the Event type lets us update after Undo and Redo commands.
+		// A redo updates _lengthScale but does not run the setter
+//        if (Event.current.type == EventType.ExecuteCommand &&
+//            Event.current.commandName == "UndoRedoPerformed") {
+//			ellipseBase.ApplyScale(GravityEngine.Instance().GetLengthScale());
+//        }
 
 		if (GUI.changed) {
 			Undo.RecordObject(ellipseBase, "EllipseBase Change");
@@ -97,5 +125,6 @@ public class EllipseBaseEditor : Editor {
 			ellipseBase.paramBy= paramBy;
 			EditorUtility.SetDirty(ellipseBase);
 		}		
+
 	}
 }

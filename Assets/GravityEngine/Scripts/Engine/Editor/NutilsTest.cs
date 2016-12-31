@@ -15,4 +15,17 @@ public class NutilsTest {
 			Assert.IsTrue( Mathf.Abs(angle - a) < 1E-2);
         }
     }
+
+	[Test]
+    public void Mod360()
+    {
+    	// check each quadrant
+		float[] angles = { -90f, 20f, 355f, 270f+2*360f, 14f*360f+5f};
+		float[] answer = { 270f, 20f, 355f, 270f, 5f};
+        for (int i=0; i < angles.Length; i++) {
+			float a = NUtils.DegressMod360( angles[i]);
+			Debug.Log( "angle=" + angles[i] + " a=" + a);
+			Assert.IsTrue( Mathf.Abs(a - answer[i]) < 1E-2);
+        }
+    }
 }

@@ -51,7 +51,7 @@ public class ExplosionFromNBody : MonoBehaviour, IGravityParticlesInit {
 			#pragma warning restore 162		
 		}
 		explosionVelocity = ExplosionVelocity(fromNbody, startRadius);
-		bodyVelocity = GravityEngine.instance.GetVelocity( fromNbody.transform.gameObject);
+		bodyVelocity = GravityEngine.instance.GetScaledVelocity( fromNbody.transform.gameObject);
 	}
 
 	public void InitNewParticles(int fromParticle, int toParticle, ref double [,] r, ref double[,] v) {

@@ -44,17 +44,20 @@ public sealed class LeapFrogIntegrator : INBodyIntegrator {
 	}
 	
 	// TODO - If add during sim - would be useful to do a PreEvolve()
-	public void AddNBody(Vector3 position, NBody nbody, double massScale) {
+	public void AddNBody( int bodyNum, NBody nbody, Vector3 position, Vector3 velocity) {
 
 		if (numBodies > maxBodies) {
 			Debug.LogError("Added more than maximum allocated bodies! max=" + maxBodies);
 			return;
 		}
-		double velScale = System.Math.Sqrt(massScale);
+		if (bodyNum != numBodies) {
+			Debug.LogError("Body numbers are out of sync integrator=" + numBodies + " GE=" + bodyNum);
+			return;
+		}
 		// r,m already in GravityEngine
-		v[numBodies,0] = velScale * nbody.vel.x; 
-		v[numBodies,1] = velScale * nbody.vel.y; 
-		v[numBodies,2] = velScale * nbody.vel.z; 
+		v[numBodies,0] = velocity.x; 
+		v[numBodies,1] = velocity.y; 
+		v[numBodies,2] = velocity.z; 
 		
 		numBodies++;
 		
@@ -103,11 +106,7 @@ public sealed class LeapFrogIntegrator : INBodyIntegrator {
 		v[i,2] = vel.z;
 	}
 
-    public void SetPositionForIndex(int i, Vector3 position)
-    {
-    }
-
-    public Vector3 GetAccelerationForIndex(int i) {
+	public Vector3 GetAccelerationForIndex(int i) {
 		return new Vector3( (float)a[i,0], (float)a[i,1], (float)a[i,2]);
 	}
 
@@ -130,7 +129,7 @@ public sealed class LeapFrogIntegrator : INBodyIntegrator {
 				}
 				r3 = r2 * System.Math.Sqrt(r2) + EPSILON; 
 				for (int k=0; k < GravityEngine.NDIM; k++) {
-					a[i,k] += m[i] * rji[k]/r3; 
+					a[i,k] += m[j] * rji[k]/r3; 
 					a[j,k] -= m[i] * rji[k]/r3;
 				}
 			}

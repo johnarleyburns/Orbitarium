@@ -23,10 +23,10 @@ public interface INBodyIntegrator {
     /// Adds the N body. Implementation may support the case where the initial number of bodies 
     /// in Setup() is exceeded, creating space, or may ignore additions that exceed this limit (e.g. AZTTriple). 
     /// </summary>
-    /// <param name="position">Position.</param>
-    /// <param name="nbody">Nbody.</param>
-    /// <param name="massScale">Mass scale.</param>
-    void AddNBody(Vector3 position, NBody nbody, double massScale);
+	/// <param name="nbody">NBody component</param>
+	/// <param name="position">Physics position</param>
+	/// <param name="velocity">Physics velocity</param>
+	void AddNBody( int bodyNum, NBody nbody, Vector3 position, Vector3 velocity);
 
     /// <summary>
     /// Removes NBody at index i.
@@ -40,13 +40,11 @@ public interface INBodyIntegrator {
 	/// <param name="growBy">Grow by.</param>
 	void GrowArrays(int growBy);
 			
-	Vector3 GetVelocityForIndex(int i);
+	Vector3 GetVelocityForIndex(int i); 
 
-    void SetVelocityForIndex(int i, Vector3 vel);
+	void SetVelocityForIndex(int i, Vector3 vel); 
 
-    void SetPositionForIndex(int i, Vector3 pos);
-
-    Vector3 GetAccelerationForIndex(int i); 
+	Vector3 GetAccelerationForIndex(int i); 
 
 	// Call ONCE after all game objects have been added to allow integrator to pre-calc
 	// starting quantities required for integration

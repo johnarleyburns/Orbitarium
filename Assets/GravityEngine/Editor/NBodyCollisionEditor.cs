@@ -16,7 +16,7 @@ public class NBodyCollisionEditor : Editor {
 		NBodyCollision nbc = (NBodyCollision) target;
 		GameObject explodePF = nbc.explosionPrefab;
 		int precedence = nbc.collisionPrecedence;
-        float minRelVtoExplode = nbc.minRelVtoExplode;
+		float explodeOrBounceVelocity = nbc.explodeOrBounceVelocity;
 		float bounceFactor = 1f; 
 
 		NBodyCollision.CollisionType type = NBodyCollision.CollisionType.ABSORB_IMMEDIATE;
@@ -37,14 +37,19 @@ public class NBodyCollisionEditor : Editor {
             explodePF = (GameObject)EditorGUILayout.ObjectField(
                 new GUIContent("Explosion Prefab", "Particle System with NBodyParticles"), explodePF, typeof(GameObject), true);
             bounceFactor = EditorGUILayout.Slider(new GUIContent("Bounce", bTip), nbc.bounceFactor, 0f, 1f);
-            minRelVtoExplode = EditorGUILayout.FloatField(new GUIContent("Min RelV to Explode", dTip), nbc.minRelVtoExplode);
+			GravityScaler.Units units = GravityEngine.Instance().units;
+			float oldLabelWidth = EditorGUIUtility.labelWidth;
+			EditorGUIUtility.labelWidth = oldLabelWidth + 75f;
+			string prompt = string.Format("Relative Velocity to Explode ({0})", GravityScaler.VelocityUnits(units));
+			explodeOrBounceVelocity = EditorGUILayout.FloatField(new GUIContent(prompt, dTip), nbc.explodeOrBounceVelocity);
+			EditorGUIUtility.labelWidth = oldLabelWidth;
         }
         if (GUI.changed) {
 			Undo.RecordObject(nbc, "NBodyCollision Change");
 			nbc.explosionPrefab = explodePF;
 			nbc.collisionType = type; 
 			nbc.bounceFactor = bounceFactor;
-            nbc.minRelVtoExplode = minRelVtoExplode;
+			nbc.explodeOrBounceVelocity = explodeOrBounceVelocity;
 			nbc.collisionPrecedence = precedence;
 			EditorUtility.SetDirty(nbc);
 		}

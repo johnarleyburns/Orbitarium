@@ -1,4 +1,4 @@
-﻿//#define SOLAR_SYSTEM
+﻿#define SOLAR_SYSTEM
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -42,10 +42,18 @@ public class EllipseBase : MonoBehaviour, IOrbitPositions {
 	// Orbit parameters (user control via FixedEllipseEditor)
 	// These parameters are in world space. 
 	//! eccentricity (0..1, 0=circle, 1=linear)
-	public float ecc; 			
+	public float ecc; 	
+
+	public float a_scaled = -1f; 
+	public float p_scaled;		
 
 	// Allow EITHER a or p to specify size (JPL data uses a for planets and p for comets, so both are useful)
 	//! semi-major axis - based on paramBy user can specify a OR p. a = p/(1-ecc)
+	/// <summary>
+	/// (a,p) hold the values for a and p in the unit system specified
+	/// by the gravity engine. These are scaled and used to set a and p for game simulation
+	/// based on the unit scaling system provided by gravity engine. 
+	/// </summary>
 	public float a = 10f; 			
 	//! pericenter - based on paramBy user can specify a OR p. a = p/(1-ecc)
 	public float p; 			
@@ -67,6 +75,10 @@ public class EllipseBase : MonoBehaviour, IOrbitPositions {
 	protected NBody centerNbody; 
 
 	protected OrbitData initData; 
+
+	void Awake() {
+		a_scaled = a;
+	}
 	
 	/// <summary>
 	/// Init the ellipse, verify a center body is present, determine orientation and update transform.
@@ -121,7 +133,7 @@ public class EllipseBase : MonoBehaviour, IOrbitPositions {
 	/// </summary>
 	/// <param name="od">Od.</param>
 	public void InitFromOrbitData(OrbitData od) {
-		a = od.a; 
+		a_scaled = od.a; 
 		ecc = od.ecc; 
 		omega_lc = od.omega_lc;
 		omega_uc = od.omega_uc; 
@@ -131,23 +143,6 @@ public class EllipseBase : MonoBehaviour, IOrbitPositions {
 		Init();
 	}
 
-	// under construction
-#if SOLAR_SYSTEM
-	/// <summary>
-	/// Inits from solar body.
-	/// </summary>
-	/// <param name="sbody">Sbody.</param>
-	public void InitFromSolarBody(SolarBody sbody) {
-		a = sbody.a; 
-		ecc = sbody.ecc; 
-		omega_lc = sbody.omega_lc;
-		omega_uc = sbody.omega_uc; 
-		inclination = sbody.inclination;
-		phase = sbody.phase;
-		Init();
-	}
-#endif
-
 	public OrbitData GetOrbitData() {
 		return initData;
 	}
@@ -155,7 +150,7 @@ public class EllipseBase : MonoBehaviour, IOrbitPositions {
 
 	// Allow either P or A as params. Only one can be specified in editor at a time since they are related.
 	// If the editor changes the value, the keep the related variable in sync.
-	protected void CheckOrbitParams() {
+	protected void UpdateOrbitParams() {
 		if (paramBy == ParamBy.AXIS_A){
 			p = a*(1-ecc);
 		} else if (paramBy == ParamBy.CLOSEST_P) {
@@ -177,7 +172,7 @@ public class EllipseBase : MonoBehaviour, IOrbitPositions {
 	public void SetTransform() {
 		float phaseRad = phase * Mathf.Deg2Rad;
 		// position object using true anomoly (angle from  focus)
-		float r = a * ( 1f - ecc* ecc)/(1f + ecc * Mathf.Cos(phaseRad));
+		float r = a_scaled * ( 1f - ecc* ecc)/(1f + ecc * Mathf.Cos(phaseRad));
 		
 		Vector3 pos = new Vector3( r * Mathf.Cos (phaseRad), r * Mathf.Sin (phaseRad), 0);
 		// move from XY plane to the orbital plane
@@ -188,7 +183,7 @@ public class EllipseBase : MonoBehaviour, IOrbitPositions {
 	}
 
 	private Vector3 PositionForTheta(float theta) {
-		float r = a * ( 1f - ecc* ecc)/(1f + ecc * Mathf.Cos(theta));
+		float r = a_scaled * ( 1f - ecc* ecc)/(1f + ecc * Mathf.Cos(theta));
 		Vector3 position = new Vector3( r * Mathf.Cos (theta), r * Mathf.Sin (theta), 0);
 		// move from XY plane to the orbital plane
 		Vector3 newPosition = ellipse_orientation * position; 
@@ -213,10 +208,10 @@ public class EllipseBase : MonoBehaviour, IOrbitPositions {
 		}
 		Vector3[] points = new Vector3[numPoints];
 
-		CheckOrbitParams();
+		UpdateOrbitParams();
 		CalculateRotation();
 		// start at theta=0 on the ellipse and transform to world space
-		float r = a * ( 1f - ecc* ecc)/(1f + ecc);
+		float r = a_scaled * ( 1f - ecc* ecc)/(1f + ecc);
 		Vector3 oldPosition = new Vector3( r, 0, 0);
 		oldPosition = ellipse_orientation * oldPosition;
 		oldPosition += centerObject.transform.position;
@@ -229,9 +224,15 @@ public class EllipseBase : MonoBehaviour, IOrbitPositions {
 			points[i] = PositionForTheta(theta);
 			theta += dtheta;
 		}
+		// close the path (credit for fix to R. Vincent)
+		points[numPoints-1]=points[0];
 		return points;
 	}
 
+	/// <summary>
+	/// Return the center object around which this ellipse is defined.
+	/// </summary>
+	/// <returns>The center object.</returns>
 	public GameObject GetCenterObject() {
 		// need to have a center to draw gizmo.
 		if (centerObject == null && transform.parent != null) {
@@ -257,7 +258,7 @@ public class EllipseBase : MonoBehaviour, IOrbitPositions {
 		if (!selected)
 			return;
 
-		CheckOrbitParams();
+		UpdateOrbitParams();
 		CalculateRotation();
 
 		const int NUM_STEPS = 100; 

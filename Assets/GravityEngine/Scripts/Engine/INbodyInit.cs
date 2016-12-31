@@ -12,5 +12,5 @@ public interface INbodyInit  {
 	/// evolution beginning. 
 	/// </summary>
 	/// <param name="physicalScale">Physical scale.</param>
-	void InitNBody(float physicalScale);
+	void InitNBody(float physicalScale, float massScale);
 }

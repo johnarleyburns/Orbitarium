@@ -12,7 +12,7 @@ using System.Collections;
 ///
 /// Must have two NBody objects as immediate children.
 /// </summary>
-public class BinaryPair :  EllipseBase {
+public class BinaryPair :  EllipseBase, IOrbitScalable {
 
 	//! Velocity of center of mass of the binary pair
 	public Vector3 velocity;
@@ -21,7 +21,11 @@ public class BinaryPair :  EllipseBase {
 	private NBody body2; 
 
 	// Use this for initialization
-	void Start () {
+	void Start() {
+		SetupBodies();
+	}
+
+	private void SetupBodies () {
 
 		if (transform.childCount != 2) {
 			// can have more than 2 if 
@@ -34,11 +38,12 @@ public class BinaryPair :  EllipseBase {
 			Debug.LogError("Binary requires children to have NBody scripts attached.");
 			return;
 		}
+		// mass is scaled by GE
 		float m_total = (body1.mass + body2.mass);
 		float mu1 = body1.mass/m_total;
 		float mu2 = body2.mass/m_total;
-		SetupBody( body1, a * mu2,  mu2 * mu2 * body2.mass, false);
-		SetupBody( body2, a * mu1,  mu1 * mu1 * body1.mass, true);
+		SetupBody( body1, a_scaled * mu2,  mu2 * mu2 * body2.mass, false);
+		SetupBody( body2, a_scaled * mu1,  mu1 * mu1 * body1.mass, true);
 	}
 
 	/// <summary>
@@ -58,7 +63,7 @@ public class BinaryPair :  EllipseBase {
 		// Murray and Dermott (2.20)
 		float r = a_phy * (1f - ecc*ecc)/(1f + ecc * Mathf.Cos(f));
 		// (2.26) mu = n^2 a^3  (n is period, aka T)
-		float n = Mathf.Sqrt( mu/(a_phy*a_phy*a_phy));
+		float n = Mathf.Sqrt( mu * GravityEngine.Instance().massScale/(a_phy*a_phy*a_phy));
 		// (2.36)
 		float denom = Mathf.Sqrt( 1f - ecc*ecc);
 		float xdot = -1f * n * a_phy * Mathf.Sin(f)/denom;
@@ -69,12 +74,29 @@ public class BinaryPair :  EllipseBase {
 		// orbit position is WRT center
 		Vector3 position =  ellipse_orientation * position_xy;
 		position += transform.position/GravityEngine.instance.physToWorldFactor;
+		nbody.initialPos = position;
 
 		Vector3 v_xy = new Vector3( xdot, ydot, 0);
 		v_xy *= reflect_in_y;
+		// velocity will be scaled when NBody is scaled
 		nbody.vel = ellipse_orientation * v_xy + velocity;
-		//Debug.Log("body=" + nbody.name + " pos=" + position + " vxy=" + v_xy + " n=" + n);
+		Debug.Log("body=" + nbody.name + " pos=" + position + " vxy=" + v_xy + " n=" + n);
 
+	}
+
+	/// <summary>
+	/// Apply scale to the orbit. This is used by the inspector scripts during
+	/// scene setup. Do not use at run-time.
+	/// </summary>
+	/// <param name="scale">Scale.</param>
+	public void ApplyScale(float scale) {
+		if (paramBy == ParamBy.AXIS_A){
+			a_scaled = a * scale;
+		} else if (paramBy == ParamBy.CLOSEST_P) {
+			p_scaled = p * scale; 
+		}
+		UpdateOrbitParams();
+		SetupBodies();
 	}
 
 #if UNITY_EDITOR
@@ -98,14 +120,14 @@ public class BinaryPair :  EllipseBase {
 		float mu1 = body1.mass/m_total;
 		float mu2 = body2.mass/m_total;
 
-		CheckOrbitParams();
+		UpdateOrbitParams();
 		CalculateRotation();
 
-		DrawEllipse( a * mu2, transform.position, false );
-		DrawEllipse( a * mu1, transform.position, true );
+		DrawEllipse( a_scaled * mu2, transform.position, false );
+		DrawEllipse( a_scaled * mu1, transform.position, true );
 		// move bodies to location specified by parameters
-		SetTransform( a * mu2, body1, false);
-		SetTransform( a * mu1, body2, true);
+		SetTransform( a_scaled * mu2, body1, false);
+		SetTransform( a_scaled * mu1, body2, true);
 	}
 
 	private void DrawEllipse(float a_n, Vector3 focusPos, bool reflect) {

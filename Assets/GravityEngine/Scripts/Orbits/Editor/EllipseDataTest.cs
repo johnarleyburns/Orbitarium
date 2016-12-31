@@ -52,7 +52,7 @@ public class EllipseDataTest {
     }
 
 	[Test]
-    // Check eccetricity and inclination
+    // Check eccentricity and inclination
     public void CheckTestRV()
     {
         const float mass = 1000f; 
@@ -66,7 +66,8 @@ public class EllipseDataTest {
 		orbitEllipse.omega_lc = 20f;
 		orbitEllipse.phase = 190f;
 		orbitEllipse.Init();
-		orbitEllipse.InitNBody(1f);
+		orbitEllipse.ApplyScale(1f);
+		orbitEllipse.InitNBody(1f, 1f);
 		OrbitData od = new OrbitData();
 		od.a = orbitRadius; 
 		od.ecc = 0.25f;
@@ -86,12 +87,13 @@ public class EllipseDataTest {
         const float orbitRadius = 10f; 
 		GameObject planet = TestSetupUtils.CreatePlanetInOrbit(star, 1f, orbitRadius);
 		OrbitEllipse orbitEllipse = planet.GetComponent<OrbitEllipse>();
-		orbitEllipse.InitNBody(1f);
+		orbitEllipse.InitNBody(1f, 1f);
 
 		float eccentricity = 0.3f;
 		orbitEllipse.ecc = eccentricity;
 		orbitEllipse.Init();
-		orbitEllipse.InitNBody(1f);
+		orbitEllipse.ApplyScale(1f);
+		orbitEllipse.InitNBody(1f, 1f);
 		// take the velocity and check 
 		OrbitData orbitData = new OrbitData();
 		orbitData.SetOrbitForVelocity(planet.GetComponent<NBody>(), star.GetComponent<NBody>());
@@ -103,7 +105,7 @@ public class EllipseDataTest {
 		foreach (float inc in inclinationValues) {
 			orbitEllipse.inclination = inc ; 
 			orbitEllipse.Init();
-			orbitEllipse.InitNBody(1f);
+			orbitEllipse.InitNBody(1f, 1f);
 			OrbitData od = new OrbitData();
 			od.SetOrbitForVelocity(planet.GetComponent<NBody>(), star.GetComponent<NBody>());
 			Debug.Log("TEST: incl = " + inc + " od.inclination=" + od.inclination);
@@ -126,7 +128,8 @@ public class EllipseDataTest {
 		foreach (float phase in phaseValues) {
 			orbitEllipse.phase = phase ; 
 			orbitEllipse.Init();
-			orbitEllipse.InitNBody(1f);
+			orbitEllipse.ApplyScale(1f);
+			orbitEllipse.InitNBody(1f, 1f);
 			OrbitData od = new OrbitData();
 			od.SetOrbitForVelocity(planet.GetComponent<NBody>(), star.GetComponent<NBody>());
 			Debug.Log("phase = " + phase + " od.phase=" + od.phase);
@@ -151,7 +154,8 @@ public class EllipseDataTest {
 		foreach (float phase in phaseValues) {
 			orbitEllipse.phase = phase ; 
 			orbitEllipse.Init();
-			orbitEllipse.InitNBody(1f);
+			orbitEllipse.ApplyScale(1f);
+			orbitEllipse.InitNBody(1f, 1f);
 			OrbitData od = new OrbitData();
 			od.SetOrbitForVelocity(planet.GetComponent<NBody>(), star.GetComponent<NBody>());
 			Debug.Log("phase = " + phase + " od.phase=" + od.phase);
@@ -177,7 +181,8 @@ public class EllipseDataTest {
 		foreach (float phase in phaseValues) {
 			orbitEllipse.phase = phase ; 
 			orbitEllipse.Init();
-			orbitEllipse.InitNBody(1f);
+			orbitEllipse.ApplyScale(1f);
+			orbitEllipse.InitNBody(1f, 1f);
 			OrbitData od = new OrbitData();
 			od.SetOrbitForVelocity(planet.GetComponent<NBody>(), star.GetComponent<NBody>());
 			Debug.Log("phase = " + phase + " od.phase=" + od.phase);
@@ -203,7 +208,8 @@ public class EllipseDataTest {
 		foreach (float phase in phaseValues) {
 			orbitEllipse.phase = phase ; 
 			orbitEllipse.Init();
-			orbitEllipse.InitNBody(1f);
+			orbitEllipse.ApplyScale(1f);
+			orbitEllipse.InitNBody(1f, 1f);
 			OrbitData od = new OrbitData();
 			od.SetOrbitForVelocity(planet.GetComponent<NBody>(), star.GetComponent<NBody>());
 			Debug.Log("phase = " + phase + " od.phase=" + od.phase);
@@ -231,7 +237,8 @@ public class EllipseDataTest {
 				orbitEllipse.phase = phase ; 
 				orbitEllipse.omega_uc = omegau;
 				orbitEllipse.Init();
-				orbitEllipse.InitNBody(1f);
+				orbitEllipse.ApplyScale(1f);
+				orbitEllipse.InitNBody(1f, 1f);
 				orbitEllipse.Log("Initial circle:");
 				OrbitData od = new OrbitData();
 				od.SetOrbitForVelocity(planet.GetComponent<NBody>(), star.GetComponent<NBody>());
@@ -251,7 +258,7 @@ public class EllipseDataTest {
         const float orbitRadius = 10f; 
 		GameObject planet = TestSetupUtils.CreatePlanetInOrbit(star, 1f, orbitRadius);
 		OrbitEllipse orbitEllipse = planet.GetComponent<OrbitEllipse>();
-		orbitEllipse.InitNBody(1f);
+		orbitEllipse.InitNBody(1f, 1f);
 
 		orbitEllipse.ecc = 0.1f;
 
@@ -260,7 +267,8 @@ public class EllipseDataTest {
 		foreach (float omega in omegaValues) {
 			orbitEllipse.omega_uc = omega ; 
 			orbitEllipse.Init();
-			orbitEllipse.InitNBody(1f);
+			orbitEllipse.ApplyScale(1f);
+			orbitEllipse.InitNBody(1f, 1f);
 			OrbitData od = new OrbitData();
 			od.SetOrbitForVelocity(planet.GetComponent<NBody>(), star.GetComponent<NBody>());
 			Debug.Log("omega = " + omega + " od.omega_lc=" + od.omega_lc);
@@ -277,19 +285,20 @@ public class EllipseDataTest {
         const float orbitRadius = 10f; 
 		GameObject planet = TestSetupUtils.CreatePlanetInOrbit(star, 1f, orbitRadius);
 		OrbitEllipse orbitEllipse = planet.GetComponent<OrbitEllipse>();
-		orbitEllipse.InitNBody(1f);
+		orbitEllipse.InitNBody(1f, 1f);
 
 		orbitEllipse.inclination = 30f;
 		orbitEllipse.ecc = 0.2f;
 		orbitEllipse.Init();
-		orbitEllipse.InitNBody(1f);
+		orbitEllipse.ApplyScale(1f);
+		orbitEllipse.InitNBody(1f, 1f);
 
 		// Try some values of om
 		float[] omegaValues = { 0f, 30f, 45f, 60f, 90f, 135f, 180f, 210f, 310f};
 		foreach (float omega in omegaValues) {
 			orbitEllipse.omega_uc = omega ; 
 			orbitEllipse.Init();
-			orbitEllipse.InitNBody(1f);
+			orbitEllipse.InitNBody(1f, 1f);
 			orbitEllipse.Log("OmegaU inclined:");
 			OrbitData od = new OrbitData();
 			od.SetOrbitForVelocity(planet.GetComponent<NBody>(), star.GetComponent<NBody>());
@@ -308,19 +317,20 @@ public class EllipseDataTest {
         const float orbitRadius = 10f; 
 		GameObject planet = TestSetupUtils.CreatePlanetInOrbit(star, 1f, orbitRadius);
 		OrbitEllipse orbitEllipse = planet.GetComponent<OrbitEllipse>();
-		orbitEllipse.InitNBody(1f);
+		orbitEllipse.InitNBody(1f, 1f);
 
 		orbitEllipse.inclination = 30f;
 		orbitEllipse.ecc = 0.2f;
+		orbitEllipse.ApplyScale(1f);
 		orbitEllipse.Init();
-		orbitEllipse.InitNBody(1f);
+		orbitEllipse.InitNBody(1f, 1f);
 
 		// Try some values of om
 		float[] omegaValues = { 0f, 30f, 45f, 60f, 90f, 135f, 180f, 210f, 310f};
 		foreach (float omega in omegaValues) {
 			orbitEllipse.omega_lc = omega ; 
 			orbitEllipse.Init();
-			orbitEllipse.InitNBody(1f);
+			orbitEllipse.InitNBody(1f, 1f);
 			orbitEllipse.Log("OmegaU inclined:");
 			OrbitData od = new OrbitData();
 			od.SetOrbitForVelocity(planet.GetComponent<NBody>(), star.GetComponent<NBody>());
@@ -337,19 +347,20 @@ public class EllipseDataTest {
         const float orbitRadius = 10f; 
 		GameObject planet = TestSetupUtils.CreatePlanetInOrbit(star, 1f, orbitRadius);
 		OrbitEllipse orbitEllipse = planet.GetComponent<OrbitEllipse>();
-		orbitEllipse.InitNBody(1f);
+		orbitEllipse.InitNBody(1f, 1f);
 
 		orbitEllipse.inclination = 35f;
 		orbitEllipse.ecc = 0.25f;
 		orbitEllipse.Init();
-		orbitEllipse.InitNBody(1f);
+		orbitEllipse.ApplyScale(1f);
+		orbitEllipse.InitNBody(1f, 1f);
 
 		// Try some values of om
 		float[] omegaValues = { 0f, 30f, 45f, 60f, 90f, 135f, 180f};
 		foreach (float omega in omegaValues) {
 			orbitEllipse.omega_uc = omega ; 
 			orbitEllipse.Init();
-			orbitEllipse.InitNBody(1f);
+			orbitEllipse.InitNBody(1f, 1f);
 			OrbitData od = new OrbitData();
 			od.SetOrbitForVelocity(planet.GetComponent<NBody>(), star.GetComponent<NBody>());
 			TestRV(od, planet, star, orbitRadius);
@@ -364,8 +375,9 @@ public class EllipseDataTest {
 		GameObject testPlanet = TestSetupUtils.CreatePlanetInOrbit(star, 1f, orbitRadius);
 		OrbitEllipse testEllipse = testPlanet.GetComponent<OrbitEllipse>();
 		testEllipse.InitFromOrbitData( od);
+		testEllipse.ApplyScale(1f);
 		testEllipse.Init();
-		testEllipse.InitNBody(1f);
+		testEllipse.InitNBody(1f, 1f);
 		Vector3 r = testPlanet.transform.position;
 		Vector3 v = testPlanet.GetComponent<NBody>().vel;
 		Debug.Log(" r_i=" + r_initial + " r=" + r + " delta=" + Vector3.Distance(r_initial, r));

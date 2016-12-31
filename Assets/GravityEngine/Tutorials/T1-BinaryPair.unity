@@ -191,7 +191,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mass: 800
-  vel: {x: 0, y: 0, z: 0}
+  vel: {x: 0, y: -7.736232, z: 0}
+  vel_scaled: {x: 0, y: -7.736232, z: 0}
+  initialPos: {x: -7.044445, y: 0.0000012316899, z: 0}
   automaticParticleCapture: 1
   size: 2.5
 --- !u!1 &369545031
@@ -225,8 +227,10 @@ MonoBehaviour:
   optimizeMassless: 1
   detectNbodies: 1
   physToWorldFactor: 1
+  units: 0
+  _lengthScale: 1
   massScale: 5
-  timeScale: 1
+  _timeScale: 1
   bodies: []
   evolveAtStart: 1
   editorShowAdvanced: 0
@@ -274,7 +278,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mass: 1000
-  vel: {x: 0, y: 0, z: 0}
+  vel: {x: 0, y: 6.1889853, z: 0}
+  vel_scaled: {x: 0, y: 6.1889853, z: 0}
+  initialPos: {x: 5.6355557, y: 0, z: 0}
   automaticParticleCapture: 1
   size: 2.5
 --- !u!4 &936935599
@@ -472,6 +478,8 @@ MonoBehaviour:
   paramBy: 0
   centerObject: {fileID: 0}
   ecc: 0.366
+  a_scaled: 20
+  p_scaled: 0
   a: 20
   p: 12.68
   omega_uc: 0

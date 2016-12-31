@@ -24,6 +24,11 @@ public class GravityEngineEditor : Editor {
 				" Larger values can slow the simulation significantly if many particles are used.\n" + 
 				"Default value is 2.";
 
+	private const string unitsTip = "Units specifies the interpretation of the distance and mass\n" +
+				"in NBody objects.\n\n" + 
+				"GravityEngine uses G=1 and choice of units defines an intrinsic timescale.\n\n" +
+				"Game time to physics time can then be specified in the inspector.";
+
 	[MenuItem("GameObject/3D Object/GravityEngine")]
 	static void Init()
     {
@@ -42,6 +47,8 @@ public class GravityEngineEditor : Editor {
 		GravityEngine gravityEngine = (GravityEngine) target;
 		float massScale = gravityEngine.massScale; 
 		float timeScale = gravityEngine.timeScale; 
+		float lengthScale = gravityEngine.lengthScale;
+
 		float physToWorldFactor = gravityEngine.physToWorldFactor; 
 
 		bool optimizeMassless = gravityEngine.optimizeMassless;
@@ -55,13 +62,42 @@ public class GravityEngineEditor : Editor {
 		int particleStepsPerFrame = gravityEngine.particleStepsPerFrame;
 
 		GravityEngine.Algorithm algorithm = GravityEngine.Algorithm.LEAPFROG;
+		GravityScaler.Units units = GravityScaler.Units.DIMENSIONLESS;
 
 		EditorGUIUtility.labelWidth = 200;
 
 		scaling = EditorGUILayout.Foldout(scaling, "Scaling");
 		if (scaling) {
-			massScale = EditorGUILayout.FloatField(new GUIContent("Mass Scale", mTip), gravityEngine.massScale);
-			timeScale = EditorGUILayout.FloatField(new GUIContent("Time Scale", timeTip), gravityEngine.timeScale);
+			units =
+				(GravityScaler.Units)EditorGUILayout.EnumPopup(new GUIContent("Units", unitsTip), gravityEngine.units);
+//			float lscale = 0f;
+			switch(units) {
+			case GravityScaler.Units.DIMENSIONLESS:
+					massScale = EditorGUILayout.FloatField(new GUIContent("Mass Scale", mTip), gravityEngine.massScale);
+					timeScale = EditorGUILayout.FloatField(new GUIContent("Time Scale", timeTip), gravityEngine.timeScale);
+					break;
+			case GravityScaler.Units.SI:
+//					// mass scale is controlled by time exclusivly
+//					EditorGUILayout.LabelField("m/kg/sec.");
+//					// meters per Unity unit in the case of meters
+//					lengthScale = EditorGUILayout.DelayedFloatField(new GUIContent("m per Unity unit", timeTip), 1f/gravityEngine.lengthScale);
+//					timeScale = EditorGUILayout.DelayedFloatField(new GUIContent("Game sec. per sec.", timeTip), gravityEngine.timeScale);
+//					break;
+			case GravityScaler.Units.ORBITAL:
+					// mass scale is controlled by time exclusivly
+					EditorGUILayout.LabelField("km/1E24 kg/hr");
+					// Express in km per Unity unit km/U
+					lengthScale = EditorGUILayout.DelayedFloatField(new GUIContent("Unity unit per km", timeTip), gravityEngine.lengthScale);
+					timeScale = EditorGUILayout.DelayedFloatField(new GUIContent("Game sec. per hour", timeTip), gravityEngine.timeScale);
+					break;
+			case GravityScaler.Units.SOLAR:
+					// mass scale is controlled by time exclusivly
+					EditorGUILayout.LabelField("AU/1E24 kg/year");
+					// Flip since unity units per AU
+					lengthScale = EditorGUILayout.DelayedFloatField(new GUIContent("Unity unit per AU", timeTip), gravityEngine.lengthScale);
+					timeScale = EditorGUILayout.DelayedFloatField(new GUIContent("Game Sec per year", timeTip), gravityEngine.timeScale);
+					break;
+			}
 		}
 
 		showAdvanced = EditorGUILayout.Foldout(showAdvanced, "Advanced");
@@ -96,10 +132,21 @@ public class GravityEngineEditor : Editor {
 			EditorGUILayout.LabelField("CM Velocity:" + gravityEngine.GetWorldCenterOfMassVelocity());
 		}
 
+
+		// Checking the Event type lets us update after Undo and Redo commands.
+		// A redo updates _lengthScale but does not run the setter
+        if (Event.current.type == EventType.ExecuteCommand &&
+            Event.current.commandName == "UndoRedoPerformed") {
+            // explicitly re-set so setter code will run. 
+			gravityEngine.lengthScale = lengthScale;
+        }
+
 		if (GUI.changed) {
 			Undo.RecordObject(gravityEngine, "GE Change");
 			gravityEngine.timeScale = timeScale; 
 			gravityEngine.massScale = massScale; 
+			gravityEngine.lengthScale = lengthScale;
+			gravityEngine.units = units;
 			gravityEngine.physToWorldFactor = physToWorldFactor; 
 			gravityEngine.optimizeMassless = optimizeMassless; 
 			gravityEngine.detectNbodies = detectNbodies;
@@ -112,5 +159,6 @@ public class GravityEngineEditor : Editor {
 			gravityEngine.particleStepsPerFrame = particleStepsPerFrame;
 			EditorUtility.SetDirty(gravityEngine);
 		}
+
 	}
 }

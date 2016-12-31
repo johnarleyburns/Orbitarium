@@ -11,7 +11,9 @@ public class BinaryPairEditor : EllipseBaseEditor {
 		BinaryPair bPair = (BinaryPair) target;
 		Vector3 velocity = Vector3.zero;
 
-		velocity = EditorGUILayout.Vector3Field(new GUIContent("Velocity", "velocity of binary center of mass"), bPair.velocity);
+		GravityScaler.Units units = GravityEngine.Instance().units;
+		string prompt = string.Format("Velocity ({0})", GravityScaler.VelocityUnits(units));
+		velocity = EditorGUILayout.Vector3Field(new GUIContent(prompt, "velocity of binary center of mass"), bPair.velocity);
 
 
 		if (GUI.changed) {
@@ -20,6 +22,10 @@ public class BinaryPairEditor : EllipseBaseEditor {
 			EditorUtility.SetDirty(bPair);
 		}	
 		base.OnInspectorGUI();
-	
+
+		if (axisUpdated) {
+			bPair.ApplyScale(GravityEngine.Instance().GetLengthScale());
+		}
+
 	}
 }

@@ -21,6 +21,7 @@ public class DustRing : EllipseBase, IGravityParticlesInit {
 	void Start () {
 
 		Init();	// call EllipseBase.Init()
+		ApplyScale( GravityEngine.Instance().GetLengthScale());
 
 		// if the ring is too small will break particle system. 
 		if (a < 1E-3) {
@@ -39,13 +40,14 @@ public class DustRing : EllipseBase, IGravityParticlesInit {
 			float f = Random.Range(0, 2*Mathf.PI);
 
 			float physicalScale = GravityEngine.instance.physToWorldFactor;
-			float a_phy = a/physicalScale;
+			float a_phy =  a_scaled/physicalScale;
+			Debug.Log("a_phy=" + a_phy);
 			a_phy = Random.Range( a_phy * (1f-0.5f*ringWidthPercent), a_phy * (1f + 0.5f*ringWidthPercent));
 			// Phase is TRUE anomoly f
 			// Murray and Dermott(2.26)
-			// This should really be (M+m), but assume m << M
-			// (mass Scale will be applied in the integrator)
-			float n = Mathf.Sqrt( (float)centerNbody.mass /(a_phy*a_phy*a_phy));
+			// This should really be (M+m), but particles have m=0
+			float massScale = GravityEngine.Instance().massScale;
+			float n = Mathf.Sqrt( (float)(centerNbody.mass * massScale) /(a_phy*a_phy*a_phy));
 			// (2.36)
 			float denom = Mathf.Sqrt( 1f - ecc*ecc);
 			float xdot = -1f * n * a_phy * Mathf.Sin(f)/denom;
@@ -64,10 +66,23 @@ public class DustRing : EllipseBase, IGravityParticlesInit {
 			r[i,2] = pos.z;
 		
 			Vector3 v_xy = new Vector3( xdot, ydot, 0);
-			Vector3 vVec = ellipse_orientation * v_xy; 
+			Vector3 vVec = ellipse_orientation * v_xy + centerNbody.vel_scaled;
 			v[i,0] = vVec.x;
 			v[i,1] = vVec.y;
 			v[i,2] = vVec.z;
+		}
+	}
+
+	/// <summary>
+	/// Apply scale to the orbit. This is used by the inspector scripts during
+	/// scene setup. Do not use at run-time.
+	/// </summary>
+	/// <param name="scale">Scale.</param>
+	public void ApplyScale(float scale) {
+		if (paramBy == ParamBy.AXIS_A){
+			a_scaled = a * scale;
+		} else if (paramBy == ParamBy.CLOSEST_P) {
+			p_scaled = p * scale; 
 		}
 	}
 

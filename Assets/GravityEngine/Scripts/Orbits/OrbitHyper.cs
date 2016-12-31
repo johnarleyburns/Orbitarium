@@ -24,7 +24,7 @@ using System.Collections;
 ///    Omega (capital Omega) - is the rotation around Z after preceeding rotations
 ///
 /// </summary>
-public class OrbitHyper : MonoBehaviour, INbodyInit, IOrbitPositions  {
+public class OrbitHyper : MonoBehaviour, INbodyInit, IOrbitPositions, IOrbitScalable  {
 
 	public enum evolveType {GRAVITY_ENGINE, KEPLERS_EQN};
 	//! Use GRAVITY_ENGINE to evolve or move in a fixed KEPLER orbit. 
@@ -38,12 +38,23 @@ public class OrbitHyper : MonoBehaviour, INbodyInit, IOrbitPositions  {
 	//! eccentricity (0..1, 0=circle, 1=linear)
 	public float ecc = 2.0f; 			
 
-	//! semi-major axis - based on paramBy user can specify a OR p. a = p/(1-ecc)
-	private float a; 			
+	/// <summary>
+	/// Hyperbola parameters:
+	/// The definition is typically in terms of peri[helion] (closest approach to e.g. Sun) but the
+	/// hyperbola equation uses a.
+	///
+	/// a is calculated from the perihelion and used for orbital calculations.
+	///
+	/// </summary>
+
 	//! point of closest approach
 	public float perihelion = 10f; 		
-	//! pericenter (intercept of y-const from focus and hyperbola)
-	public float p;	
+	//! point of closest approach
+	public float perihelion_scaled = 10f; 		
+
+	//! semi-major axis - based on paramBy user can specify a OR p. a = p/(1-ecc)
+	private float a; 			
+
 	//! "longitude of ascending node" - angle from x-axis to line from focus to pericenter
 	public float omega_uc; 		
 	//! "argument of perienter" - angle from ascending node to pericenter
@@ -98,7 +109,7 @@ public class OrbitHyper : MonoBehaviour, INbodyInit, IOrbitPositions  {
 
 	public void InitFromOrbitData(OrbitData od) {
 		a = od.a; 
-		perihelion = od.perihelion; // Beware setting perihelion 
+		perihelion = od.perihelion;  
 		ecc = od.ecc; 
 		omega_lc = od.omega_lc;
 		omega_uc = od.omega_uc; 
@@ -129,7 +140,6 @@ public class OrbitHyper : MonoBehaviour, INbodyInit, IOrbitPositions  {
 		// p is the distance at f = +/- Pi/2  i.e. where the line y=const through the focus
 		// intercepts the parabola. The point of closest approach is when f=0, cosf=1, r=perihelion/(1+e)
 		a = perihelion/(ecc-1f);
-		p = a*(ecc*ecc-1f);
 		b = Mathf.Sqrt( a*a * (ecc*ecc-1f));
 	}
 
@@ -179,7 +189,7 @@ public class OrbitHyper : MonoBehaviour, INbodyInit, IOrbitPositions  {
 	/// position and velocity of the parent. 
 	/// </summary>
 	/// <param name="physicalScale">Physical scale.</param>
-	public void InitNBody(float physicalScale) {
+	public void InitNBody(float physicalScale, float massScale) {
 
 		float a_phy = a/physicalScale;
 		NBody nbody = GetComponent<NBody>();
@@ -188,7 +198,7 @@ public class OrbitHyper : MonoBehaviour, INbodyInit, IOrbitPositions  {
 		float f = ThetaForR(r_initial);
 		// Murray and Dermot (2.20)
 		Debug.Log(" r_initial=" + r_initial + " ecc=" + ecc);
-		float n = Mathf.Sqrt( (float)centerNbody.mass/(a_phy*a_phy*a_phy));
+		float n = Mathf.Sqrt( (float)(centerNbody.mass * massScale)/(a_phy*a_phy*a_phy));
 		float denom = Mathf.Sqrt( ecc*ecc - 1f);
 		// reverse sign from text to get prograde motion
 		float xdot = 1f * n * a_phy * Mathf.Sin(f)/denom;
@@ -203,18 +213,29 @@ public class OrbitHyper : MonoBehaviour, INbodyInit, IOrbitPositions  {
 		// has inited.
 		INbodyInit centerInit = centerObject.GetComponent<INbodyInit>();
 		if (centerInit != null) {
-			centerInit.InitNBody(physicalScale);
+			centerInit.InitNBody(physicalScale, massScale);
 		}
 
 		SetTransform(physicalScale);
 		Vector3 v_xy = new Vector3( xdot, ydot, 0);
-		Vector3 vphy = ellipse_orientation * v_xy + centerNbody.vel;
-		nbody.vel = vphy;
+		Vector3 vphy = ellipse_orientation * v_xy + centerNbody.vel_scaled;
+		nbody.vel_scaled = vphy;
 	}	
 
 	private Vector3 PositionForTheta(float theta) {
 		float r = RforTheta(theta);
 		Vector3 position = new Vector3( -r * Mathf.Cos (theta), r * Mathf.Sin (theta), 0);
+		// move from XY plane to the orbital plane
+		Vector3 newPosition = ellipse_orientation * position; 
+		// orbit position is WRT center
+		newPosition += centerObject.transform.position;
+		return newPosition;
+	}
+
+	private Vector3 PositionForThetaLeftBranch(float theta) {
+		float r = RforTheta(theta);
+		// flip sign of X to get left branch
+		Vector3 position = new Vector3( r * Mathf.Cos (theta), r * Mathf.Sin (theta), 0);
 		// move from XY plane to the orbital plane
 		Vector3 newPosition = ellipse_orientation * position; 
 		// orbit position is WRT center
@@ -250,12 +271,12 @@ public class OrbitHyper : MonoBehaviour, INbodyInit, IOrbitPositions  {
 		}
 		Vector3[] points = new Vector3[numPoints];
 		// start at y=100 and work down and up
-		const float Y_LIMIT = 100f; 
-		float dy = 2f*Y_LIMIT/numPoints;
-		float y = Y_LIMIT;
-		for (int i=0; i < numPoints; i++) {
-			points[i] = PositionForY(y);
-			y -= dy;
+		float dTheta = Mathf.PI/(float) numPoints;
+		float theta = -Mathf.PI/2f;
+		for (int i=0; i < numPoints; i++)
+		{
+			points[i] = PositionForThetaLeftBranch(theta);
+			theta += dTheta;
 		}
 		return points;
 	}
@@ -263,6 +284,17 @@ public class OrbitHyper : MonoBehaviour, INbodyInit, IOrbitPositions  {
 	public void Log(string prefix) {
 		Debug.Log(string.Format("orbitHyper: {0} a={1} ecc={2} peri={3} i={4} Omega={5} omega={6} r_initial={7}", 
 								prefix, a, ecc, perihelion, inclination, omega_uc, omega_lc, r_initial));
+	}
+
+	/// <summary>
+	/// Apply scale to the orbit. This is used by the inspector scripts during
+	/// scene setup. Do not use at run-time.
+	/// </summary>
+	/// <param name="scale">Scale.</param>
+	public void ApplyScale(float scale) {
+		perihelion_scaled = perihelion * scale;
+		CalcOrbitParams();
+		SetTransform(GravityEngine.Instance().physToWorldFactor);
 	}
 
 

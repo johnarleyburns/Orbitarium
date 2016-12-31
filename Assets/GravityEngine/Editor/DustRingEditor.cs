@@ -22,5 +22,10 @@ public class DustRingEditor : EllipseBaseEditor {
 			dustRing.ringWidthPercent = FixNaN.FixIfNaN(ringWidthPercent);
 			EditorUtility.SetDirty(dustRing);
 		}
+
+		if (axisUpdated) {
+			dustRing.ApplyScale(GravityEngine.Instance().GetLengthScale());
+		}
+
 	}
 }

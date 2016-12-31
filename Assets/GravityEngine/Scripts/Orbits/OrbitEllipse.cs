@@ -15,7 +15,7 @@ using System.Collections;
 /// </summary>
 
 [RequireComponent(typeof(NBody))]
-public class OrbitEllipse : EllipseBase, INbodyInit, IFixedOrbit {
+public class OrbitEllipse : EllipseBase, INbodyInit, IFixedOrbit, IOrbitScalable {
 
 	public enum evolveType {GRAVITY_ENGINE, KEPLERS_EQN};
 
@@ -35,20 +35,18 @@ public class OrbitEllipse : EllipseBase, INbodyInit, IFixedOrbit {
 	/// position and velocity of the parent. 
 	/// </summary>
 	/// <param name="physicalScale">Physical scale.</param>
-	/// <param name="massScale">Mass scale.</param>
-	public void InitNBody(float physicalScale) {
+	public void InitNBody(float physicalScale, float massScale) {
 
-		float a_phy = a/physicalScale;
+		float a_phy = a_scaled/physicalScale;
 		NBody nbody = GetComponent<NBody>();
 		
 		// Phase is TRUE anomoly f
 		float f = phase * Mathf.Deg2Rad;
-		// Murray and Dermot (2.20)
-//		float r = a_phy * (1f - ecc*ecc)/(1f + ecc * Mathf.Cos(f));
+		// Murray and Dermot 
 		// (2.26)
 		// This should really be (M+m), but assume m << M
-		// (massScale is added in at the integrator level)
-		float n = Mathf.Sqrt( (float)centerNbody.mass/(a_phy*a_phy*a_phy));
+		// (massScale is added in at the GE level)
+		float n = Mathf.Sqrt( (float)(centerNbody.mass * massScale)/(a_phy*a_phy*a_phy));
 		// (2.36)
 		float denom = Mathf.Sqrt( 1f - ecc*ecc);
 		float xdot = -1f * n * a_phy * Mathf.Sin(f)/denom;
@@ -59,16 +57,31 @@ public class OrbitEllipse : EllipseBase, INbodyInit, IFixedOrbit {
 		// has inited. Init may get called more than once. 
 		INbodyInit centerInit = centerObject.GetComponent<INbodyInit>();
 		if (centerInit != null) {
-			centerInit.InitNBody(physicalScale);
+			centerInit.InitNBody(physicalScale, massScale);
 		}
 
 		SetTransform();
 
 		Vector3 v_xy = new Vector3( xdot, ydot, 0);
-		Vector3 vphy = ellipse_orientation * v_xy + centerNbody.vel;
-		nbody.vel = vphy;
+		Vector3 vphy = ellipse_orientation * v_xy + centerNbody.vel_scaled;
+		nbody.vel_scaled = vphy;
 		SetTransform();
 	}	
+
+	/// <summary>
+	/// Inits from solar body.
+	/// </summary>
+	/// <param name="sbody">Sbody.</param>
+	public void InitFromSolarBody(SolarBody sbody) {
+		a = sbody.a; 
+		ecc = sbody.ecc; 
+		omega_lc = sbody.omega_lc;
+		omega_uc = sbody.omega_uc; 
+		inclination = sbody.inclination;
+		phase = sbody.longitude;
+		Init();
+		ApplyScale(GravityEngine.Instance().GetLengthScale());
+	}
 
 	// Fixed motion code
 
@@ -89,7 +102,7 @@ public class OrbitEllipse : EllipseBase, INbodyInit, IFixedOrbit {
 			}
 			base.Init();
 		}
-		a_phy = a/gravityEngine.GetPhysicalScale();
+		a_phy = a_scaled/gravityEngine.GetPhysicalScale();
 		float massScale = gravityEngine.massScale;
 		orbitPeriod = 2f * Mathf.PI * Mathf.Sqrt(a_phy*a_phy*a_phy/((float)centerNbody.mass * massScale)); // G=1
 		return orbitPeriod;
@@ -107,7 +120,7 @@ public class OrbitEllipse : EllipseBase, INbodyInit, IFixedOrbit {
 		}
 		// Convert a to physical scale so the correct orbit time results w.r.t evolving bodies
 		// Don't know this until factor until GravityEngine calls here. 
-		a_phy = a/physicalScale;
+		a_phy = a_scaled/physicalScale;
 		base.CalculateRotation();
 		// evolution relies on orbital period to determine current mean anomoly
 		orbitPeriod = GetPeriod();
@@ -186,7 +199,8 @@ public class OrbitEllipse : EllipseBase, INbodyInit, IFixedOrbit {
 		int loopCount = 0; 
 		float u = m * Mathf.Deg2Rad; // seed with mean anomoly
 		float u_next = 0;
-		const int LOOP_LIMIT = 10;
+		// some extreme comet orbits (e.g. Halley) need a LOT of iterations
+		const int LOOP_LIMIT = 200;
 		while(loopCount++ < LOOP_LIMIT) {
 			// this should always converge in a small number of iterations - but be paranoid
 			u_next = u + (m - (u - e * Mathf.Sin(u)))/(1 - e * Mathf.Cos(u));
@@ -194,14 +208,31 @@ public class OrbitEllipse : EllipseBase, INbodyInit, IFixedOrbit {
 				break;
 			u = u_next;
 		}
-		if (loopCount == LOOP_LIMIT)	
+		if (loopCount >= LOOP_LIMIT)	
 			Debug.LogError("Failed to converge u_n=" + u_next);	// keep going anyway
 
 		// 2) eccentric anomoly is angle from center of ellipse, not focus (where centerObject is). Convert
 		//    to true anomoly, f - the angle measured from the focus. (see Fig 3.2 in Gravity) 
 		float cos_f = (Mathf.Cos(u) - e)/(1f - e * Mathf.Cos(u));
         float sin_f = (Mathf.Sqrt(1 - e*e) * Mathf.Sin (u))/(1f - e * Mathf.Cos(u));
-        return NUtils.AngleFromSinCos(sin_f, cos_f) * Mathf.Rad2Deg;
+		float f_deg = NUtils.AngleFromSinCos(sin_f, cos_f) * Mathf.Rad2Deg;
+		//Debug.Log("m=" + m + " E=" + u * Mathf.Deg2Rad + " f=" + f_deg);
+        return f_deg;
+	}
+
+	/// <summary>
+	/// Apply scale to the orbit. This is used by the inspector scripts during
+	/// scene setup. Do not use at run-time.
+	/// </summary>
+	/// <param name="scale">Scale.</param>
+	public void ApplyScale(float scale) {
+		if (paramBy == ParamBy.AXIS_A){
+			a_scaled = a * scale;
+		} else if (paramBy == ParamBy.CLOSEST_P) {
+			p_scaled = p * scale; 
+		}
+		UpdateOrbitParams();
+		SetTransform();
 	}
 
 	public void Log(string prefix) {

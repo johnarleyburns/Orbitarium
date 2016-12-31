@@ -255,12 +255,6 @@ public class GravityParticles : MonoBehaviour {
 			if (particlesInit != null) {
 				particlesInit.InitNewParticles (lastParticleCount, gravityParticles.particleCount, ref r, ref v);
 				// apply mass scale to particle velocities
-				double velScale = System.Math.Sqrt(GravityEngine.instance.massScale);
-				for (int i = lastParticleCount; i < gravityParticles.particleCount; i++) {
-					v[i,0] *= velScale;
-					v[i,1] *= velScale;
-					v[i,2] *= velScale;
-				}
 
 			} else {
 				NoInitDelegateSetup(lastParticleCount, gravityParticles.particleCount);

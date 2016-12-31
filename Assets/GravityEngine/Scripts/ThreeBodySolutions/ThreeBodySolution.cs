@@ -17,6 +17,7 @@ public class ThreeBodySolution : MonoBehaviour {
 	public GameObject body3;
 
 	private GravityEngine gravityEngine;
+	private bool running; 
 
 	void Start () {
 		
@@ -43,7 +44,13 @@ public class ThreeBodySolution : MonoBehaviour {
 		if (gravityEngine.massScale != 1.0f) {
 			Debug.LogError("Three body solutions will not work as expected when massScale != 1");
 		}
-		gravityEngine.SetEvolve(true);
+	}
+
+	void FixedUpdate() {
+		if (!running) {
+			running = true; 
+			gravityEngine.SetEvolve(true);
+		}
 	}
 
 	private void SetBodies(NBody[] nbodies) {
@@ -63,9 +70,8 @@ public class ThreeBodySolution : MonoBehaviour {
 			// factor) it comes out as a wash. This is because the literature uses [-1..1] and this awkward approach
 			// is easier than scaling the velocities and masses. 
 			Vector3 position = new Vector3((float) x[i,0], (float) x[i,1], (float) x[i,2]) * gravityEngine.physToWorldFactor;
-			nbodies[i].transform.localPosition = Vector3.zero;
+			nbodies[i].initialPos = position;
 			nbodies[i].transform.position = position;
-			Debug.Log("pos = " + position);
 		}
 		// solution server provides a per-solution algorithm
 		GravityEngine.instance.algorithm = algorithm;

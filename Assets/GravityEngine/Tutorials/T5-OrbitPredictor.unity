@@ -445,8 +445,10 @@ MonoBehaviour:
   optimizeMassless: 1
   detectNbodies: 1
   physToWorldFactor: 1
+  units: 0
+  _lengthScale: 1
   massScale: 1
-  timeScale: 1
+  _timeScale: 1
   bodies: []
   evolveAtStart: 1
   editorShowAdvanced: 0
@@ -706,6 +708,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mass: 0
   vel: {x: 0, y: 5, z: 0}
+  vel_scaled: {x: 0, y: 0, z: 0}
+  initialPos: {x: 0, y: 0, z: 0}
   automaticParticleCapture: 1
   size: 0.10000000149011612
 --- !u!4 &1575528224
@@ -795,7 +799,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "Camera W-A-S-D\nSpaceship: Arrows, F-Fire Engine\nSPACE to pause, \n+/-
+  m_Text: "Camera: Arrows & <>\nSpaceship: ASDW, F-Fire Engine\nSPACE to pause, \n+/-
     for engine burn"
 --- !u!222 &1718254703
 CanvasRenderer:
@@ -988,6 +992,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spinRate: 1
+  zoomSize: 1
 --- !u!4 &2100916866
 Transform:
   m_ObjectHideFlags: 0

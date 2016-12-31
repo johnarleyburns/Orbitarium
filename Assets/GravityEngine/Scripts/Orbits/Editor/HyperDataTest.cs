@@ -26,7 +26,7 @@ public class HyperDataTest {
 		foreach (float ecc in eccValues) {
 			orbitHyper.ecc = ecc ; 
 			orbitHyper.Init();
-			orbitHyper.InitNBody(1f);
+			orbitHyper.InitNBody(1f, 1f);
 			orbitHyper.Log(System.Reflection.MethodBase.GetCurrentMethod().Name);
 			OrbitData od = new OrbitData();
 			od.SetOrbitForVelocity(planet.GetComponent<NBody>(), star.GetComponent<NBody>());
@@ -51,7 +51,7 @@ public class HyperDataTest {
 		foreach (float incl in inclValues) {
 			orbitHyper.inclination = incl ; 
 			orbitHyper.Init();
-			orbitHyper.InitNBody(1f);
+			orbitHyper.InitNBody(1f, 1f);
 			orbitHyper.Log(System.Reflection.MethodBase.GetCurrentMethod().Name);
 			OrbitData od = new OrbitData();
 			od.SetOrbitForVelocity(planet.GetComponent<NBody>(), star.GetComponent<NBody>());
@@ -78,7 +78,7 @@ public class HyperDataTest {
 		foreach (float omega in omegaValues) {
 			orbitHyper.omega_lc = omega ; 
 			orbitHyper.Init();
-			orbitHyper.InitNBody(1f);
+			orbitHyper.InitNBody(1f, 1f);
 			orbitHyper.Log(System.Reflection.MethodBase.GetCurrentMethod().Name);
 			OrbitData od = new OrbitData();
 			od.SetOrbitForVelocity(planet.GetComponent<NBody>(), star.GetComponent<NBody>());
@@ -106,7 +106,7 @@ public class HyperDataTest {
 		foreach (float rinit in rinit_values) {
 			orbitHyper.r_initial = rinit ; 
 			orbitHyper.Init();
-			orbitHyper.InitNBody(1f);
+			orbitHyper.InitNBody(1f, 1f);
 			orbitHyper.Log(System.Reflection.MethodBase.GetCurrentMethod().Name);
 			OrbitData od = new OrbitData();
 			od.SetOrbitForVelocity(planet.GetComponent<NBody>(), star.GetComponent<NBody>());
@@ -132,7 +132,7 @@ public class HyperDataTest {
 		foreach (float omega in omegaValues) {
 			orbitHyper.omega_lc = omega ; 
 			orbitHyper.Init();
-			orbitHyper.InitNBody(1f);
+			orbitHyper.InitNBody(1f, 1f);
 			orbitHyper.Log(System.Reflection.MethodBase.GetCurrentMethod().Name);
 			OrbitData od = new OrbitData();
 			od.SetOrbitForVelocity(planet.GetComponent<NBody>(), star.GetComponent<NBody>());
@@ -159,7 +159,7 @@ public class HyperDataTest {
 		foreach (float omega in omegaValues) {
 			orbitHyper.omega_lc = omega ; 
 			orbitHyper.Init();
-			orbitHyper.InitNBody(1f);
+			orbitHyper.InitNBody(1f, 1f);
 			orbitHyper.Log(System.Reflection.MethodBase.GetCurrentMethod().Name);
 			OrbitData od = new OrbitData();
 			od.SetOrbitForVelocity(planet.GetComponent<NBody>(), star.GetComponent<NBody>());
@@ -186,7 +186,7 @@ public class HyperDataTest {
 		foreach (float omega in omegaValues) {
 			orbitHyper.omega_uc = omega ; 
 			orbitHyper.Init();
-			orbitHyper.InitNBody(1f);
+			orbitHyper.InitNBody(1f, 1f);
 			orbitHyper.Log(System.Reflection.MethodBase.GetCurrentMethod().Name);
 			OrbitData od = new OrbitData();
 			od.SetOrbitForVelocity(planet.GetComponent<NBody>(), star.GetComponent<NBody>());
@@ -211,7 +211,7 @@ public class HyperDataTest {
 		foreach (float omega in omegaValues) {
 			orbitHyper.omega_uc = omega ; 
 			orbitHyper.Init();
-			orbitHyper.InitNBody(1f);
+			orbitHyper.InitNBody(1f, 1f);
 			orbitHyper.Log(System.Reflection.MethodBase.GetCurrentMethod().Name);
 			OrbitData od = new OrbitData();
 			od.SetOrbitForVelocity(planet.GetComponent<NBody>(), star.GetComponent<NBody>());
@@ -239,7 +239,7 @@ public class HyperDataTest {
 				orbitHyper.inclination = incl ; 
 				orbitHyper.omega_uc = omegau;
 				orbitHyper.Init();
-				orbitHyper.InitNBody(1f);
+				orbitHyper.InitNBody(1f, 1f);
 				orbitHyper.Log("Initial circle:");
 				OrbitData od = new OrbitData();
 				od.SetOrbitForVelocity(planet.GetComponent<NBody>(), star.GetComponent<NBody>());
@@ -258,7 +258,7 @@ public class HyperDataTest {
 		OrbitHyper testHyper = testPlanet.GetComponent<OrbitHyper>();
 		testHyper.InitFromOrbitData( od);
 		testHyper.Init();
-		testHyper.InitNBody(1f);
+		testHyper.InitNBody(1f, 1f);
 		Vector3 r = testPlanet.transform.position;
 		Vector3 v = testPlanet.GetComponent<NBody>().vel;
 		Debug.Log(" r_i=" + r_initial + " r=" + r + " delta=" + Vector3.Distance(r_initial, r));

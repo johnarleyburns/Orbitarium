@@ -36,7 +36,11 @@ public class OrbitEllipseEditor : EllipseBaseEditor {
 			r_hill = OrbitUtils.HillRadius( orbit.GetCenterObject(), orbit.transform.gameObject);
 		}
 		EditorGUILayout.LabelField(new GUIContent(string.Format("Hill Radius:  {0}", r_hill), hillTip));
-		EditorGUILayout.LabelField(new GUIContent(string.Format("Orbit Period: {0}", orbit.GetPeriod()), periodTip));
+		// EditorGUILayout.LabelField(new GUIContent(string.Format("Orbit Period: {0}", orbit.GetPeriod()), periodTip));
+
+		if (axisUpdated) {
+			orbit.ApplyScale(GravityEngine.Instance().GetLengthScale());
+		}
 
 	}
 }

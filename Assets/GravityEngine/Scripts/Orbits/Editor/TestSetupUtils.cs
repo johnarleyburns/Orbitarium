@@ -20,7 +20,8 @@ public class TestSetupUtils : MonoBehaviour {
 		OrbitEllipse orbitEllipse = planet.AddComponent<OrbitEllipse>();
 		orbitEllipse.a = a;
 		orbitEllipse.SetCenterBody(center);
-		orbitEllipse.InitNBody(1f);
+		orbitEllipse.ApplyScale(1f);
+		orbitEllipse.InitNBody(1f, 1f);
 		return planet;
 	}
 
@@ -31,7 +32,7 @@ public class TestSetupUtils : MonoBehaviour {
 
 		OrbitHyper orbitHyper = planet.AddComponent<OrbitHyper>();
 		orbitHyper.SetCenterBody(center);
-		orbitHyper.InitNBody(1f);
+		orbitHyper.InitNBody(1f, 1f);
 		return planet;
 	}
 }

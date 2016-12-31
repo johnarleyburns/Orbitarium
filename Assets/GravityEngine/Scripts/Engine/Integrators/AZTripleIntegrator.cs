@@ -122,12 +122,10 @@ public sealed class AZTripleIntegrator : INBodyIntegrator {
 		
 	}
 	
-	public void AddNBody(Vector3 position, NBody nbody, double massScale) {
+	public void AddNBody( int bodyNum, NBody nbody, Vector3 position, Vector3 velocity) {
 
-		// massScale is not supported
-		
 		numBodies++;
-		if (numBodies > 3) {
+		if (numBodies > maxBodies) {
 			Debug.LogError("Added more than maximum allocated bodies! max=" + maxBodies);
 			return;
 		}
@@ -135,9 +133,9 @@ public sealed class AZTripleIntegrator : INBodyIntegrator {
 		x[1,numBodies] = position.x;
 		x[2,numBodies] = position.y;
 		x[3,numBodies] = position.z;
-		xdot[1,numBodies] = nbody.vel.x;
-		xdot[2,numBodies] = nbody.vel.y;
-		xdot[3,numBodies] = nbody.vel.z;
+		xdot[1,numBodies] = velocity.x;
+		xdot[2,numBodies] = velocity.y;
+		xdot[3,numBodies] = velocity.z;
 		name[numBodies] = numBodies;
 		m[numBodies] = nbody.mass;
 		
@@ -157,17 +155,11 @@ public sealed class AZTripleIntegrator : INBodyIntegrator {
 		return Vector3.zero;
 	}
 
-    public void SetVelocityForIndex(int i, Vector3 vel)
-    {
-        Debug.LogError("Not supported in this integrator");
-    }
+	public 	void SetVelocityForIndex(int i, Vector3 vel) {
+		Debug.LogError("Not supported in this integrator");
+	}
 
-    public void SetPositionForIndex(int i, Vector3 pos)
-    {
-        Debug.LogError("Not supported in this integrator");
-    }
-
-    public Vector3 GetAccelerationForIndex(int i) {
+	public Vector3 GetAccelerationForIndex(int i) {
 		return Vector3.zero;
 	}
 

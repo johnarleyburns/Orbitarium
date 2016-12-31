@@ -6,10 +6,11 @@ using System.Collections;
 public class NBodyEditor : Editor {
 
 
-	private static string mTip = "Mass. Engine uses units in which G=1";
+	private static string mTip = "Mass. Unit selection controlled by Gravity Engine. DL=dimensionless (arbitrary units).";
 	private static string velTip = "Velocity component of the object.";
 	private static string autoTip = "Determine particle capture radius using size of mesh filter child (typically a sphere)";
 	private static string sizeTip = "Radius within which particles will be captured and removed from the scene.";
+	private static string iposTip = "Initial position (in the units chosen in the Gravity Engine). ";
 
 	public override void OnInspectorGUI()
 	{
@@ -20,25 +21,41 @@ public class NBodyEditor : Editor {
 		float size = 0.1f;
 		bool autoSize = true;
 		Vector3 velocity = Vector3.zero; 
+		Vector3 initialPos = Vector3.zero;
 
-		mass = EditorGUILayout.FloatField(new GUIContent("Mass", mTip), (float) nbody.mass);
+		GravityScaler.Units units = GravityEngine.Instance().units;
+		string mass_prompt = string.Format("Mass ({0})", GravityScaler.MassUnits(units));
+		mass = EditorGUILayout.DelayedFloatField(new GUIContent(mass_prompt, mTip), (float) nbody.mass);
 
 		// If the velocity is controlled by an EllipseBase, or this NBody is the direct child of
 		// BinaryPair or ThreeeBodySolution then don't allowit to be controlled. 
 		string controlledBy = null;
 		if (nbody.transform.gameObject.GetComponent<OrbitEllipse>() != null) {
-			controlledBy = "Velocity is set by ellipse parameters.";
+			controlledBy = "Initial position/Velocity is set by ellipse parameters.";
 		} else if (nbody.transform.gameObject.GetComponent<OrbitHyper>() != null) {
-			controlledBy = "Velocity is set by hyperbola parameters.";
+			controlledBy = "Initial position/Velocity is set by hyperbola parameters.";
 		} else if (nbody.transform.parent != null) {
 			if (nbody.transform.parent.gameObject.GetComponent<BinaryPair>() != null) {
-				controlledBy = "Velocity is set by BinaryPair parent.";
+				controlledBy = "Initial position/Velocity is set by BinaryPair parent.";
 			} else if (nbody.transform.parent.gameObject.GetComponent<ThreeBodySolution>() != null) {
-				controlledBy = "Velocity is set by ThreeBodySolution parent.";
+				controlledBy = "Initial position/Velocity is set by ThreeBodySolution parent.";
 			}
 		}
 		if (controlledBy == null) {
-			velocity = EditorGUILayout.Vector3Field(new GUIContent("Velocity", velTip), nbody.vel);
+			switch(units) {
+				case GravityScaler.Units.DIMENSIONLESS:
+					EditorGUILayout.LabelField("Initial position set via transform");
+					velocity = EditorGUILayout.Vector3Field(new GUIContent("Velocity", velTip), nbody.vel);
+					initialPos = nbody.transform.position;
+					break;
+				default:
+					string prompt = string.Format("Initial Pos ({0})", GravityScaler.LengthUnits(units));
+					initialPos = EditorGUILayout.Vector3Field(new GUIContent(prompt, iposTip), nbody.initialPos);
+
+					prompt = string.Format("Velocity ({0})", GravityScaler.VelocityUnits(units));
+					velocity = EditorGUILayout.Vector3Field(new GUIContent(prompt, velTip), nbody.vel);
+					break;
+			}
 		} else {
 			EditorGUILayout.LabelField(controlledBy, EditorStyles.boldLabel);
 			//EditorGUILayout.LabelField(string.Format("vel= {0:F2} {1:F2} {2:F2}", nbody.vel.x, nbody.vel.y, nbody.vel.z));
@@ -68,14 +85,31 @@ public class NBodyEditor : Editor {
 		if (mass < 0)
 			mass = 0; 
 
+		if (nbody.transform.hasChanged) {
+			// User has dragged the object and the transform has changed, need
+			// to change the initial Pos to correspond to this position in the correct units
+			if (units != GravityScaler.Units.DIMENSIONLESS) {
+				initialPos = nbody.transform.position/GravityEngine.Instance().GetLengthScale();
+			}
+			nbody.initialPos = initialPos;
+			nbody.transform.hasChanged = false;
+		}
+
 		if (GUI.changed) {
 			Undo.RecordObject(nbody, "NBody Change");
 			nbody.mass = FixNaN.FixIfNaN(mass);
 			nbody.vel = FixNaN.FixIfNaN(velocity);
 			nbody.size = size;
 			nbody.automaticParticleCapture = autoSize;
+			nbody.initialPos = initialPos;
+			Debug.Log("new v=" + velocity);
+			// must be after initialPos is updated
+			nbody.ApplyScale(GravityEngine.Instance().GetLengthScale(), 
+							 GravityEngine.Instance().GetVelocityScale() );
 			EditorUtility.SetDirty(nbody);
 		}
+
+
 
 	}
 }

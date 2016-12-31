@@ -52,31 +52,46 @@ public class TransformEditor : Editor
 	        scale = EditorGUILayout.Vector3Field("Scale", t.localScale);
 		} else if (t.gameObject.GetComponent<GravityEngine>() != null) {
 			EditorGUILayout.LabelField("NbodyEngine scale handled by script controls below.");
+
 		} else if (t.gameObject.GetComponent<BinaryPair>() != null) {
 			position = EditorGUILayout.Vector3Field("Position", t.localPosition);
 			EditorGUILayout.LabelField("Nbody scale set by NBodyEngine parameters.");
 			EditorGUILayout.LabelField("(To scale binary adjust the orbit parameters a or p.)");
 			EditorGUILayout.LabelField("Orientation controlled by orbit parameters.");
+
 		} else if (t.parent != null && t.parent.gameObject.GetComponent<BinaryPair>() != null) {
 			EditorGUILayout.LabelField("Position/orientation are handled by BinaryPair parameters in the parent.");
 			EditorGUILayout.LabelField("(To scale e.g. sphere, add it as a child.)");
 			showPosition = true;
+
 		} else if (t.gameObject.GetComponent<EllipseBase>() != null) {
 			EditorGUILayout.LabelField("Position/orientation are handled by Elliptical Orbit parameters below.");
 			EditorGUILayout.LabelField("(To scale e.g. sphere, add it as a child.)");
 			showPosition = true;
+
 		} else if (t.gameObject.GetComponent<OrbitHyper>() != null) {
 			EditorGUILayout.LabelField("Position/orientation are handled by OrbitHyper parameters below.");
 			EditorGUILayout.LabelField("(To scale e.g. sphere, add it as a child.)");
 			showPosition = true;
+
 		} else if (t.gameObject.GetComponent<DustRing>() != null) {
 			EditorGUILayout.LabelField("Position taken from parent.\nOrientation is handled by DustRing parameters below.");
 			showPosition = true;
+
 		} else if (t.gameObject.GetComponentsInChildren<NBody>().Length > 0) {
-			position = EditorGUILayout.Vector3Field("Position", t.localPosition);
+			// Why is this about children?
+			if (GravityEngine.Instance().units == GravityScaler.Units.DIMENSIONLESS) {
+				// ideally all units would be the same - this is to preserve bkwd compat. 
+				position = EditorGUILayout.Vector3Field("Position", t.localPosition);
+			} else {
+				EditorGUILayout.LabelField("Position is set from NBody initial position and");
+				EditorGUILayout.LabelField("  GE units and length scale selection.");
+				showPosition = true;
+			}
 			EditorGUILayout.LabelField("Nbody scale set by NBodyEngine parameters.");
-			EditorGUILayout.LabelField("(To scale e.g. sphere, add it as a child.)");
+			EditorGUILayout.LabelField("  (To scale e.g. sphere, add it as a child.)");
 			EditorGUILayout.LabelField("Nbody orbital rotation controlled on a per orbit basis.");
+
         } else {          
 	        // Replicate the standard transform inspector gui
 	        EditorGUI.indentLevel = 0;

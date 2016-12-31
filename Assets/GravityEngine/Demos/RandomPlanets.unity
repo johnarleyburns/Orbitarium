@@ -177,8 +177,10 @@ MonoBehaviour:
   optimizeMassless: 1
   detectNbodies: 1
   physToWorldFactor: 1
+  units: 0
+  _lengthScale: 1
   massScale: 1
-  timeScale: 1
+  _timeScale: 1
   bodies: []
   evolveAtStart: 1
   editorShowAdvanced: 0
@@ -391,7 +393,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3419f1b374a644051a35ff0b187ce7ac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  numPlanets: 5
+  numPlanets: 10
   planetPrefabs:
   - {fileID: 178322, guid: 0e001fe0942214065996ee3c3bb4fb6e, type: 2}
   a_min: 8
@@ -433,6 +435,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mass: 1000
   vel: {x: 0, y: 0, z: 0}
+  vel_scaled: {x: 0, y: 0, z: 0}
+  initialPos: {x: 0, y: 0, z: 0}
   automaticParticleCapture: 1
   size: 2.5
 --- !u!4 &1939654781

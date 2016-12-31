@@ -26,12 +26,6 @@ public class PhysicsUtils : MonoBehaviour {
         return explodes;
     }
 
-    public static bool ShouldBounce(GameObject myNBodyChild, GameObject otherBody)
-    {
-        float relVelDummy;
-        return ShouldBounce(myNBodyChild, otherBody, out relVelDummy);
-    }
-
     public static bool ShouldBounce(GameObject myNBodyChild, GameObject otherBody, out float relVel)
     {
         if (otherBody.tag == NeverBounceTag || myNBodyChild.tag == NeverBounceTag)
@@ -41,8 +35,8 @@ public class PhysicsUtils : MonoBehaviour {
         }
         else
         {
-            GameObject otherNBody = GetNBodyGameObject(otherBody);
-            GameObject myNBody = GetNBodyGameObject(myNBodyChild);
+            GameObject otherNBody = NUtils.GetNBodyGameObject(otherBody);
+            GameObject myNBody = NUtils.GetNBodyGameObject(myNBodyChild);
             Vector3 relVelVec =
                 GravityEngine.instance.GetVelocity(otherNBody)
                 -
@@ -58,8 +52,8 @@ public class PhysicsUtils : MonoBehaviour {
         bool dock = false;
         if (otherBody.tag == "Dock" && (myNBodyChild.tag == "Player" || myNBodyChild.tag == "Enemy"))
         {
-            GameObject otherNBody = GetNBodyGameObject(otherBody);
-            GameObject myNBody = GetNBodyGameObject(myNBodyChild);
+            GameObject otherNBody = NUtils.GetNBodyGameObject(otherBody);
+            GameObject myNBody = NUtils.GetNBodyGameObject(myNBodyChild);
             Vector3 relVelVec =
                 GravityEngine.instance.GetVelocity(otherNBody)
                 -
@@ -78,21 +72,10 @@ public class PhysicsUtils : MonoBehaviour {
         return dock;
     }
 
-    public static GameObject GetNBodyGameObject(GameObject body) // for rigidbody support
-    {
-        NBody nbody = body.GetComponent<NBody>();
-        while (nbody == null && body.transform.parent != null)
-        {
-            body = body.transform.parent.gameObject;
-            nbody = body.GetComponent<NBody>();
-        }
-        return body;
-    }
-
     public static void CalcRelV(Transform source, GameObject target, out Vector3 targetVec, out float relv, out Vector3 relVelUnit)
     {
-        Vector3 myVel = GravityEngine.instance.GetVelocity(PhysicsUtils.GetNBodyGameObject(source.gameObject));
-        Vector3 targetVel = GravityEngine.instance.GetVelocity(PhysicsUtils.GetNBodyGameObject(target));
+        Vector3 myVel = GravityEngine.instance.GetVelocity(NUtils.GetNBodyGameObject(source.gameObject));
+        Vector3 targetVel = GravityEngine.instance.GetVelocity(NUtils.GetNBodyGameObject(target));
         Vector3 relVel = myVel - targetVel;
         Vector3 targetPos = target.transform.position;
         Vector3 myPos = source.transform.position;

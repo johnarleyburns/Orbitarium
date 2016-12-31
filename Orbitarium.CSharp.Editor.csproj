@@ -138,6 +138,9 @@
     <Compile Include="Assets\GravityEngine\Editor\OrbitRendererEditor.cs" />
     <Compile Include="Assets\GravityEngine\Editor\OrbitSimpleDecayEditor.cs" />
     <Compile Include="Assets\GravityEngine\Editor\RandomPlanetEditor.cs" />
+    <Compile Include="Assets\GravityEngine\Editor\SolarBodyCreatorWindow.cs" />
+    <Compile Include="Assets\GravityEngine\Editor\SolarBodyEditor.cs" />
+    <Compile Include="Assets\GravityEngine\Editor\SolarSystemEditor.cs" />
     <Compile Include="Assets\GravityEngine\Editor\ThreeBodyEditor.cs" />
     <Compile Include="Assets\GravityEngine\Editor\TransformEditor.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\Engine\Editor\NutilsTest.cs" />

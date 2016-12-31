@@ -73,18 +73,22 @@ public sealed class HermiteIntegrator : INBodyIntegrator {
 		Debug.Log ("Hermite setup complete n=" + maxBodies);
 	}
 
-	public void AddNBody(Vector3 position, NBody nbody, double massScale) {
-		
-		if (numBodies > maxB) {
-			Debug.LogError("Hermite: Added more than max bodies bodies!");
+	public void AddNBody( int bodyNum, NBody nbody, Vector3 position, Vector3 velocity) {
+
+		if (numBodies > maxBodies) {
+			Debug.LogError("Added more than maximum allocated bodies! max=" + maxBodies);
+			return;
+		}
+		if (bodyNum != numBodies) {
+			Debug.LogError("Body numbers are out of sync integrator=" + numBodies + " GE=" + bodyNum);
 			return;
 		}
 		active[numBodies] = true;
-		double velScale = Math.Sqrt(massScale);
-		vel[numBodies,0] = velScale * nbody.vel.x; 
-		vel[numBodies,1] = velScale * nbody.vel.y; 
-		vel[numBodies,2] = velScale * nbody.vel.z; 
-		
+		// r,m already in GravityEngine
+		vel[numBodies,0] = velocity.x; 
+		vel[numBodies,1] = velocity.y; 
+		vel[numBodies,2] = velocity.z; 
+
 		//		Debug.Log ("add object at r=" + gameObject.transform.position + " v=" + ubody.vel + " size2=" + size2[numBodies]
 		//					+ " mass=" + ubody.mass);
 		numBodies++;
@@ -168,21 +172,13 @@ public sealed class HermiteIntegrator : INBodyIntegrator {
 		return new Vector3( (float)vel[i,0], (float)vel[i,1], (float)vel[i,2]);
 	}
 
-    public void SetVelocityForIndex(int i, Vector3 velocity)
-    {
-        vel[i, 0] = velocity.x;
-        vel[i, 1] = velocity.y;
-        vel[i, 2] = velocity.z;
-    }
+	public void SetVelocityForIndex(int i, Vector3 velocity) {
+		vel[i,0] = velocity.x;
+		vel[i,1] = velocity.y;
+		vel[i,2] = velocity.z;
+	}
 
-    public void SetPositionForIndex(int i, Vector3 position)
-    {
-        old_pos[i, 0] = position.x;
-        old_pos[i, 1] = position.y;
-        old_pos[i, 2] = position.z;
-    }
-
-    public Vector3 GetAccelerationForIndex(int i) {
+	public Vector3 GetAccelerationForIndex(int i) {
 		return new Vector3( (float)acc[i,0], (float)acc[i,1], (float)acc[i,2]);
 	}
 
