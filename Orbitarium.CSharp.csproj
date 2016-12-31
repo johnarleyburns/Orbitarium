@@ -122,6 +122,7 @@
     <Compile Include="Assets\Extended GUI Elements\Scripts\ToggleSelectable.cs" />
     <Compile Include="Assets\Extended GUI Elements\Scripts\Window.cs" />
     <Compile Include="Assets\Extended GUI Elements\Scripts\WindowHeader.cs" />
+    <Compile Include="Assets\GravityEngine\Scripts\Engine\Accelerometer.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\Engine\ExplosionFromNBody.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\Engine\GravityEngine.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\Engine\GravityParticles.cs" />

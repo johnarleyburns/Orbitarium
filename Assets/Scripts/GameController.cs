@@ -16,6 +16,7 @@ public class GameController : MonoBehaviour
     public Camera FPSCamera;
     public Camera OverShoulderCamera;
     public Camera OverviewCamera;
+    public GameObject Ceres;
     public GameObject Didymos;
     public GameObject Didymoon;
     //public GameObject EezoApproach;
@@ -28,6 +29,7 @@ public class GameController : MonoBehaviour
     public float PlayerInitialImpulse;
     public float PlayerShipRadiusM = 20;
     public float EnemyShipRadiusM = 20;
+    public float CeresRadiusM = 473000;
     public float DidymosRadiusM = 500;
     public float DidymoonRadiusM = 100;
     public float EezoDockingPortRadiusM = 20;
@@ -603,11 +605,13 @@ public class GameController : MonoBehaviour
 
     private void AddPlanetaryBodies()
     {
+        targetDB.AddTarget(Ceres, TargetDB.TargetType.ASTEROID, CeresRadiusM);
         targetDB.AddTarget(Didymos, TargetDB.TargetType.ASTEROID, DidymosRadiusM);
         targetDB.AddTarget(Didymoon, TargetDB.TargetType.MOON, DidymoonRadiusM);
         //targetDB.AddTarget(EezoApproach, TargetDB.TargetType.APPROACH, 0);
         targetDB.AddTarget(EezoDock, TargetDB.TargetType.DOCK, 0);
         //targetDB.AddTarget(EezoDockGhost, TargetDB.TargetType.DOCK, 0);
+        hudController.AddTargetIndicator(Ceres);
         hudController.AddTargetIndicator(Didymos);
         hudController.AddTargetIndicator(Didymoon);
         //hudController.AddTargetIndicator(EezoApproach);
