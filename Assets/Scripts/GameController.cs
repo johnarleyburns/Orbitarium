@@ -247,13 +247,6 @@ public class GameController : MonoBehaviour
         }
     }
 
-    public void EnableFPSCamera()
-    {
-        FPSCamera.enabled = true;
-        OverviewCamera.enabled = false;
-        OverShoulderCamera.enabled = false;
-    }
-
     private void TransitionToStartAwaitInput()
     {
         gameState = GameState.START_AWAIT_INPUT;
@@ -451,10 +444,10 @@ public class GameController : MonoBehaviour
         NBody playerNBody = NUtils.GetNBodyGameObject(player).GetComponent<NBody>();
         */
 
-        player.transform.position = EezoDock.transform.position;
-        player.transform.rotation = EezoDock.transform.rotation;
-        playerModel.transform.position = EezoDock.transform.GetChild(0).transform.position;
-        playerModel.transform.rotation = EezoDock.transform.GetChild(0).transform.rotation;
+        //player.transform.position = EezoDock.transform.position;
+        //player.transform.rotation = EezoDock.transform.rotation;
+        //playerModel.transform.position = EezoDock.transform.GetChild(0).transform.position;
+        //playerModel.transform.rotation = EezoDock.transform.GetChild(0).transform.rotation;
 
         doInitPlayer = true; // must init GravityEngine stuff after first FixedUpdate so auto-detect finishes
     }
@@ -464,6 +457,7 @@ public class GameController : MonoBehaviour
         if (doInitPlayer)
         {
             GetPlayerShip().Dock(EezoDockingPort.transform.GetChild(0).gameObject, false);
+            EnableOverviewCamera();
             doInitPlayer = false;
         }
     }
@@ -512,6 +506,13 @@ public class GameController : MonoBehaviour
         Quaternion enemyOffsetRotation = Quaternion.RotateTowards(enemyLookRotation, enemyRandomRotation, 90f);
         Quaternion enemySpawnRotation = enemyOffsetRotation * enemyLookRotation;
         return new KeyValuePair<Vector3, Quaternion>(enemySpawnPoint, enemySpawnRotation);
+    }
+
+    public void EnableFPSCamera()
+    {
+        FPSCamera.enabled = true;
+        OverviewCamera.enabled = false;
+        OverShoulderCamera.enabled = false;
     }
 
     public void EnableOverviewCamera()
@@ -704,18 +705,19 @@ public class GameController : MonoBehaviour
         OverviewCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
     }
 
-    public void Dock(GameObject ship, GameObject dockGhost)
+    public void Dock(GameObject ship, GameObject shipDockingPort, GameObject dockGhost, GameObject dockingPort)
     {
         GameObject myNBody = NUtils.GetNBodyGameObject(ship);
         GameObject dockNBody = NUtils.GetNBodyGameObject(dockGhost);
+//      Vector3 shipDockOffset = shipDockingPort.transform.position - ship.transform.position;
         Vector3 pos = dockGhost.transform.position;
         Vector3 vel = GravityEngine.instance.GetVelocity(dockNBody);
         GravityEngine.instance.UpdatePositionAndVelocity(myNBody.GetComponent<NBody>(), pos, vel);
         GravityEngine.instance.InactivateBody(ship);
         ship.transform.parent = dockGhost.transform.parent;
-        //ship.transform.position = dock.transform.position;
+        ship.transform.position = dockGhost.transform.position;
         ship.transform.rotation = dockGhost.transform.rotation;
-        //ship.transform.GetChild(0).transform.position = dock.transform.GetChild(0).transform.position;
+        ship.transform.GetChild(0).transform.position = dockGhost.transform.GetChild(0).transform.position;
         ship.transform.GetChild(0).transform.rotation = dockGhost.transform.GetChild(0).transform.rotation;
         inputController.PropertyChanged("Dock", true);
     }

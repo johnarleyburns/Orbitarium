@@ -302,11 +302,13 @@ public class PlayerShip : MonoBehaviour, IControllableShip
     {
         GameObject shipNbodyBody = transform.parent.gameObject;
         GameObject dockGhost = dockModel.transform.GetChild(0).gameObject;
+        GameObject dockingPort = dockModel;
         inputController.ControlsEnabled = false;
         StopAllThrust();
         ship.NullSpin();
         gameController.GetComponent<MFDController>().DisarmForDocking();
-        gameController.Dock(shipNbodyBody, dockGhost);
+        GameObject shipDockingPort = GetComponent<RocketShip>().DockingPort;
+        gameController.Dock(shipNbodyBody, shipDockingPort, dockGhost, dockingPort);
         cameraController.PlayCollisionShake();
         if (withSound)
         {
