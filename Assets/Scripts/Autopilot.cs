@@ -38,7 +38,7 @@ public class Autopilot : MonoBehaviour
         Command.INTERCEPT,
         Command.STRAFE,
         Command.RENDEZVOUS,
-        Command.APPROACH,
+        Command.HUNT,
         Command.DOCK
     };
 
@@ -47,12 +47,16 @@ public class Autopilot : MonoBehaviour
         OFF,
         KILL_ROTATION,
         FACE_TARGET,
+        FACE_NML_POS,
+        FACE_NML_NEG,
+        FACE_POS,
+        FACE_NEG,
         ACTIVE_TRACK,
         KILL_REL_V,
         INTERCEPT,
         STRAFE,
         RENDEZVOUS,
-        APPROACH,
+        HUNT,
         DOCK
     }
 
@@ -134,6 +138,18 @@ public class Autopilot : MonoBehaviour
             case Command.FACE_TARGET:
                 TurnToTarget(target);
                 break;
+            case Command.FACE_NML_POS:
+                TurnToTargetNmlPos(target);
+                break;
+            case Command.FACE_NML_NEG:
+                TurnToTargetNmlNeg(target);
+                break;
+            case Command.FACE_POS:
+                TurnToTargetPos(target);
+                break;
+            case Command.FACE_NEG:
+                TurnToTargetNeg(target);
+                break;
             case Command.ACTIVE_TRACK:
                 ActiveTrackTarget(target);
                 break;
@@ -149,8 +165,8 @@ public class Autopilot : MonoBehaviour
             case Command.RENDEZVOUS:
                 Rendezvous(target);
                 break;
-            case Command.APPROACH:
-                Approach(target);
+            case Command.HUNT:
+                Hunt(target);
                 break;
             case Command.DOCK:
                 Dock(target);
@@ -168,6 +184,40 @@ public class Autopilot : MonoBehaviour
     {
         AutopilotOff();
         PushAndStartCoroutine(FaceTargetCo(target));
+    }
+
+    private void TurnToTargetPos(GameObject target)
+    {
+        AutopilotOff();
+        Vector3 relVec = PhysicsUtils.CalcRelV(transform, target);
+        PushAndStartCoroutine(RotToUnitVec(relVec.normalized));
+    }
+
+    private void TurnToTargetNeg(GameObject target)
+    {
+        AutopilotOff();
+        Vector3 relVec = PhysicsUtils.CalcRelV(transform, target);
+        PushAndStartCoroutine(RotToUnitVec(-relVec.normalized));
+    }
+
+    private void TurnToTargetNmlPos(GameObject target)
+    {
+        AutopilotOff();
+        Vector3 relVec = PhysicsUtils.CalcRelV(transform, target);
+        Vector3 a = relVec.normalized;
+        Vector3 b = transform.up;
+        Vector3 nmlPos = -Vector3.Cross(a, b); // left handed coordinate system
+        PushAndStartCoroutine(RotToUnitVec(nmlPos.normalized));
+    }
+
+    private void TurnToTargetNmlNeg(GameObject target)
+    {
+        AutopilotOff();
+        Vector3 relVec = PhysicsUtils.CalcRelV(transform, target);
+        Vector3 a = relVec.normalized;
+        Vector3 b = transform.up;
+        Vector3 nmlPos = -Vector3.Cross(a, b);
+        PushAndStartCoroutine(RotToUnitVec(-nmlPos.normalized));
     }
 
     private void KillRelV(GameObject target)
@@ -194,7 +244,7 @@ public class Autopilot : MonoBehaviour
         PushAndStartCoroutine(RendezvousCo(target));
     }
 
-    private void Approach(GameObject target)
+    private void Hunt(GameObject target)
     {
         AutopilotOff();
         PushAndStartCoroutine(ApproachCo(target));
@@ -498,27 +548,25 @@ public class Autopilot : MonoBehaviour
         }
     }
 
-    float RCSDist = 150f;
+    private float RCSDist = 100f;
+    private float RCSMaxV = 5f;
 
     IEnumerator KillRelVCo(GameObject target)
     {
-        Vector3 targetVec;
-        float relv;
-        Vector3 relVelUnit;
-        PhysicsUtils.CalcRelV(transform.parent.transform, target, out targetVec, out relv, out relVelUnit);
+        Vector3 relVec = PhysicsUtils.CalcRelV(transform.parent.transform, target);
         float dist;
         PhysicsUtils.CalcDistance(transform, target, out dist);
 
-        float arelv = Mathf.Abs(relv);
-        Vector3 negVec = -1f * relVelUnit;
+        float arelv = relVec.magnitude;
+        Vector3 negVec = -relVec;
         float secMain = CalcDeltaVMainBurnSec(arelv);
         float secAux = CalcDeltaVAuxBurnSec(arelv);
         float secRCS = CalcDeltaVBurnRCSSec(arelv);
-        if (secMain >= MinMainEngineBurnSec)
+        if (secMain >= MinMainEngineBurnSec && dist > RCSDist && arelv > RCSMaxV)
         {
             yield return PushAndStartCoroutine(RotThenBurnMain(negVec, secMain));
         }
-        else if (secAux >= MinAuxEngineBurnSec && dist > RCSDist)
+        else if (secAux >= MinAuxEngineBurnSec && dist > RCSDist && arelv > RCSMaxV)
         {
             yield return PushAndStartCoroutine(RotThenBurnAux(negVec, secAux));
         }
@@ -526,25 +574,6 @@ public class Autopilot : MonoBehaviour
         {
             ship.RCSBurst(negVec, secRCS);
             yield return new WaitForSeconds(secRCS);
-        }
-        else
-        {
-            PopCoroutine();
-            yield break;
-        }
-    }
-
-    IEnumerator KillRelVRCSCo(GameObject target)
-    {
-        Vector3 targetVec;
-        float relv;
-        Vector3 relVelUnit;
-        PhysicsUtils.CalcRelV(transform.parent.transform, target, out targetVec, out relv, out relVelUnit);
-        Vector3 negVec = -1f * relVelUnit;
-        float sec = CalcDeltaVBurnRCSSec(relv);
-        if (sec >= ship.RCSBurnMinSec)
-        {
-            yield return PushAndStartCoroutine(RCSBurst(negVec, sec));
         }
         else
         {
@@ -853,7 +882,7 @@ public class Autopilot : MonoBehaviour
             }
             else if (relv > MaxCenteredRelv)
             {
-                yield return PushAndStartCoroutine(KillRelVRCSCo(targetDock));
+                yield return PushAndStartCoroutine(KillRelVCo(targetDock));
             }
             else if (Mathf.Abs(targetAngle) > MinDockDeltaTheta) // rot to tgt
             {

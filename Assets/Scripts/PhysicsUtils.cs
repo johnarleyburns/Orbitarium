@@ -52,6 +52,8 @@ public class PhysicsUtils : MonoBehaviour {
         bool dock = false;
         if (otherBody.tag == "Dock" && (myNBodyChild.tag == "Player" || myNBodyChild.tag == "Enemy"))
         {
+            RocketShip rocket = myNBodyChild.GetComponent<RocketShip>();
+            float dist = Vector3.Distance(rocket.DockingPort.transform.position, otherBody.transform.position);
             GameObject otherNBody = NUtils.GetNBodyGameObject(otherBody);
             GameObject myNBody = NUtils.GetNBodyGameObject(myNBodyChild);
             Vector3 relVelVec =
@@ -62,7 +64,7 @@ public class PhysicsUtils : MonoBehaviour {
             Transform dockGhostModel = otherBody.transform.GetChild(0).GetChild(0).transform;
             float relTheta = Quaternion.Angle(myNBodyChild.transform.rotation, dockGhostModel.rotation);
             bool isRelv = relVel >= minRelVtoDock && relVel <= maxRelVtoDock;
-            bool isPos = Vector3.Distance(myNBody.transform.position, dockGhostModel.position) <= maxDistToDock;
+            bool isPos = dist <= maxDistToDock;
             bool isAligned = relTheta <= maxThetatoDock;
             if (isRelv && isPos && isAligned)
             {
@@ -70,6 +72,14 @@ public class PhysicsUtils : MonoBehaviour {
             }
         }
         return dock;
+    }
+
+    public static Vector3 CalcRelV(Transform source, GameObject target)
+    {
+        Vector3 myVel = GravityEngine.instance.GetVelocity(NUtils.GetNBodyGameObject(source.gameObject));
+        Vector3 targetVel = GravityEngine.instance.GetVelocity(NUtils.GetNBodyGameObject(target));
+        Vector3 relVec = myVel - targetVel;
+        return relVec;
     }
 
     public static void CalcRelV(Transform source, GameObject target, out Vector3 targetVec, out float relv, out Vector3 relVelUnit)

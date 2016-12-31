@@ -4,6 +4,7 @@ using System.Collections.Generic;
 public class RocketShip : MonoBehaviour {
 
     public GameController gameController;
+    public GameObject DockingPort;
     public float EmptyMassKg = 10000;
     public float FuelMassKg = 9200;
     public float RCSThrustNewtons = 880; // 220*4 in the SM
