@@ -101,10 +101,9 @@ public class MasslessBodyEngine  {
 		r[numBodies,0] = physicsPosition.x;
 		r[numBodies,1] = physicsPosition.y;
 		r[numBodies,2] = physicsPosition.z; 
-		double velScale = System.Math.Sqrt(GravityEngine.instance.massScale);
-		v[numBodies,0] = velScale * nbody.vel.x; 
-		v[numBodies,1] = velScale * nbody.vel.y; 
-		v[numBodies,2] = velScale * nbody.vel.z; 
+		v[numBodies,0] = nbody.vel_scaled.x; 
+		v[numBodies,1] = nbody.vel_scaled.y; 
+		v[numBodies,2] = nbody.vel_scaled.z; 
 		info[numBodies] = 0;
 		numBodies++;
 		#pragma warning disable 162		// disable unreachable code warning
@@ -116,6 +115,7 @@ public class MasslessBodyEngine  {
 	public void RemoveBody(GameObject gameObject) {
 		NBody nbody = gameObject.GetComponent<NBody>();
 		// shuffle rest of entries in array up
+		Debug.Log("Remove body at " + nbody.engineRef.index);
 		for( int j=nbody.engineRef.index; j < numBodies-1; j++) {
 			for (int k=0; k < GravityEngine.NDIM; k++) {
 				r[j,k] = r[j+1, k]; 
@@ -126,6 +126,7 @@ public class MasslessBodyEngine  {
 			NBody nb = bodies[j].GetComponent<NBody>();
 			nb.engineRef.index = j;
 		}
+		numBodies--;
 	}
 
 	public int NumBodies() {
@@ -146,9 +147,9 @@ public class MasslessBodyEngine  {
 			info_copy[j] = info[j];
 			bodies_copy[j] = bodies[j];
 		}
-        r = new double[arraySize + growBy, GravityEngine.NDIM];
-        v = new double[arraySize + growBy, GravityEngine.NDIM];
-        a = new double[arraySize+growBy, GravityEngine.NDIM];
+		r = new double[arraySize+growBy, GravityEngine.NDIM];
+		v = new double[arraySize+growBy, GravityEngine.NDIM];
+		a = new double[arraySize+growBy, GravityEngine.NDIM];
 		info = new byte[arraySize+growBy];
 		bodies = new GameObject[arraySize+growBy];
 
@@ -306,26 +307,27 @@ public class MasslessBodyEngine  {
 		return new Vector3((float) v[i,0], (float) v[i,1], (float) v[i,2]);
 	}
 
-    public void SetVelocity(GameObject body, Vector3 velocity)
-    {
-        NBody nbody = body.GetComponent<NBody>();
-        int i = nbody.engineRef.index;
-        v[i, 0] = velocity.x;
-        v[i, 1] = velocity.y;
-        v[i, 2] = velocity.z;
-    }
+	public void SetVelocity(GameObject body, Vector3 velocity) {
+		NBody nbody = body.GetComponent<NBody>();
+		int i = nbody.engineRef.index;
+		v[i,0] = velocity.x;
+		v[i,1] = velocity.y;
+		v[i,2] = velocity.z;
+	}
 
-    public void SetPosition(GameObject body, Vector3 position, float physicalScale)
-    {
-        NBody nbody = body.GetComponent<NBody>();
-        int i = nbody.engineRef.index;
-        r[i, 0] = position.x / physicalScale;
-        r[i, 1] = position.y / physicalScale;
-        r[i, 2] = position.z / physicalScale;
-        bodies[i].transform.position = position;
-    }
+	public void SetVelocityAtIndex(int i, Vector3 velocity) {
+		v[i,0] = velocity.x;
+		v[i,1] = velocity.y;
+		v[i,2] = velocity.z;
+	}
 
-    public Vector3 GetAcceleration(GameObject body) {
+	public void SetPositionAtIndex(int i, Vector3 pos) {
+		r[i,0] = pos.x;
+		r[i,1] = pos.y;
+		r[i,2] = pos.z;
+	}
+
+	public Vector3 GetAcceleration(GameObject body) {
 		NBody nbody = body.GetComponent<NBody>();
 		int i = nbody.engineRef.index;
 		return new Vector3((float) a[i,0], (float) a[i,1], (float) a[i,2]);

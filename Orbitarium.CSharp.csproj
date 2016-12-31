@@ -125,6 +125,7 @@
     <Compile Include="Assets\GravityEngine\Scripts\Engine\ExplosionFromNBody.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\Engine\GravityEngine.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\Engine\GravityParticles.cs" />
+    <Compile Include="Assets\GravityEngine\Scripts\Engine\GravityScaler.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\Engine\IFixedOrbit.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\Engine\IGravityParticlesInit.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\Engine\INbodyInit.cs" />
@@ -140,6 +141,7 @@
     <Compile Include="Assets\GravityEngine\Scripts\Orbits\EllipseBase.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\Orbits\FixedObject.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\Orbits\IOrbitPositions.cs" />
+    <Compile Include="Assets\GravityEngine\Scripts\Orbits\IOrbitScalable.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\Orbits\OrbitData.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\Orbits\OrbitEllipse.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\Orbits\OrbitHyper.cs" />
@@ -152,6 +154,13 @@
     <Compile Include="Assets\GravityEngine\Scripts\Particles\DustRing.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\Samples\CameraSpin.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\Samples\GridOverlay.cs" />
+    <Compile Include="Assets\GravityEngine\Scripts\SolarSystem\AsteroidData.cs" />
+    <Compile Include="Assets\GravityEngine\Scripts\SolarSystem\AsteroidUnnumbered.cs" />
+    <Compile Include="Assets\GravityEngine\Scripts\SolarSystem\CometData.cs" />
+    <Compile Include="Assets\GravityEngine\Scripts\SolarSystem\PlanetData.cs" />
+    <Compile Include="Assets\GravityEngine\Scripts\SolarSystem\SolarBody.cs" />
+    <Compile Include="Assets\GravityEngine\Scripts\SolarSystem\SolarSystem.cs" />
+    <Compile Include="Assets\GravityEngine\Scripts\SolarSystem\SolarUtils.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\Systems\RandomPlanets.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\ThreeBodySolutions\BrouckeA.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\ThreeBodySolutions\BrouckeR.cs" />
@@ -231,6 +240,7 @@
     <Compile Include="Assets\Scripts\MissileShip.cs" />
     <Compile Include="Assets\Scripts\MissileShipController.cs" />
     <Compile Include="Assets\Scripts\MusicController.cs" />
+    <Compile Include="Assets\Scripts\OverShoulderCameraSpin.cs" />
     <Compile Include="Assets\Scripts\PerlinShake.cs" />
     <Compile Include="Assets\Scripts\PhysicsUtils.cs" />
     <Compile Include="Assets\Scripts\PlayerShip.cs" />

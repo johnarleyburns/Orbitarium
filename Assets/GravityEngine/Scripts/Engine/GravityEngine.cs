@@ -43,6 +43,9 @@ public class GravityEngine : MonoBehaviour {
 	//! Singleton instance handle. Initialized during Awake().
 	public static GravityEngine instance; 
 
+	//! global flag for debugging 
+	public const bool DEBUG = false; 
+	                                       
 	/// <summary>
 	/// Integrator choices:
 	/// LEAPFROG - a fixed timestep, with good energy conservation 
@@ -71,10 +74,48 @@ public class GravityEngine : MonoBehaviour {
 	/// will result in stronger gravity and faster interactions. 
 	/// </summary>
 	public float physToWorldFactor = 1.0f;
+
+	public GravityScaler.Units units;
+
+	/// <summary>
+	/// The length scale.
+	/// Scale from NBody initial pos to Unity position
+	/// Expressed in Unity units per scale unit (pos = scale_pos * lengthScale).
+	/// Changing this value will result in changes in the positions of all NBody objects in 
+	/// the scene. It is intended for use by the Editor scripts during script setup and not
+	/// for run-time changes.
+	/// </summary>
+	[SerializeField]
+	private float _lengthScale = 1f; 
+	//! Orbital scale in Unity unity per AU
+	public float lengthScale {
+		get { return _lengthScale; }
+		set { UpdateLengthScale(value);}
+	}
+
 	//! Mass scale applied to all NBody objects handled by the Gravity Engine. Increasing mass scale makes everything move faster for the same CPU cost.
 	public float massScale = 1.0f;
-	//! Scale of physical ("engine") time to game time. Altering time scale number of computations per frame. 
-	public float timeScale = 1.0f; 
+
+	/// <summary>
+	/// The time scale.
+	/// Time scale is used for overall scale at setup and is used via dimension analysis to set an overall
+	/// mass scale to produce the required evolution. 
+	///
+	/// To change evoution speed at run time use SetTimeZoom(). This affectes the amount of physics calculations
+	/// performed per frame. 
+	///
+	/// </summary>
+	[SerializeField]
+	private float _timeScale = 1.0f; 
+	//! Orbital scale in Unity unity per AU
+	public float timeScale {
+		get { return _timeScale; }
+		set { UpdateTimeScale(value);}
+	}
+
+	private float timeZoom = 1f; 
+	private bool timeZoomChangePending; 
+	private float newTimeZoom; 
 
 	//! Array of game objects to be controlled by the engine at start (used when detectNbodies=false). During evolution use AddBody().
 	public GameObject[] bodies; 
@@ -106,8 +147,6 @@ public class GravityEngine : MonoBehaviour {
 	// run particles at a larger timestep to save CPU
 	private double particle_dt;  
 		
-	private bool timescaleChangePending; 
-	private float newTimescale; 
 	private float evolveTimeStart; 
 	private enum Evolvers { MASSIVE, MASSLESS, PARTICLES};
 	double[] physicalTime; // physical time per evolver since start OR last timescale change
@@ -135,9 +174,6 @@ public class GravityEngine : MonoBehaviour {
 	public const byte FIXED_MOTION  = 1 << 1;	// integrator should not update position/velocity but
 	                                            // will use mass to affect other object
 
-	//! global flag for debugging 
-	public const bool DEBUG = false; 
-	                                       
 	private byte[] info; // per GameObject flags for the integrator
 
 	private List<GameObject> addedByScript; 
@@ -186,6 +222,15 @@ public class GravityEngine : MonoBehaviour {
 	// ---------main class-------------
 	private List<FixedBody> fixedBodies;
 
+	/// <summary>
+	/// Static accessor that finds Instance. Useful for Editor scripts.
+	/// </summary>
+	public static GravityEngine Instance()
+ 	{
+     	if (instance == null)
+         	instance = (GravityEngine)FindObjectOfType(typeof(GravityEngine));
+     	return instance;
+    }
 		
 	void Awake () {
 		if (instance == null) {
@@ -194,9 +239,8 @@ public class GravityEngine : MonoBehaviour {
 			Debug.LogError("More than one GravityEngine in Scene");
 			return;
 		}
-		engineDt = 1.0/(60.0 * (double) stepsPerFrame); 
-		particle_dt = 1.0/(60.0 * (double) particleStepsPerFrame); 		
 
+		ConfigureDT();
 		SetAlgorithm(algorithm);
 		nbodyParticles = new List<GravityParticles>();
 
@@ -215,6 +259,8 @@ public class GravityEngine : MonoBehaviour {
 			Debug.LogError("Cannot evolve with timeScale = 0"); 
 			return;
 		}
+		// force computation of massScale
+		UpdateTimeScale(_timeScale);
 
 		addedByScript = new List<GameObject>();
 	}
@@ -305,6 +351,8 @@ public class GravityEngine : MonoBehaviour {
 
 	public void Setup() {
 		numBodies = 0;
+		GravityScaler.UpdateTimeScale(units, _timeScale, _lengthScale);
+		GravityScaler.ScaleScene(units,  _timeScale, _lengthScale);
 		if (detectNbodies) {
 			SetupAutoDetect();
 		} else {
@@ -377,11 +425,12 @@ public class GravityEngine : MonoBehaviour {
                        maxBodies += body.GetComponentsInChildren<NBody>().Length;
                }
         }
-        InitArrays(maxBodies+GROW_SIZE);
                        
 		NBody[] nbodies = (NBody[]) Object.FindObjectsOfType(typeof(NBody));
 		// allocate physics arrays (will over-allocate by number of massless bodies if optimizing massless)
 		// add some buffer to allow for dynamic additions
+		maxBodies += nbodies.Length;
+        InitArrays(maxBodies+GROW_SIZE);
 
 		foreach (NBody nbody in nbodies) {
 			SetupOneGameObject(nbody.gameObject, nbody);
@@ -451,7 +500,7 @@ public class GravityEngine : MonoBehaviour {
 		#pragma warning disable 162		// disable unreachable code warning
 		if (DEBUG)
 			Debug.Log("GrowArrays by " + growBy);
-		#pragma warning restore 162		// disable unreachable code warning
+		#pragma warning restore 162		
 		return true;
 	}
 
@@ -498,7 +547,7 @@ public class GravityEngine : MonoBehaviour {
 				worldTime += Time.time - lastFrameTime; 
 			}
 			lastFrameTime = Time.time;
-			double gameDt = System.Math.Max(worldTime - ((float) physicalTime[(int)Evolvers.MASSIVE])/timeScale,0.0);
+			double gameDt = System.Math.Max(worldTime - ((float) physicalTime[(int)Evolvers.MASSIVE])/timeZoom,0.0);
 			// evolve all the massive game objects (unless we went into future last time and gameDt < 0)
 			if (gameDt > 1E-5) {
 				double dt = integrator.Evolve(gameDt, ref m , ref r, ref info);
@@ -526,7 +575,7 @@ public class GravityEngine : MonoBehaviour {
 			// Particles
 			//==============================
 			if (nbodyParticles.Count > 0) {
-				double particleDt = System.Math.Max(worldTime - ((float) physicalTime[(int)Evolvers.PARTICLES])/timeScale,0.0);
+				double particleDt = System.Math.Max(worldTime - ((float) physicalTime[(int)Evolvers.PARTICLES])/timeZoom,0.0);
 				if (particleDt > 1E-5) {
 					double evolvedFor = 0.0;
 					foreach (GravityParticles nbp in nbodyParticles) {
@@ -540,7 +589,7 @@ public class GravityEngine : MonoBehaviour {
 			// Massless
 			//==============================
 			if (masslessEngine != null) {
-				double masslessDt = System.Math.Max(worldTime - ((float) physicalTime[(int)Evolvers.MASSLESS])/timeScale,0.0);
+				double masslessDt = System.Math.Max(worldTime - ((float) physicalTime[(int)Evolvers.MASSLESS])/timeZoom,0.0);
 				if (masslessDt > 1E-5) {
 					physicalTime[(int)Evolvers.MASSLESS] +=
 							masslessEngine.Evolve(masslessDt, numBodies, ref m, ref r, ref size2, ref info);
@@ -560,13 +609,13 @@ public class GravityEngine : MonoBehaviour {
 			}
 
 			// if there is a timescale change pending, apply it
-			if (timescaleChangePending) {
+			if (timeZoomChangePending) {
 				// When changing timescale need to reset the evolve time and physics running time
 				evolveTimeStart = worldTime + evolveTimeStart;
 				totalPhysicalTime += physicalTime[(int)Evolvers.MASSIVE];
-				timeScale = newTimescale; 
+				timeZoom = newTimeZoom; 
 				ResetPhysicalTime();
-				timescaleChangePending = false;
+				timeZoomChangePending = false;
 			}
 		}
 		
@@ -580,12 +629,21 @@ public class GravityEngine : MonoBehaviour {
 	}
 
 	/// <summary>
-	/// Sets the timescale.
+	/// Return the length scale that maps lengths in the specified unit system to 
+	/// Unity game length units (e.g. Unity units per meter, Unity units per AU)
+	/// </summary>
+	/// <returns>The length scale.</returns>
+	public float GetLengthScale() {
+		return lengthScale;
+	}
+
+	/// <summary>
+	/// Changes the timescale during runtime
 	/// </summary>
 	/// <param name="value">Value.</param>
-	public void SetTimescale(float value) {
-		newTimescale = value;
-		timescaleChangePending = true;
+	public void SetTimeZoom(float value) {
+		newTimeZoom = value;
+		timeZoomChangePending = true;
 	}
 
 	/// <summary>
@@ -607,7 +665,9 @@ public class GravityEngine : MonoBehaviour {
 	// Adds one game object - checking if it is fixed or should be evolved in the 
 	// standard or massless engine. 
 	private void SetupOneGameObject(GameObject gameObject, NBody nbody) {
+
         // don't double-add
+        /*
         for (int i = 0; i < numBodies; i++)
         {
             if (bodies[i] == gameObject)
@@ -615,9 +675,15 @@ public class GravityEngine : MonoBehaviour {
                 return;
             }
         }
+        */
 
-		bool fixedObject = false; 
+        bool fixedObject = false; 
 		IFixedOrbit fixedOrbit = gameObject.GetComponent<IFixedOrbit>();
+
+		// Backwards compatibility. Pre 1.3 position was in transform. Now in initialPos (in specified units)
+		if (units == GravityScaler.Units.DIMENSIONLESS && _lengthScale == 1f ) {
+			nbody.initialPos = nbody.transform.position;
+		}
 
 		if (fixedOrbit != null && fixedOrbit.IsFixed()) {
 			fixedObject = true;
@@ -628,14 +694,22 @@ public class GravityEngine : MonoBehaviour {
 		// check for initial condition setup (e.g. initial conditions for elliptical orbit)
 		INbodyInit initNbody = gameObject.GetComponent<INbodyInit>();
 		if ( initNbody != null) {
-			initNbody.InitNBody(physToWorldFactor);
-		}
+			initNbody.InitNBody(physToWorldFactor, massScale);
+		} 
 		if (nbody.mass == 0 && optimizeMassless && !fixedObject) {
 			// use the massless engine and its built-in Leapfrog integrator
 			if (masslessEngine == null) {
 				masslessEngine = new MasslessBodyEngine(engineDt); 
 			}
 			masslessEngine.AddBody(gameObject);
+			#pragma warning disable 162		// disable unreachable code warning
+			if (DEBUG) {
+				Vector3 pos = nbody.transform.position;
+				Debug.Log(string.Format("GE add massless: {0} r=[{1} {2} {3}] v=[{4} {5} {6}]",
+					gameObject.name, pos.x, pos.y, pos.z, 
+					nbody.vel_scaled.x, nbody.vel_scaled.y, nbody.vel_scaled.z));
+			}
+			#pragma warning restore 162		// enable unreachable code warning
 		} else {
 			// Use the standard (massive) engine and the configured integrator
 			// Make sure there's room
@@ -654,14 +728,18 @@ public class GravityEngine : MonoBehaviour {
 			r[numBodies,2] = physicsPosition.z; 
 			size2[numBodies] = nbody.size * nbody.size;
 			gameObjects[numBodies] = gameObject; 
-			integrator.AddNBody(physicsPosition, nbody, massScale);
+			integrator.AddNBody(numBodies, nbody, physicsPosition, nbody.vel_scaled);
 			nbody.engineRef = new EngineRef(BodyType.MASSIVE, numBodies);
 			numBodies++;
+			#pragma warning disable 162		// disable unreachable code warning
+			if (DEBUG) {
+				int i = numBodies-1;
+				Debug.Log(string.Format("GE add massive: {0} as {1} r=[{2} {3} {4}] v=[{5} {6} {7}]",
+					gameObject.name, i, r[i,0], r[i,1], r[i,2], 
+					nbody.vel_scaled.x, nbody.vel_scaled.y, nbody.vel_scaled.z));
+			}
+			#pragma warning restore 162		// enable unreachable code warning
 		}
-		#pragma warning disable 162		// disable unreachable code warning
-		if (DEBUG)
-			Debug.Log("Add body " + gameObject.name + " numBodies=" + numBodies);
-		#pragma warning restore 162		// disable unreachable code warning
 
 	}
 		
@@ -720,6 +798,8 @@ public class GravityEngine : MonoBehaviour {
 				}
 			}
 			numBodies--; 
+		} else {
+			masslessEngine.RemoveBody(toRemove);
 		}
 	}
 
@@ -749,7 +829,7 @@ public class GravityEngine : MonoBehaviour {
 			#pragma warning disable 162		// disable unreachable code warning
 			if (DEBUG)
 				Debug.Log("Inactivate body " + toInactivate.name);
-			#pragma warning restore 162		// disable unreachable code warning
+			#pragma warning restore 162		// enable unreachable code warning
 		}
 	}
 
@@ -765,7 +845,8 @@ public class GravityEngine : MonoBehaviour {
         {
             masslessEngine.ActivateBody(toActivate);
         }
-        else {
+        else
+        {
             int i = nbody.engineRef.index;
             unchecked
             {
@@ -779,16 +860,96 @@ public class GravityEngine : MonoBehaviour {
     }
 
     /// <summary>
-    /// Update physics based on collisionType between body1 and body2. 
-    ///
-    /// In all cases except bounce, the handling is a "hit and stick" and body2 is assumed to be
-    /// removed. It's momtm is not updated. body1 velocity is adjusted based on conservation of momtm.
-    ///
+    /// Updates the position and velocity of an existing body in the engine to new 
+    /// values (e.g. teleport of the object)
     /// </summary>
-    /// <param name="body1">Body1.</param>
-    /// <param name="body2">Body2.</param>
-    /// <param name="collisionType">Collision type.</param>
-    public void Collision(GameObject body1, GameObject body2, NBodyCollision.CollisionType collisionType, float bounce) {
+    /// <param name="nbody">Nbody.</param>
+    /// <param name="pos">Position.</param>
+    /// <param name="vel">Vel.</param>
+    public void UpdatePositionAndVelocity(NBody nbody, Vector3 pos, Vector3 vel) {
+
+		if (nbody == null) {
+			Debug.LogError("object to update has no NBody: ");
+			return;
+		}
+		int i = nbody.engineRef.index;
+		if (nbody.engineRef.bodyType == BodyType.MASSIVE) {
+			// GE holds pos/vel in array
+			r[i,0] = pos.x;
+			r[i,1] = pos.y;
+			r[i,2] = pos.z;
+			integrator.SetVelocityForIndex(i, vel);
+		} else {
+			masslessEngine.SetPositionAtIndex(i, pos);
+			masslessEngine.SetVelocityAtIndex(i, vel);
+		}
+	}
+
+	/// <summary>
+	/// Changes the length scale of all NBody objects in the scene due to a change in the inspector.
+	/// Find all NBody containing objects.
+	/// - independent objects are rescaled
+	/// - orbit based objects have their primary dimension adjusted (e.g. for ellipse, a)
+	///   (these objects are scalable and are asked to rescale themselves)
+	///
+	/// Length scale is Nbody units/Unity Length e.g. km/Unity Length
+	/// Not intended for run-time use.
+	/// </summary>
+	private void UpdateLengthScale(float newScale) {
+		_lengthScale = newScale;
+		GravityScaler.UpdateTimeScale(units, _timeScale, _lengthScale);
+		GravityScaler.ScaleScene(units, _timeScale, _lengthScale);
+	}
+
+	/// <summary>
+	/// Updates the time scale.
+	/// Prior to scene starting GE adjusts the time scale by setting DT for the numerical integrators.
+	///
+	/// During evolution DT cannot be changed on the fly for the Leapfrog integrators without violating
+	/// energy conservation - so changes are made in the number of integration performed. This imposes a
+	/// practical limit on how much "speed up" can occur - since too much time evolution will lower the
+	/// frame rate.
+	/// </summary>
+	/// <param name="value">Value.</param>
+
+	private void UpdateTimeScale(float value) {
+
+		if (!evolve) {
+			_timeScale = value;
+			GravityScaler.UpdateTimeScale(units, _timeScale, _lengthScale);
+		}
+
+	}
+
+	// TODO: Need to get conversion from phys to world
+	public float GetVelocityScale() {
+		return GravityScaler.GetVelocityScale();
+	}
+
+
+	// Intially thought in terms of changing DT based on units - but decided it's better to rescale
+	// distances and masses to adapt to a universal timescale. 
+	private void ConfigureDT() {
+		
+		double time_g1 = 1f;
+		double stepsPerSec = 60.0 * (double) stepsPerFrame;
+		double particleStepsPerSec = 60.0 * (double) particleStepsPerFrame;
+		engineDt = time_g1/stepsPerSec; 
+		particle_dt = time_g1/particleStepsPerSec; 
+
+	}
+
+	/// <summary>
+	/// Update physics based on collisionType between body1 and body2. 
+	///
+	/// In all cases except bounce, the handling is a "hit and stick" and body2 is assumed to be
+	/// removed. It's momtm is not updated. body1 velocity is adjusted based on conservation of momtm.
+	///
+	/// </summary>
+	/// <param name="body1">Body1.</param>
+	/// <param name="body2">Body2.</param>
+	/// <param name="collisionType">Collision type.</param>
+	public void Collision(GameObject body1, GameObject body2, NBodyCollision.CollisionType collisionType, float bounce) {
 		NBody nbody1 = body1.GetComponent<NBody>();
 		NBody nbody2 = body2.GetComponent<NBody>();
 		int index1 = nbody1.engineRef.index;
@@ -852,8 +1013,6 @@ public class GravityEngine : MonoBehaviour {
 	// These positions are globally scaled by physicalScale to allow the physics to act on a
 	// suitable scale where required. 	
 	//
-	// This routine is not typically called from external routines but in circumstances where bodies are added
-	// from physics data prior to 
 	private void UpdateGameObjects() {
 		for (int i=0; i < numBodies; i++) {
 			// fixed objects update their own transforms as they evolve
@@ -864,86 +1023,54 @@ public class GravityEngine : MonoBehaviour {
 		}
 	}
 
-    /// <summary>
-    /// Gets the velocity of the body in "Physics Space". 
-    /// May be different from world co-ordinates if physToWorldFactor is not 1. 
-    /// </summary>
-    /// <returns>The velocity.</returns>
-    /// <param name="body">Body</param>
-    public Vector3 GetVelocity(GameObject body)
-    {
-        NBody nbody = body.GetComponent<NBody>();
-        if (nbody == null)
-        {
-            Debug.LogError("No NBody found on " + body.name + " cannot get velocity");
-            return Vector3.zero;
-        }
-        if (nbody.engineRef == null)
-        {
-            Debug.LogError("No NBody engine ref found on " + body.name + " cannot get velocity");
-            return Vector3.zero;
-        }
-        if (nbody.engineRef.bodyType == BodyType.MASSLESS)
-        {
-            return masslessEngine.GetVelocity(body);
-        }
-        return integrator.GetVelocityForIndex(nbody.engineRef.index);
-    }
+	/// <summary>
+	/// Gets the velocity of the body in "Physics Space". 
+	/// May be different from Unity co-ordinates if physToWorldFactor is not 1. 
+	/// This is the velocity in Unity units. For dimensionful velocity use @GetScaledVelocity
+	/// </summary>
+	/// <returns>The velocity.</returns>
+	/// <param name="body">Body</param>
+	public Vector3 GetVelocity(GameObject body) {
+		NBody nbody = body.GetComponent<NBody>();
+		if (nbody == null) {
+			Debug.LogError("No NBody found on " + body.name + " cannot get velocity"); 
+			return Vector3.zero;
+		}
+		if (nbody.engineRef.bodyType == BodyType.MASSLESS) {
+			return masslessEngine.GetVelocity(body);
+		} 
+		return integrator.GetVelocityForIndex(nbody.engineRef.index);
+	}
 
-    public void SetVelocity(GameObject body, Vector3 vel)
-    {
-        NBody nbody = body.GetComponent<NBody>();
-        if (nbody == null)
-        {
-            Debug.LogError("No NBody found on " + body.name + " cannot get velocity");
-            return;
-        }
-        if (nbody.engineRef == null)
-        {
-            Debug.LogError("No NBody engine ref found on " + body.name + " cannot get velocity");
-            return;
-        }
-        if (nbody.engineRef.bodyType == BodyType.MASSLESS)
-        {
-            masslessEngine.SetVelocity(body, vel);
-            return;
-        }
-        integrator.SetVelocityForIndex(nbody.engineRef.index, vel);
-    }
+	/// <summary>
+	/// Gets the velocity of the body in selected unit system.
+	/// e.g. for SOLAR get value in km/sec 
+	/// </summary>
+	/// <returns>The velocity.</returns>
+	/// <param name="body">Body</param>
+	public Vector3 GetScaledVelocity(GameObject body) {
+		Vector3 velocity = Vector3.zero; 
+		NBody nbody = body.GetComponent<NBody>();
+		if (nbody == null) {
+			Debug.LogError("No NBody found on " + body.name + " cannot get velocity"); 
+			return Vector3.zero;
+		}
+		if (nbody.engineRef.bodyType == BodyType.MASSLESS) {
+			velocity = masslessEngine.GetVelocity(body);
+		} else {
+			velocity = integrator.GetVelocityForIndex(nbody.engineRef.index);
+		}
+		velocity = velocity / GravityScaler.GetVelocityScale();
+		return velocity;
+	}
 
-    public void SetPosition(GameObject body, Vector3 pos)
-    {
-        NBody nbody = body.GetComponent<NBody>();
-        if (nbody == null)
-        {
-            Debug.LogError("No NBody found on " + body.name + " cannot get velocity");
-            return;
-        }
-        if (nbody.engineRef == null)
-        {
-            Debug.LogError("No NBody engine ref found on " + body.name + " cannot get velocity");
-            return;
-        }
-        // divide by the physics to world scale factor - required for threebody solutions
-        Vector3 physicsPosition = pos / physToWorldFactor;
-        r[nbody.engineRef.index, 0] = physicsPosition.x;
-        r[nbody.engineRef.index, 1] = physicsPosition.y;
-        r[nbody.engineRef.index, 2] = physicsPosition.z;
-        if (nbody.engineRef.bodyType == BodyType.MASSLESS)
-        {
-            masslessEngine.SetPosition(body, pos, physToWorldFactor);
-            return;
-        }
-        integrator.SetPositionForIndex(nbody.engineRef.index, pos);
-    }
-
-    /// <summary>
-    /// Gets the acceleration of the body in "Physics Space". 
-    /// May be different from world co-ordinates if physToWorldFactor is not 1. 
-    /// </summary>
-    /// <returns>The acceleration.</returns>
-    /// <param name="body">Body.</param>
-    public Vector3 GetAcceleration(GameObject body) {
+	/// <summary>
+	/// Gets the acceleration of the body in "Physics Space". 
+	/// May be different from world co-ordinates if physToWorldFactor is not 1. 
+	/// </summary>
+	/// <returns>The acceleration.</returns>
+	/// <param name="body">Body.</param>
+	public Vector3 GetAcceleration(GameObject body) {
 		NBody nbody = body.GetComponent<NBody>();
 		if (nbody == null) {
 			Debug.LogError("No NBody found on " + body.name + " cannot get velocity"); 
@@ -982,10 +1109,11 @@ public class GravityEngine : MonoBehaviour {
 		// impulse = step change in the momentum (p) of a body
 		// delta v = delta p/m
 		// If the spaceship is massless, then treat impulse as a change in velocity
+		// TODO: Need to think about mass scale here?
 		Vector3 velocity = Vector3.zero;
 		if (nbody.engineRef.bodyType == BodyType.MASSIVE) {
 			velocity = integrator.GetVelocityForIndex(nbody.engineRef.index);
-			velocity += impulse/nbody.mass;
+			velocity += impulse/(nbody.mass * massScale);
 			if (apply) {
 				integrator.SetVelocityForIndex(nbody.engineRef.index, velocity);
 			}
@@ -1005,13 +1133,12 @@ public class GravityEngine : MonoBehaviour {
 	/// <param name="nbody">Nbody.</param>
 	public void UpdateMass(NBody nbody) {
 		// Can only do the update if the body had a mass (otherwise would need to shuffle from 
-		// massless engine to mass-based engine - not currently supported
+		// massless engine to mass-based engine - not currently supported)
 		if (nbody.engineRef.bodyType == BodyType.MASSIVE) {
-			m[nbody.engineRef.index] = nbody.mass;
+			m[nbody.engineRef.index] = nbody.mass * massScale;
 		} else {
 			Debug.LogWarning("Cannot set mass on a massless body");
 		}
-
 	}
 
 

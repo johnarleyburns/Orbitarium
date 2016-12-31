@@ -85,4 +85,29 @@ public class NUtils  {
 
 	}
 
+	/// <summary>
+	/// Degress modules 360f (angle in 0..360)
+	/// </summary>
+	/// <returns>The mod360.</returns>
+	/// <param name="angle">Angle.</param>
+	public static float DegressMod360(float angle) {
+		int numCycles = (int)angle/360;
+		float result = ( angle/360f - numCycles) * 360f;
+		if (result < 0)
+			result += 360f;
+		return result;
+	}
+
+    public static GameObject GetNBodyGameObject(GameObject body) // for rigidbody support
+    {
+        NBody nbody = body.GetComponent<NBody>();
+        while (nbody == null && body.transform.parent != null)
+        {
+            body = body.transform.parent.gameObject;
+            nbody = body.GetComponent<NBody>();
+        }
+        return body;
+    }
+
+
 }

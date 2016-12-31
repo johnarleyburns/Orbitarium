@@ -107,13 +107,15 @@ public class GameController : MonoBehaviour
         foreach (GameObject ghost in followGhost.Keys)
         {
             GameObject shadow = followGhost[ghost];
-            shadow.transform.position = ghost.transform.position;
+
+            //shadow.transform.position = ghost.transform.position;
             shadow.transform.rotation = ghost.transform.rotation;
-            shadow.transform.GetChild(0).localScale = ghost.transform.GetChild(0).localScale;
-            shadow.transform.GetChild(0).position = ghost.transform.GetChild(0).position;
+            //shadow.transform.GetChild(0).localScale = ghost.transform.GetChild(0).localScale;
+            //shadow.transform.GetChild(0).position = ghost.transform.GetChild(0).position;
             shadow.transform.GetChild(0).rotation = ghost.transform.GetChild(0).rotation;
-            GravityEngine.instance.SetPosition(shadow, ghost.transform.position);
-            GravityEngine.instance.SetVelocity(shadow, GravityEngine.instance.GetVelocity(PhysicsUtils.GetNBodyGameObject(ghost)));
+            Vector3 pos = ghost.transform.position;
+            Vector3 vel = GravityEngine.instance.GetVelocity(NUtils.GetNBodyGameObject(ghost));
+            GravityEngine.instance.UpdatePositionAndVelocity(shadow.GetComponent<NBody>(), pos, vel);
         }
     }
 
@@ -141,10 +143,7 @@ public class GameController : MonoBehaviour
         hudController.HideTargetIndicator();
         InstantiatePlayer();
         EnableOverviewCamera();
-        GameStartCanvas.SetActive(true);
-        FPSCanvas.SetActive(false);
-        GamePauseCanvas.SetActive(false);
-        GameOverCanvas.SetActive(false);
+        UpdateCanvasState(GameState.START_NOT_ACCEPTING_INPUT);
         SetupStrobes();
         musicController.StartMusic.Play();
         gameState = GameState.START_NOT_ACCEPTING_INPUT;
@@ -189,44 +188,70 @@ public class GameController : MonoBehaviour
         SetupInitialVelocities();
         hudController.SelectNextTargetPreferClosestEnemy();
         inputController.PropertyChanged("SelectDockTarget", EezoDock);
-        FPSCanvas.SetActive(true);
-        GameStartCanvas.SetActive(false);
-        GamePauseCanvas.SetActive(false);
-        GameOverCanvas.SetActive(false);
-        FPSCamera.enabled = true;
-        OverviewCamera.enabled = false;
-        OverShoulderCamera.enabled = false;
+        UpdateCanvasState(GameState.RUNNING);
+        EnableFPSCamera();
         musicController.StartMusic.Stop();
         musicController.RunningBackgroundMusic.Play();
         gameState = GameState.RUNNING;
     }
 
+
     private void TransitionToPaused()
     {
         Time.timeScale = 0;
-        FPSCanvas.SetActive(false);
-        GameStartCanvas.SetActive(false);
-        GamePauseCanvas.SetActive(true);
-        GameOverCanvas.SetActive(false);
-        FPSCamera.enabled = true;
-        OverviewCamera.enabled = false;
-        OverShoulderCamera.enabled = false;
+        UpdateCanvasState(GameState.PAUSED);
+        EnableFPSCamera();
         musicController.RunningBackgroundMusic.Stop();
         gameState = GameState.PAUSED;
     }
 
     private void TransitionToRunningFromPaused()
     {
-        FPSCanvas.SetActive(true);
-        GameStartCanvas.SetActive(false);
-        GamePauseCanvas.SetActive(false);
-        GameOverCanvas.SetActive(false);
-        FPSCamera.enabled = true;
-        OverviewCamera.enabled = false;
-        OverShoulderCamera.enabled = false;
+        UpdateCanvasState(GameState.RUNNING);
+        EnableFPSCamera();
         Time.timeScale = 1.0f;
         musicController.RunningBackgroundMusic.Play();
         gameState = GameState.RUNNING;
+    }
+
+    private void UpdateCanvasState(GameState newState)
+    {
+        switch (newState)
+        {
+            case GameState.STARTING:
+            case GameState.START_NOT_ACCEPTING_INPUT:
+                FPSCanvas.SetActive(false);
+                GameStartCanvas.SetActive(true);
+                GamePauseCanvas.SetActive(false);
+                GameOverCanvas.SetActive(false);
+                break;
+            case GameState.START_AWAIT_INPUT:
+            case GameState.RUNNING:
+                FPSCanvas.SetActive(true);
+                GameStartCanvas.SetActive(false);
+                GamePauseCanvas.SetActive(false);
+                GameOverCanvas.SetActive(false);
+                break;
+            case GameState.PAUSED:
+                FPSCanvas.SetActive(false);
+                GameStartCanvas.SetActive(false);
+                GamePauseCanvas.SetActive(true);
+                GameOverCanvas.SetActive(false);
+                break;
+            case GameState.GAME_OVER_NOT_ACCEPTING_INPUT:
+                FPSCanvas.SetActive(false);
+                GameStartCanvas.SetActive(false);
+                GamePauseCanvas.SetActive(false);
+                GameOverCanvas.SetActive(true);
+                break;
+        }
+    }
+
+    public void EnableFPSCamera()
+    {
+        FPSCamera.enabled = true;
+        OverviewCamera.enabled = false;
+        OverShoulderCamera.enabled = false;
     }
 
     private void TransitionToStartAwaitInput()
@@ -242,10 +267,7 @@ public class GameController : MonoBehaviour
         gameOverInputTimer = 1f;
         GameOverText.text = "Try again? (Y/N)";
         EnableOverviewCamera();
-        GameOverCanvas.SetActive(true);
-        GamePauseCanvas.SetActive(false);
-        GameStartCanvas.SetActive(false);
-        FPSCanvas.SetActive(false);
+        UpdateCanvasState(GameState.GAME_OVER_NOT_ACCEPTING_INPUT);
         gameState = GameState.GAME_OVER_NOT_ACCEPTING_INPUT;
     }
 
@@ -260,10 +282,7 @@ public class GameController : MonoBehaviour
         nextMsg = msg;
         GameOverText.text = msg + "\nTry again? (Y/N)";
         EnableOverviewCamera();
-        GameOverCanvas.SetActive(true);
-        GameStartCanvas.SetActive(false);
-        GamePauseCanvas.SetActive(false);
-        FPSCanvas.SetActive(false);
+        UpdateCanvasState(GameState.GAME_OVER_NOT_ACCEPTING_INPUT);
         musicController.RunningBackgroundMusic.Stop();
         gameState = GameState.GAME_OVER_NOT_ACCEPTING_INPUT;
     }
@@ -404,14 +423,6 @@ public class GameController : MonoBehaviour
     }
 
     #endregion
-    /*
-    private void ResetGravityEngine()
-    {
-        GravityEngine.instance.Clear();
-        GravityEngine.instance.Setup();
-        GravityEngine.instance.SetEvolve(true);
-    }
-    */
 
     public GameState GetGameState()
     {
@@ -437,7 +448,7 @@ public class GameController : MonoBehaviour
         /*
         player.transform.position = PlayerSpawn.position;
         playerModel.transform.rotation = PlayerSpawn.rotation;
-        NBody playerNBody = PhysicsUtils.GetNBodyGameObject(player).GetComponent<NBody>();
+        NBody playerNBody = NUtils.GetNBodyGameObject(player).GetComponent<NBody>();
         */
 
         player.transform.position = EezoDock.transform.position;
@@ -503,13 +514,22 @@ public class GameController : MonoBehaviour
         return new KeyValuePair<Vector3, Quaternion>(enemySpawnPoint, enemySpawnRotation);
     }
 
-    private void EnableOverviewCamera()
+    public void EnableOverviewCamera()
     {
         GameObject playerModel = player.GetComponent<PlayerShipController>().ShipModel;
         OverviewCamera.enabled = true;
         FPSCamera.enabled = false;
         OverShoulderCamera.enabled = false;
-        OverviewCamera.GetComponent<CameraSpin>().UpdateTarget(playerModel);
+        OverviewCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
+    }
+
+    public void EnableOverShoulderCamera()
+    {
+        GameObject playerModel = player.GetComponent<PlayerShipController>().ShipModel;
+        OverShoulderCamera.enabled = true;
+        OverviewCamera.enabled = false;
+        FPSCamera.enabled = false;
+        OverShoulderCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
     }
 
     public GameObject GetPlayer()
@@ -680,32 +700,36 @@ public class GameController : MonoBehaviour
     private void SetupCameras(GameObject playerModel)
     {
         FPSCamera.GetComponent<FPSCameraController>().UpdatePlayer(playerModel);
-        //OverShoulderCamera.GetComponent<ThirdPartyCameraController>().UpdatePlayer(playerModel);
-        OverShoulderCamera.GetComponent<CameraSpin>().UpdateTarget(playerModel);
-        OverviewCamera.GetComponent<CameraSpin>().UpdateTarget(playerModel);
+        OverShoulderCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
+        OverviewCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
     }
 
-    public void Dock(GameObject ship, GameObject dock)
+    public void Dock(GameObject ship, GameObject dockGhost)
     {
-        GravityEngine.instance.SetVelocity(ship, GravityEngine.instance.GetVelocity(PhysicsUtils.GetNBodyGameObject(dock)));
+        GameObject myNBody = NUtils.GetNBodyGameObject(ship);
+        GameObject dockNBody = NUtils.GetNBodyGameObject(dockGhost);
+        Vector3 pos = dockGhost.transform.position;
+        Vector3 vel = GravityEngine.instance.GetVelocity(dockNBody);
+        GravityEngine.instance.UpdatePositionAndVelocity(myNBody.GetComponent<NBody>(), pos, vel);
         GravityEngine.instance.InactivateBody(ship);
-        ship.transform.parent = dock.transform.parent;
-        ship.transform.position = dock.transform.position;
-        ship.transform.rotation = dock.transform.rotation;
-        ship.transform.GetChild(0).transform.position = dock.transform.GetChild(0).transform.position;
-        ship.transform.GetChild(0).transform.rotation = dock.transform.GetChild(0).transform.rotation;
+        ship.transform.parent = dockGhost.transform.parent;
+        //ship.transform.position = dock.transform.position;
+        ship.transform.rotation = dockGhost.transform.rotation;
+        //ship.transform.GetChild(0).transform.position = dock.transform.GetChild(0).transform.position;
+        ship.transform.GetChild(0).transform.rotation = dockGhost.transform.GetChild(0).transform.rotation;
         inputController.PropertyChanged("Dock", true);
     }
 
     public void Undock(GameObject ship)
     {
-        GameObject nBodyObj = PhysicsUtils.GetNBodyGameObject(ship);
+        GameObject nBodyObj = NUtils.GetNBodyGameObject(ship);
         GameObject parent = ship.transform.parent.gameObject;
         GameObject dockGhost = parent.transform.GetChild(0).gameObject;
         ship.transform.parent = null;
         GravityEngine.instance.ActivateBody(nBodyObj);
-        GravityEngine.instance.SetPosition(nBodyObj, dockGhost.transform.position); ;
-        GravityEngine.instance.ApplyImpulse(nBodyObj.GetComponent<NBody>(), UndockVelocity * -nBodyObj.transform.forward);
+        Vector3 pos = dockGhost.transform.position;
+        Vector3 vel = UndockVelocity * -nBodyObj.transform.forward;
+        GravityEngine.instance.UpdatePositionAndVelocity(nBodyObj.GetComponent<NBody>(), pos, vel);
         inputController.PropertyChanged("Undock", true);
     }
 

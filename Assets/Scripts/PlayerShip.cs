@@ -21,8 +21,8 @@ public class PlayerShip : MonoBehaviour, IControllableShip
     private InputController inputController;
     private FPSAudioController audioController;
     private FPSCameraController cameraController;
-    private enum CameraMode { FPS, ThirdParty };
-    private CameraMode currentCameraMode;
+    private enum CameraMode { OFF, FPS, ThirdParty };
+    private CameraMode currentCameraMode = CameraMode.OFF;
     private int health;
     private bool rotInput = false;
 
@@ -37,18 +37,18 @@ public class PlayerShip : MonoBehaviour, IControllableShip
         transform.rotation = Quaternion.identity;
         transform.parent.transform.position = Vector3.zero;
         transform.parent.transform.rotation = Quaternion.identity;
-        currentCameraMode = CameraMode.FPS;
         health = healthMax;
         rotInput = false;
         inputController.ControlsEnabled = true;
         inputController.PropertyChanged("RotateButton", true);
         inputController.PropertyChanged("TranslateButton", false);
         GetComponent<ShipWeapons>().AddMissiles();
+        UpdateCameraMode(CameraMode.FPS);
     }
 
     public void UpdateShip()
     {
-        UpdateCameraMode();
+        //UpdateCameraMode();
         UpdateRCSAudio();
         UpdateFuelUI();
         UpdateEngineUI();
@@ -129,38 +129,38 @@ public class PlayerShip : MonoBehaviour, IControllableShip
 
     public void ToggleCamera()
     {
+        CameraMode newMode;
         switch (currentCameraMode)
         {
             default:
             case CameraMode.FPS:
-                currentCameraMode = CameraMode.ThirdParty;
+                newMode = CameraMode.ThirdParty;
                 break;
             case CameraMode.ThirdParty:
-                currentCameraMode = CameraMode.FPS;
+                newMode = CameraMode.FPS;
                 break;
         }
-        UpdateCameraMode();
+        UpdateCameraMode(newMode);
     }
 
-    void UpdateCameraMode()
+    void UpdateCameraMode(CameraMode newMode)
     {
-        if (gameController != null)
+        if (gameController != null && currentCameraMode != newMode)
         {
-            switch (currentCameraMode)
+            switch (newMode)
             {
                 default:
                 case CameraMode.FPS:
-                    gameController.FPSCamera.enabled = true;
-                    gameController.OverShoulderCamera.enabled = false;
+                    gameController.EnableFPSCamera();
                     gameController.HUD().ShowTargetIndicator();
                     break;
                 case CameraMode.ThirdParty:
-                    gameController.FPSCamera.enabled = false;
-                    gameController.OverShoulderCamera.enabled = true;
-                    gameController.OverShoulderCamera.GetComponent<CameraSpin>().UpdateTarget(gameObject);
+                    gameController.EnableOverShoulderCamera();
+                    gameController.OverShoulderCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(NUtils.GetNBodyGameObject(transform.gameObject));
                     gameController.HUD().HideTargetIndicator();
                     break;
             }
+            currentCameraMode = newMode;
         }
     }
 
@@ -316,7 +316,7 @@ public class PlayerShip : MonoBehaviour, IControllableShip
 
     public void Undock()
     {
-        GameObject shipNBodyBody = PhysicsUtils.GetNBodyGameObject(gameObject);
+        GameObject shipNBodyBody = NUtils.GetNBodyGameObject(gameObject);
         inputController.ControlsEnabled = true;
         gameController.Undock(shipNBodyBody);
         audioController.Play(FPSAudioController.AudioClipEnum.SPACESHIP_DOCK);

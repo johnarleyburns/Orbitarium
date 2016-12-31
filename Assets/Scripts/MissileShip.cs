@@ -45,11 +45,12 @@ public class MissileShip : MonoBehaviour
 
     private IEnumerator FireMissileCo()
     {
-        GameObject nBody = PhysicsUtils.GetNBodyGameObject(gameObject);
+        GameObject nBody = NUtils.GetNBodyGameObject(gameObject);
         GameObject parent = nBody.transform.parent.gameObject;
         nBody.transform.parent = null;
-        GravityEngine.instance.SetVelocity(nBody, GravityEngine.instance.GetVelocity(PhysicsUtils.GetNBodyGameObject(parent)));
-        GravityEngine.instance.SetPosition(nBody, nBody.transform.position);
+        Vector3 pos = nBody.transform.position;
+        Vector3 vel = GravityEngine.instance.GetVelocity(NUtils.GetNBodyGameObject(parent));
+        GravityEngine.instance.UpdatePositionAndVelocity(nBody.GetComponent<NBody>(), pos, vel);
         GravityEngine.instance.ActivateBody(nBody);
         GravityEngine.instance.ApplyImpulse(nBody.GetComponent<NBody>(), MissileEjectV * nBody.transform.forward);
         yield return new WaitForSeconds(1);
