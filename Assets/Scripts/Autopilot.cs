@@ -548,8 +548,8 @@ public class Autopilot : MonoBehaviour
         }
     }
 
-    private float RCSDist = 100f;
-    private float RCSMaxV = 5f;
+    private float RCSDist = 10f;
+    private float RCSMaxV = 0.1f;
 
     IEnumerator KillRelVCo(GameObject target)
     {
@@ -559,27 +559,31 @@ public class Autopilot : MonoBehaviour
 
         float arelv = relVec.magnitude;
         Vector3 negVec = -relVec;
+        bool closeEnough = arelv <= RCSMaxV;
         float secMain = CalcDeltaVMainBurnSec(arelv);
         float secAux = CalcDeltaVAuxBurnSec(arelv);
-        float secRCS = CalcDeltaVBurnRCSSec(arelv);
-        if (secMain >= MinMainEngineBurnSec && dist > RCSDist && arelv > RCSMaxV)
+//        float secRCS = CalcDeltaVBurnRCSSec(arelv);
+        if (closeEnough)
+        {
+            ship.MainEngineCutoff();
+            ship.AuxEngineCutoff();
+            PopCoroutine();
+            yield break;
+
+        }
+        else if (secMain >= MinMainEngineBurnSec)
         {
             yield return PushAndStartCoroutine(RotThenBurnMain(negVec, secMain));
         }
-        else if (secAux >= MinAuxEngineBurnSec && dist > RCSDist && arelv > RCSMaxV)
+        else if (secAux >= MinAuxEngineBurnSec)
         {
             yield return PushAndStartCoroutine(RotThenBurnAux(negVec, secAux));
         }
-        else if (secRCS >= ship.RCSBurnMinSec)
-        {
-            ship.RCSBurst(negVec, secRCS);
-            yield return new WaitForSeconds(secRCS);
-        }
-        else
-        {
-            PopCoroutine();
-            yield break;
-        }
+//        else if (secRCS >= ship.RCSBurnMinSec)
+//        {
+//            ship.RCSBurst(negVec, secRCS);
+//            yield return new WaitForSeconds(secRCS);
+//        }
     }
 
     IEnumerator APNGRotateBurnCo(GameObject target)
@@ -747,11 +751,11 @@ public class Autopilot : MonoBehaviour
             PhysicsUtils.CalcDistance(transform.position, targetApproach, out dist);
             float minMainBurnDist = MinMainBurnDist(MinRendezvousBurnSec);
             float minAuxBurnDist = MinAuxBurnDist(MinRendezvousBurnSec);
-            float minRCSBurnDist = MinRCSBurnDist(MinRendezvousBurnSec);
+//            float minRCSBurnDist = MinRCSBurnDist(MinRendezvousBurnSec);
             bool closeEnough = dist < MinRendezvousEpsilonM;
             bool fireMain = dist >= minMainBurnDist;
             bool fireAux = dist >= minAuxBurnDist && dist > RCSDist;
-            bool fireRCS = dist >= minRCSBurnDist && dist > MinRendezvousEpsilonM;
+//            bool fireRCS = dist >= minRCSBurnDist && dist > MinRendezvousEpsilonM;
             if (!closeEnough && fireMain)
             {
                 float idealBurnSec = IdealMainBurnSec(dist);
@@ -766,18 +770,18 @@ public class Autopilot : MonoBehaviour
                 yield return PushAndStartCoroutine(RotThenBurnAux(b, burnSec));
                 yield return PushAndStartCoroutine(KillRelVCo(target));
             }
-            else if (!closeEnough && fireRCS)
-            {
-                yield return PushAndStartCoroutine(FaceTargetCo(target));
-                float idealBurnSec = IdealRCSBurnSec(dist);
-                float burnSec = Mathf.Max(ship.RCSBurnMinSec, idealBurnSec);
-                ship.RCSBurst(b, burnSec);
-                yield return new WaitForSeconds(burnSec);
-                ship.RCSBurst(-b, burnSec);
-                yield return new WaitForSeconds(burnSec);
-                yield return PushAndStartCoroutine(KillRelVCo(target));
-                closeEnough = true;
-            }
+//            else if (!closeEnough && fireRCS)
+//            {
+//                yield return PushAndStartCoroutine(FaceTargetCo(target));
+//                float idealBurnSec = IdealRCSBurnSec(dist);
+//                float burnSec = Mathf.Max(ship.RCSBurnMinSec, idealBurnSec);
+//                ship.RCSBurst(b, burnSec);
+//                yield return new WaitForSeconds(burnSec);
+//                ship.RCSBurst(-b, burnSec);
+//                yield return new WaitForSeconds(burnSec);
+//                yield return PushAndStartCoroutine(KillRelVCo(target));
+//                closeEnough = true;
+//            }
             if (closeEnough)
             {
                 yield return PushAndStartCoroutine(FaceTargetCo(target));

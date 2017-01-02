@@ -16,7 +16,7 @@ public class GameController : MonoBehaviour
     public Camera FPSCamera;
     public Camera OverShoulderCamera;
     public Camera OverviewCamera;
-    public GameObject Ceres;
+    public GameObject ReferenceBody;
     public GameObject Didymos;
     public GameObject Didymoon;
     //public GameObject EezoApproach;
@@ -26,10 +26,11 @@ public class GameController : MonoBehaviour
     public GameObject EezoDockingPort;
     public Transform PlayerSpawn;
     public Transform EnemySpawn;
+    public PlayerStartMode StartMode;
     public float PlayerInitialImpulse;
     public float PlayerShipRadiusM = 20;
     public float EnemyShipRadiusM = 20;
-    public float CeresRadiusM = 473000;
+    public float ReferenceBodyRadiusM = 3396000;
     public float DidymosRadiusM = 500;
     public float DidymoonRadiusM = 100;
     public float EezoDockingPortRadiusM = 20;
@@ -434,11 +435,7 @@ public class GameController : MonoBehaviour
         DestroyPlayer();
         player = Instantiate(PlayerShipPrefab, Vector3.zero, Quaternion.identity) as GameObject;
         player.GetComponent<PlayerShipController>().gameController = this;
-        GravityEngine.instance.AddBody(player);
-
-        GameObject playerModel = player.GetComponent<PlayerShipController>().ShipModel;
-        SetupCameras(playerModel);
-        playerModel.GetComponent<PlayerShip>().StartShip();
+        //GravityEngine.instance.AddBody(player);
 
         /*
         player.transform.position = PlayerSpawn.position;
@@ -451,14 +448,34 @@ public class GameController : MonoBehaviour
         //playerModel.transform.position = EezoDock.transform.GetChild(0).transform.position;
         //playerModel.transform.rotation = EezoDock.transform.GetChild(0).transform.rotation;
 
+        GameObject playerModel = player.GetComponent<PlayerShipController>().ShipModel;
+        SetupCameras(playerModel);
+        playerModel.GetComponent<PlayerShip>().StartShip();
         doInitPlayer = true; // must init GravityEngine stuff after first FixedUpdate so auto-detect finishes
+    }
+
+    public enum PlayerStartMode
+    {
+        SPAWN,
+        DOCKED
     }
 
     public void LateUpdate()
     {
         if (doInitPlayer)
         {
-            GetPlayerShip().Dock(EezoDockingPort.transform.GetChild(0).gameObject, false);
+            switch (StartMode)
+            {
+                case PlayerStartMode.DOCKED:
+                    GetPlayerShip().Dock(EezoDockingPort.transform.GetChild(0).gameObject, false);
+                    break;
+                case PlayerStartMode.SPAWN:
+                    player.transform.position = PlayerSpawn.transform.position;
+                    player.transform.rotation = PlayerSpawn.transform.rotation;
+                    player.transform.GetChild(0).transform.rotation = PlayerSpawn.rotation;
+                    GravityEngine.instance.UpdatePositionAndVelocity(player.GetComponent<NBody>(), PlayerSpawn.position, Vector3.zero);
+                    break;
+            }
             EnableOverviewCamera();
             doInitPlayer = false;
         }
@@ -605,13 +622,13 @@ public class GameController : MonoBehaviour
 
     private void AddPlanetaryBodies()
     {
-        targetDB.AddTarget(Ceres, TargetDB.TargetType.ASTEROID, CeresRadiusM);
+        targetDB.AddTarget(ReferenceBody, TargetDB.TargetType.ASTEROID, ReferenceBodyRadiusM);
         targetDB.AddTarget(Didymos, TargetDB.TargetType.ASTEROID, DidymosRadiusM);
         targetDB.AddTarget(Didymoon, TargetDB.TargetType.MOON, DidymoonRadiusM);
         //targetDB.AddTarget(EezoApproach, TargetDB.TargetType.APPROACH, 0);
         targetDB.AddTarget(EezoDock, TargetDB.TargetType.DOCK, 0);
         //targetDB.AddTarget(EezoDockGhost, TargetDB.TargetType.DOCK, 0);
-        hudController.AddTargetIndicator(Ceres);
+        hudController.AddTargetIndicator(ReferenceBody);
         hudController.AddTargetIndicator(Didymos);
         hudController.AddTargetIndicator(Didymoon);
         //hudController.AddTargetIndicator(EezoApproach);
