@@ -5,13 +5,9 @@ public class DockController : MonoBehaviour {
 
     public GameController gameController;
     public float minRelVtoDamage = 1f;
-    private FPSAudioController audioController;
-    private FPSCameraController cameraController;
 
     // Use this for initialization
     void Start () {
-        audioController = gameController.FPSCamera.GetComponent<FPSAudioController>();
-        cameraController = gameController.FPSCamera.GetComponent<FPSCameraController>();
     }
 
     // Update is called once per frame

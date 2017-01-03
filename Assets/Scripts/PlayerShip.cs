@@ -20,7 +20,14 @@ public class PlayerShip : MonoBehaviour, IControllableShip
     private Autopilot autopilot;
     private InputController inputController;
     private FPSAudioController audioController;
-    private FPSCameraController cameraController;
+    private FPSCameraController nearCameraController;
+    private FPSCameraController farCameraController;
+    private FPSCameraController rearNearCameraController;
+    private FPSCameraController rearFarCameraController;
+    private FPSCameraController leftNearCameraController;
+    private FPSCameraController leftFarCameraController;
+    private FPSCameraController rightNearCameraController;
+    private FPSCameraController rightFarCameraController;
     private enum CameraMode { OFF, FPS, ThirdParty };
     private CameraMode currentCameraMode = CameraMode.OFF;
     private int health;
@@ -31,8 +38,15 @@ public class PlayerShip : MonoBehaviour, IControllableShip
         ship = GetComponent<RocketShip>();
         autopilot = GetComponent<Autopilot>();
         inputController = gameController.GetComponent<InputController>();
-        audioController = gameController.FPSCamera.GetComponent<FPSAudioController>();
-        cameraController = gameController.FPSCamera.GetComponent<FPSCameraController>();
+        audioController = gameController.UICamera.GetComponent<FPSAudioController>();
+        nearCameraController = gameController.NearCamera.GetComponent<FPSCameraController>();
+        farCameraController = gameController.FarCamera.GetComponent<FPSCameraController>();
+        rearNearCameraController = gameController.RearNearCamera.GetComponent<FPSCameraController>();
+        rearFarCameraController = gameController.RearFarCamera.GetComponent<FPSCameraController>();
+        leftNearCameraController = gameController.LeftNearCamera.GetComponent<FPSCameraController>();
+        leftFarCameraController = gameController.LeftFarCamera.GetComponent<FPSCameraController>();
+        rightNearCameraController = gameController.RightNearCamera.GetComponent<FPSCameraController>();
+        rightFarCameraController = gameController.RightFarCamera.GetComponent<FPSCameraController>();
         transform.position = Vector3.zero;
         transform.rotation = Quaternion.identity;
         transform.parent.transform.position = Vector3.zero;
@@ -156,7 +170,7 @@ public class PlayerShip : MonoBehaviour, IControllableShip
                     break;
                 case CameraMode.ThirdParty:
                     gameController.EnableOverShoulderCamera();
-                    gameController.OverShoulderCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(NUtils.GetNBodyGameObject(transform.gameObject));
+//                    gameController.OverShoulderCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(NUtils.GetNBodyGameObject(transform.gameObject));
                     gameController.HUD().HideTargetIndicator();
                     break;
             }
@@ -172,7 +186,14 @@ public class PlayerShip : MonoBehaviour, IControllableShip
             bool auxOn = ship.IsAuxEngineGo();
             if (mainOn)
             {
-                cameraController.StartContinuousMainEngineShake();
+                nearCameraController.StartContinuousMainEngineShake();
+                farCameraController.StartContinuousMainEngineShake();
+                rearNearCameraController.StartContinuousMainEngineShake();
+                rearFarCameraController.StartContinuousMainEngineShake();
+                leftNearCameraController.StartContinuousMainEngineShake();
+                leftFarCameraController.StartContinuousMainEngineShake();
+                rightNearCameraController.StartContinuousMainEngineShake();
+                rightFarCameraController.StartContinuousMainEngineShake();
                 if (!audioController.IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE))
                 {
                     audioController.Play(FPSAudioController.AudioClipEnum.SPACESHIP_MAIN_ENGINE);
@@ -184,7 +205,14 @@ public class PlayerShip : MonoBehaviour, IControllableShip
             }
             if (!mainOn && auxOn)
             {
-                cameraController.StartContinuousAuxEngineShake();
+                nearCameraController.StartContinuousAuxEngineShake();
+                farCameraController.StartContinuousAuxEngineShake();
+                rearNearCameraController.StartContinuousAuxEngineShake();
+                rearFarCameraController.StartContinuousAuxEngineShake();
+                leftNearCameraController.StartContinuousAuxEngineShake();
+                leftFarCameraController.StartContinuousAuxEngineShake();
+                rightNearCameraController.StartContinuousAuxEngineShake();
+                rightFarCameraController.StartContinuousAuxEngineShake();
                 if (!audioController.IsPlaying(FPSAudioController.AudioClipEnum.SPACESHIP_AUX))
                 {
                     audioController.Play(FPSAudioController.AudioClipEnum.SPACESHIP_AUX);
@@ -200,7 +228,14 @@ public class PlayerShip : MonoBehaviour, IControllableShip
             }
             else
             {
-                cameraController.StopShake();
+                nearCameraController.StopShake();
+                farCameraController.StopShake();
+                rearNearCameraController.StopShake();
+                rearFarCameraController.StopShake();
+                leftNearCameraController.StopShake();
+                leftFarCameraController.StopShake();
+                rightNearCameraController.StopShake();
+                rightFarCameraController.StopShake();
             }
         }
     }
@@ -276,18 +311,31 @@ public class PlayerShip : MonoBehaviour, IControllableShip
             float relVel;
             if (!PhysicsUtils.Fused(otherBody) && PhysicsUtils.ShouldBounce(gameObject, otherBody, out relVel))
             {
+                bool shake;
                 if (relVel >= minRelVtoDamage)
                 {
-                    cameraController.PlayCollisionShake();
+                    shake = true;
                     health--;
                 }
-                else if (otherBody.tag == "Dock")
+                else if (otherBody.tag != "Dock")
                 {
+                    shake = true;
                     //PerformDock(otherBody); // called from collider
                 }
                 else
                 {
-                    cameraController.PlayCollisionShake();
+                    shake = false;
+                }
+                if (shake)
+                {
+                    nearCameraController.PlayCollisionShake();
+                    farCameraController.PlayCollisionShake();
+                    rearNearCameraController.PlayCollisionShake();
+                    rearFarCameraController.PlayCollisionShake();
+                    leftNearCameraController.PlayCollisionShake();
+                    leftFarCameraController.PlayCollisionShake();
+                    rightNearCameraController.PlayCollisionShake();
+                    rightFarCameraController.PlayCollisionShake();
                 }
             }
             else
@@ -309,7 +357,14 @@ public class PlayerShip : MonoBehaviour, IControllableShip
         gameController.GetComponent<MFDController>().DisarmForDocking();
         GameObject shipDockingPort = GetComponent<RocketShip>().DockingPort;
         gameController.Dock(shipNbodyBody, shipDockingPort, dockGhost, dockingPort);
-        cameraController.PlayCollisionShake();
+        nearCameraController.PlayCollisionShake();
+        farCameraController.PlayCollisionShake();
+        rearNearCameraController.PlayCollisionShake();
+        rearFarCameraController.PlayCollisionShake();
+        leftNearCameraController.PlayCollisionShake();
+        leftFarCameraController.PlayCollisionShake();
+        rightNearCameraController.PlayCollisionShake();
+        rightFarCameraController.PlayCollisionShake();
         if (withSound)
         {
             audioController.Play(FPSAudioController.AudioClipEnum.SPACESHIP_DOCK);

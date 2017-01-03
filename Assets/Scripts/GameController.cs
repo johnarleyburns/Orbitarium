@@ -13,9 +13,20 @@ public class GameController : MonoBehaviour
     public GameObject GamePauseCanvas;
     public GameObject GameOverCanvas;
     public Text GameOverText;
-    public Camera FPSCamera;
-    public Camera OverShoulderCamera;
-    public Camera OverviewCamera;
+    public Camera UICamera;
+    public Camera NearCamera;
+    public Camera FarCamera;
+    public Camera RearNearCamera;
+    public Camera RearFarCamera;
+    public Camera LeftNearCamera;
+    public Camera LeftFarCamera;
+    public Camera RightNearCamera;
+    public Camera RightFarCamera;
+    public Camera OverShoulderNearCamera;
+    public Camera OverShoulderFarCamera;
+    public Camera OverviewUICamera;
+    public Camera OverviewNearCamera;
+    public Camera OverviewFarCamera;
     public GameObject ReferenceBody;
     public GameObject Didymos;
     public GameObject Didymoon;
@@ -529,27 +540,62 @@ public class GameController : MonoBehaviour
 
     public void EnableFPSCamera()
     {
-        FPSCamera.enabled = true;
-        OverviewCamera.enabled = false;
-        OverShoulderCamera.enabled = false;
+        UICamera.enabled = true;
+        NearCamera.enabled = true;
+        FarCamera.enabled = true;
+        RearNearCamera.enabled = true;
+        RearFarCamera.enabled = true;
+        LeftNearCamera.enabled = true;
+        LeftFarCamera.enabled = true;
+        RightNearCamera.enabled = true;
+        RightFarCamera.enabled = true;
+        OverShoulderNearCamera.enabled = false;
+        OverShoulderFarCamera.enabled = false;
+        OverviewUICamera.enabled = false;
+        OverviewNearCamera.enabled = false;
+        OverviewFarCamera.enabled = false;
     }
 
     public void EnableOverviewCamera()
     {
         GameObject playerModel = player.GetComponent<PlayerShipController>().ShipModel;
-        OverviewCamera.enabled = true;
-        FPSCamera.enabled = false;
-        OverShoulderCamera.enabled = false;
-        OverviewCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
+        OverviewUICamera.enabled = true;
+        OverviewNearCamera.enabled = true;
+        OverviewFarCamera.enabled = true;
+        UICamera.enabled = false;
+        NearCamera.enabled = false;
+        FarCamera.enabled = false;
+        RearNearCamera.enabled = false;
+        RearFarCamera.enabled = false;
+        LeftNearCamera.enabled = false;
+        LeftFarCamera.enabled = false;
+        RightNearCamera.enabled = false;
+        RightFarCamera.enabled = false;
+        OverShoulderNearCamera.enabled = false;
+        OverShoulderFarCamera.enabled = false;
+        OverviewNearCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
+        OverviewFarCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
     }
 
     public void EnableOverShoulderCamera()
     {
         GameObject playerModel = player.GetComponent<PlayerShipController>().ShipModel;
-        OverShoulderCamera.enabled = true;
-        OverviewCamera.enabled = false;
-        FPSCamera.enabled = false;
-        OverShoulderCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
+        UICamera.enabled = true;
+        OverShoulderNearCamera.enabled = true;
+        OverShoulderFarCamera.enabled = true;
+        NearCamera.enabled = false;
+        FarCamera.enabled = false;
+        RearNearCamera.enabled = false;
+        RearFarCamera.enabled = false;
+        LeftNearCamera.enabled = false;
+        LeftFarCamera.enabled = false;
+        RightNearCamera.enabled = false;
+        RightFarCamera.enabled = false;
+        OverviewUICamera.enabled = false;
+        OverviewNearCamera.enabled = false;
+        OverviewFarCamera.enabled = false;
+        OverShoulderNearCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
+        OverShoulderFarCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
     }
 
     public GameObject GetPlayer()
@@ -721,9 +767,20 @@ public class GameController : MonoBehaviour
 
     private void SetupCameras(GameObject playerModel)
     {
-        FPSCamera.GetComponent<FPSCameraController>().UpdatePlayer(playerModel);
-        OverShoulderCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
-        OverviewCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
+        //UICamera.GetComponent<FPSCameraController>().UpdatePlayer(playerModel);
+        NearCamera.GetComponent<FPSCameraController>().UpdatePlayer(playerModel);
+        FarCamera.GetComponent<FPSCameraController>().UpdatePlayer(playerModel);
+        RearNearCamera.GetComponent<FPSCameraController>().UpdatePlayer(playerModel);
+        RearFarCamera.GetComponent<FPSCameraController>().UpdatePlayer(playerModel);
+        LeftNearCamera.GetComponent<FPSCameraController>().UpdatePlayer(playerModel);
+        LeftFarCamera.GetComponent<FPSCameraController>().UpdatePlayer(playerModel);
+        RightNearCamera.GetComponent<FPSCameraController>().UpdatePlayer(playerModel);
+        RightFarCamera.GetComponent<FPSCameraController>().UpdatePlayer(playerModel);
+        OverShoulderNearCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
+        OverShoulderFarCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
+        //OverviewUICamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
+        OverviewNearCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
+        OverviewFarCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
     }
 
     public void Dock(GameObject ship, GameObject shipDockingPort, GameObject dockGhost, GameObject dockingPort)
