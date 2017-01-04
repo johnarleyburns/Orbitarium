@@ -20,9 +20,9 @@ public class DisplayUtils {
     public static string DistanceText(float dist)
     {
         float adist = Mathf.Abs(dist);
-        string distText = adist > 100000 ? string.Format("{0:,0} km", dist / 1000)
-            : (adist > 10000 ? string.Format("{0:,0.0} km", dist / 1000)
-            : (adist > 1000 ? string.Format("{0:,0.00} km", dist / 1000)
+        string distText = adist > 100000 ? string.Format("{0:,0} km", dist / 1000f)
+            : (adist > 10000 ? string.Format("{0:,0.0} km", dist / 1000f)
+            : (adist > 1000 ? string.Format("{0:,0.00} km", dist / 1000f)
                 : (adist > 100 ? string.Format("{0:,0} m", dist)
                 : string.Format("{0:,0.0} m", dist))));
         return distText;
@@ -31,8 +31,8 @@ public class DisplayUtils {
     public static string RelvText(float relV)
     {
         float arelV = Mathf.Abs(relV);
-        string relvText = arelV > 10000 ? string.Format("{0:,0.022} km/s", relV / 1000)
-            : (arelV > 1000 ? string.Format("{0:,0.00} km/s", relV / 1000)
+        string relvText = arelV > 10000 ? string.Format("{0:,0.0} km/s", relV / 1000f)
+            : (arelV > 1000 ? string.Format("{0:,0.00} km/s", relV / 1000f)
             : (arelV > 100 ? string.Format("{0:,0} m/s", relV)
             : (arelV > 10 ? string.Format("{0:,0} m/s", relV)
             : (arelV > 1 ? string.Format("{0:,0.0} m/s", relV)

@@ -85,29 +85,27 @@ public class PhysicsUtils : MonoBehaviour {
 
     public static void CalcRelV(Transform source, GameObject target, out Vector3 targetVec, out float relv, out Vector3 relVelUnit)
     {
-        Vector3 myVel = GravityEngine.instance.GetVelocity(NUtils.GetNBodyGameObject(source.gameObject));
-        Vector3 targetVel = GravityEngine.instance.GetVelocity(NUtils.GetNBodyGameObject(target));
+        float scale = NUtils.GetNBodyToModelScale(target);
+        GameObject sourceNBody = NUtils.GetNBodyGameObject(source.gameObject);
+        GameObject targetNBody = NUtils.GetNBodyGameObject(target);
+        Vector3 myVel = GravityEngine.instance.GetVelocity(sourceNBody);
+        Vector3 targetVel = GravityEngine.instance.GetVelocity(targetNBody);
         Vector3 relVel = myVel - targetVel;
-        Vector3 targetPos = target.transform.position;
-        Vector3 myPos = source.transform.position;
-        Vector3 tVec = targetPos - myPos;
+        Vector3 tVec = targetNBody.transform.position - sourceNBody.transform.position;
         float relVelDot = Vector3.Dot(relVel, tVec);
-        float relVelScalar = relVel.magnitude;
-        targetVec = tVec;
-        relv = NUtils.GetNBodyToModelScale(target) * Mathf.Sign(relVelDot) * relVelScalar;
+        relv = scale * Mathf.Sign(relVelDot) * relVel.magnitude;
+        targetVec = scale * tVec;
         relVelUnit = relVel.normalized;
     }
 
     public static void CalcDistance(Transform source, GameObject target, out float dist)
     {
-//        CalcDistance(source.transform.position, target.transform.position, NUtils.GetNBodyToModelScale(target), out dist);
-        CalcDistance(source.transform.position, target.transform.position, 1, out dist);
+        CalcDistance(source.transform.position, target.transform.position, NUtils.GetNBodyToModelScale(target), out dist);
     }
 
     public static void CalcDistance(Vector3 s, Vector3 t, float scale, out float dist)
     {
-        //dist = scale * (t - s).magnitude;
-        dist = (t - s).magnitude;
+        dist = scale * (t - s).magnitude;
     }
 
     public static void CalcDockPlanar(Transform source, GameObject targetDock, float relv, Vector3 relunitvec, out float closingDist, out float closingRelv, out Vector2 planarVec)

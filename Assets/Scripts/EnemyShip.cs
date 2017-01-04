@@ -4,6 +4,7 @@ using System.Collections;
 public class EnemyShip : MonoBehaviour, IControllableShip {
 
     public GameController gameController;
+    public NBodyDimensions NBodyDimensions;
     public string VisibleName;
     public float healthMax = 1;
     public float minRelVtoDamage = 5;

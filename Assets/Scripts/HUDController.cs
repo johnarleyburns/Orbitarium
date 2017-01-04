@@ -82,7 +82,8 @@ public class HUDController : MonoBehaviour, IPropertyChangeObserver
     {
         int indicatorId = targetIndicatorId[target];
         bool isSelectedTarget = target == selectedTarget;
-        bool calcRelV = target.GetComponent<NBody>() != null;
+        GameObject targetNBody = NUtils.GetNBodyGameObject(target);
+        bool calcRelV = targetNBody != null;
         if (calcRelV)
         {
             Vector3 targetVec;

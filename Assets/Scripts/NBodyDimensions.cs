@@ -18,9 +18,9 @@ public class NBodyDimensions : MonoBehaviour {
 	void Update () {
 	    if (UpdatePosition && NBody != null && PlayerNBody != null)
         {
-            NBody p = NBody.GetComponent<NBody>();
+            NBody p = PlayerNBody.GetComponent<NBody>();
             NBody n = NBody.GetComponent<NBody>();
-            transform.position = (n.transform.position - p.transform.position) / NBodyToModelScaleFactor;
+            transform.position = (n.transform.position - p.transform.position) * NBodyToModelScaleFactor;
         }
 	}
 }

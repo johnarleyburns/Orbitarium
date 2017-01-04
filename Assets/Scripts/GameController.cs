@@ -29,6 +29,7 @@ public class GameController : MonoBehaviour
     public Camera OverviewNearCamera;
     public Camera OverviewFarCamera;
     public GameObject ReferenceBody;
+    public GameObject ReferenceBodyTarget;
     //public GameObject Didymos;
     //public GameObject Didymoon;
     //public GameObject EezoDock;
@@ -434,17 +435,7 @@ public class GameController : MonoBehaviour
         player.GetComponent<NBodyDimensions>().PlayerNBody = nBody;
         player.GetComponent<PlayerShipController>().NBodyDimensions = player.GetComponent<NBodyDimensions>();
         GravityEngine.instance.AddBody(nBody);
-
-        /*
-        player.transform.position = PlayerSpawn.position;
-        playerModel.transform.rotation = PlayerSpawn.rotation;
-        NBody playerNBody = NUtils.GetNBodyGameObject(player).GetComponent<NBody>();
-        */
-
-        //player.transform.position = EezoDock.transform.position;
-        //player.transform.rotation = EezoDock.transform.rotation;
-        //playerModel.transform.position = EezoDock.transform.GetChild(0).transform.position;
-        //playerModel.transform.rotation = EezoDock.transform.GetChild(0).transform.rotation;
+        nBody.name = "NBody " + player.name;
 
         GameObject playerModel = player.GetComponent<PlayerShipController>().ShipModel;
         SetupCameras(playerModel);
@@ -498,25 +489,37 @@ public class GameController : MonoBehaviour
 
     private void InstantiateEnemy(string suffix)
     {
-        KeyValuePair<Vector3, Quaternion> spawn = NextEnemySpawn();
-        GameObject enemy = Instantiate(EnemyShipPrefab, spawn.Key, spawn.Value) as GameObject;
-        GravityEngine.instance.AddBody(enemy);
+        GameObject playerNBody = NUtils.GetNBodyGameObject(player);
 
+        GameObject nBody = Instantiate(NBodyPrefab, Vector3.zero, Quaternion.identity) as GameObject;
+        GameObject enemy = Instantiate(EnemyShipPrefab, Vector3.zero, Quaternion.identity) as GameObject;
         enemy.GetComponent<EnemyShipController>().gameController = this;
+        enemy.GetComponent<NBodyDimensions>().NBody = nBody;
+        enemy.GetComponent<NBodyDimensions>().PlayerNBody = playerNBody;
+        enemy.GetComponent<EnemyShipController>().NBodyDimensions = player.GetComponent<NBodyDimensions>();
+        GravityEngine.instance.AddBody(nBody);
+
         GameObject enemyModel = enemy.GetComponent<EnemyShipController>().ShipModel;
         enemyModel.GetComponent<EnemyShip>().StartShip();
         string nameRoot = enemyModel.GetComponent<EnemyShip>().VisibleName;
         enemy.name = string.Format("{0}-{1}", nameRoot, suffix);
+        nBody.name = string.Format("NBody {0}-{1}", nameRoot, suffix);
+
+        KeyValuePair < Vector3, Quaternion> spawn = NextEnemySpawn(playerNBody);
+        enemy.transform.GetChild(0).transform.rotation = spawn.Value;
+        GravityEngine.instance.UpdatePositionAndVelocity(nBody.GetComponent<NBody>(), spawn.Key, Vector3.zero);
+
         targetDB.AddTarget(enemy, TargetDB.TargetType.ENEMY);
         hudController.AddTargetIndicator(enemy);
     }
 
-    private KeyValuePair<Vector3, Quaternion> NextEnemySpawn()
+    private KeyValuePair<Vector3, Quaternion> NextEnemySpawn(GameObject playerNBody)
     {
-        Vector3 enemyOffset = EnemyRandomSpreadMeters * Random.insideUnitSphere;
+        float scale = NUtils.GetNBodyToModelScale(player);
+        Vector3 enemyOffset = (EnemyRandomSpreadMeters/scale) * Random.insideUnitSphere;
         Vector3 enemySpawnPoint = EnemySpawn.position + enemyOffset;
         Quaternion enemyRandomRotation = Quaternion.AngleAxis(Random.Range(0, 360), Random.onUnitSphere);
-        Quaternion enemyLookRotation = Quaternion.LookRotation(enemySpawnPoint - player.transform.position); // facePlayer
+        Quaternion enemyLookRotation = Quaternion.LookRotation(enemySpawnPoint - playerNBody.transform.position); // facePlayer
         Quaternion enemyOffsetRotation = Quaternion.RotateTowards(enemyLookRotation, enemyRandomRotation, 90f);
         Quaternion enemySpawnRotation = enemyOffsetRotation * enemyLookRotation;
         return new KeyValuePair<Vector3, Quaternion>(enemySpawnPoint, enemySpawnRotation);
@@ -664,9 +667,12 @@ public class GameController : MonoBehaviour
 
     private void AddPlanetaryBodies()
     {
+
+        ReferenceBodyTarget.GetComponent<NBodyDimensions>().PlayerNBody = NUtils.GetNBodyGameObject(player);
+        ReferenceBodyTarget.GetComponent<NBodyDimensions>().NBody = ReferenceBody;
         GravityEngine.instance.AddBody(ReferenceBody);
-        targetDB.AddTarget(ReferenceBody, TargetDB.TargetType.PLANET);
-        hudController.AddTargetIndicator(ReferenceBody);
+        targetDB.AddTarget(ReferenceBodyTarget, TargetDB.TargetType.PLANET);
+        hudController.AddTargetIndicator(ReferenceBodyTarget);
         /*
         targetDB.AddTarget(Didymos, TargetDB.TargetType.ASTEROID);
         targetDB.AddTarget(Didymoon, TargetDB.TargetType.MOON);
