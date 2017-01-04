@@ -31,8 +31,8 @@ public class DisplayUtils {
     public static string RelvText(float relV)
     {
         float arelV = Mathf.Abs(relV);
-        string relvText = arelV > 10000 ? string.Format("{0:,0} km/s", relV / 1000)
-            : (arelV > 1000 ? string.Format("{0:,0.0} m/s", relV / 1000)
+        string relvText = arelV > 10000 ? string.Format("{0:,0.022} km/s", relV / 1000)
+            : (arelV > 1000 ? string.Format("{0:,0.00} km/s", relV / 1000)
             : (arelV > 100 ? string.Format("{0:,0} m/s", relV)
             : (arelV > 10 ? string.Format("{0:,0} m/s", relV)
             : (arelV > 1 ? string.Format("{0:,0.0} m/s", relV)

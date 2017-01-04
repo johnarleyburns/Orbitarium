@@ -37,10 +37,12 @@ public class TargetDB : MonoBehaviour {
 
     }
 
-    public void AddTarget(GameObject target, TargetType targetType, float targetRadiusM)
+    public void AddTarget(GameObject target, TargetType targetType)
     {
         if (target != null)
         {
+            NBodyDimensions dim = target.GetComponent<NBodyDimensions>();
+            float targetRadiusM = dim != null ? dim.RadiusM : 0f;
             targets[target] = targetType;
             targetRadius[target] = targetRadiusM;
             if (!targetOrder.Contains(target))

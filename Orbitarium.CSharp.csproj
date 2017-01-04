@@ -241,6 +241,7 @@
     <Compile Include="Assets\Scripts\MissileShip.cs" />
     <Compile Include="Assets\Scripts\MissileShipController.cs" />
     <Compile Include="Assets\Scripts\MusicController.cs" />
+    <Compile Include="Assets\Scripts\NBodyDimensions.cs" />
     <Compile Include="Assets\Scripts\OverShoulderCameraSpin.cs" />
     <Compile Include="Assets\Scripts\PerlinShake.cs" />
     <Compile Include="Assets\Scripts\PhysicsUtils.cs" />

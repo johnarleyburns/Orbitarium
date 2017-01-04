@@ -6,6 +6,7 @@ public class Autopilot : MonoBehaviour
 {
 
     public GameController gameController;
+    public NBodyDimensions NBodyDimensions;
 
     public float UpdateTrackTime = 0.2f;
     public float MaxRCSAutoBurnSec = 60f;
@@ -748,7 +749,7 @@ public class Autopilot : MonoBehaviour
             yield return PushAndStartCoroutine(KillRelVCo(target));
             Vector3 b = (targetApproach - transform.position).normalized;
             float dist;
-            PhysicsUtils.CalcDistance(transform.position, targetApproach, out dist);
+            PhysicsUtils.CalcDistance(transform.position, targetApproach, NUtils.GetNBodyToModelScale(target), out dist);
             float minMainBurnDist = MinMainBurnDist(MinRendezvousBurnSec);
             float minAuxBurnDist = MinAuxBurnDist(MinRendezvousBurnSec);
 //            float minRCSBurnDist = MinRCSBurnDist(MinRendezvousBurnSec);

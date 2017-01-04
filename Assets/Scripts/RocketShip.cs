@@ -4,6 +4,7 @@ using System.Collections.Generic;
 public class RocketShip : MonoBehaviour {
 
     public GameController gameController;
+    public NBodyDimensions NBodyDimensions;
     public GameObject DockingPort;
     public float EmptyMassKg = 10000;
     public float FuelMassKg = 9200;
@@ -20,7 +21,6 @@ public class RocketShip : MonoBehaviour {
     public float RCSBurnMinSec = 0.02f;
     public float RCSFineControlFactor = 0.5f;
 
-    private NBody nbody;
     private float currentFuelKg;
     private float currentTotalMassKg;
     private float RCSThrustPerSec;
@@ -39,7 +39,6 @@ public class RocketShip : MonoBehaviour {
 
     void Start()
     {
-        nbody = transform.parent.GetComponent<NBody>();
         mainEngineOn = false;
         auxEngineOn = false;
         rcsFineControlOn = false;
@@ -250,10 +249,10 @@ public class RocketShip : MonoBehaviour {
         return currentFuelKg / FuelMassKg;
     }
 
-    private void ApplyImpulse(Vector3 normalizedDirection, float thrustPerSec, float sec)
+    public void ApplyImpulse(Vector3 normalizedDirection, float thrustPerSec, float sec)
     {
         Vector3 thrust = normalizedDirection * thrustPerSec * sec;
-        GravityEngine.instance.ApplyImpulse(nbody, thrust);
+        GravityEngine.instance.ApplyImpulse(NBodyDimensions.NBody.GetComponent<NBody>(), thrust / NBodyDimensions.NBodyToModelScaleFactor);
     }
 
     private void ApplyFuel(float deltaFuel)

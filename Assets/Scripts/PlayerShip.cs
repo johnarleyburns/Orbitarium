@@ -8,6 +8,7 @@ public class PlayerShip : MonoBehaviour, IControllableShip
 {
 
     public GameController gameController;
+    public NBodyDimensions NBodyDimensions;
     public GameObject ShipExplosion;
     public int healthMax = 3;
     public float minRelVtoDamage = 1;

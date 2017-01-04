@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 public class GameController : MonoBehaviour
 {
-
+    public GameObject NBodyPrefab;
     public GameObject PlayerShipPrefab;
     public GameObject EnemyShipPrefab;
     public GameObject FPSCanvas;
@@ -16,6 +16,7 @@ public class GameController : MonoBehaviour
     public Camera UICamera;
     public Camera NearCamera;
     public Camera FarCamera;
+    public bool UseAdditionalCameras;
     public Camera RearNearCamera;
     public Camera RearFarCamera;
     public Camera LeftNearCamera;
@@ -28,23 +29,15 @@ public class GameController : MonoBehaviour
     public Camera OverviewNearCamera;
     public Camera OverviewFarCamera;
     public GameObject ReferenceBody;
-    public GameObject Didymos;
-    public GameObject Didymoon;
-    //public GameObject EezoApproach;
-    //public GameObject EezoApproachGhost;
-    public GameObject EezoDock;
-    public GameObject EezoDockGhost;
-    public GameObject EezoDockingPort;
+    //public GameObject Didymos;
+    //public GameObject Didymoon;
+    //public GameObject EezoDock;
+    //public GameObject EezoDockGhost;
+    //public GameObject EezoDockingPort;
     public Transform PlayerSpawn;
     public Transform EnemySpawn;
     public PlayerStartMode StartMode;
     public float PlayerInitialImpulse;
-    public float PlayerShipRadiusM = 20;
-    public float EnemyShipRadiusM = 20;
-    public float ReferenceBodyRadiusM = 3396000;
-    public float DidymosRadiusM = 500;
-    public float DidymoonRadiusM = 100;
-    public float EezoDockingPortRadiusM = 20;
     public float EnemyRandomSpreadMeters = 200;
     public float EnemyInitialCount = 3;
     public float EnemyInitialImpulse = 10;
@@ -62,7 +55,7 @@ public class GameController : MonoBehaviour
     private float gameStartInputTimer = -1;
     private float gameOverInputTimer = -1;
     private GameState gameState;
-    private bool doInitPlayer = false;
+    private bool transitionToStartingLateUpdate = false;
 
     public enum GameState
     {
@@ -79,6 +72,7 @@ public class GameController : MonoBehaviour
 
     void Start()
     {
+        GravityEngine.instance.Setup();
         hudController = GetComponent<HUDController>();
         inputController = GetComponent<InputController>();
         musicController = GetComponent<MusicController>();
@@ -87,7 +81,9 @@ public class GameController : MonoBehaviour
         targetDB.gameController = this;
         enemyTracker.gameController = this;
         StartFollowGhost();
+        GravityEngine.instance.SetEvolve(true);
         TransitionToStarting();
+//        transitionToStartingLateUpdate = true; // for gravity engine
     }
 
     private void StartFollowGhost()
@@ -95,24 +91,11 @@ public class GameController : MonoBehaviour
         
         followGhost = new Dictionary<GameObject, GameObject>()
         {
-            {
-                EezoDockGhost,
-                EezoDock
-            }
-            //,
-            //{
-             //   EezoApproachGhost,
-           //     EezoApproach
-            //},
-          //  {
-            //    EezoDockPortGhost,
-          //      EezoDockPort
-            //}
+        //    {
+        //        EezoDockGhost,
+        //        EezoDock
+        //    }
         };
-        
-        //virtualChildOffset = VirtualChild.transform.position - VirtualParent.transform.position;
-        //virtualChildOffsetQ = VirtualParent.transform.rotation;
-        //UpdateFollows();
     }
 
     private void UpdateFollows()
@@ -201,7 +184,7 @@ public class GameController : MonoBehaviour
         InstantiateEnemies();
         SetupInitialVelocities();
         hudController.SelectNextTargetPreferClosestEnemy();
-        inputController.PropertyChanged("SelectDockTarget", EezoDock);
+        //inputController.PropertyChanged("SelectDockTarget", EezoDock);
         UpdateCanvasState(GameState.RUNNING);
         EnableFPSCamera();
         musicController.StartMusic.Stop();
@@ -444,9 +427,13 @@ public class GameController : MonoBehaviour
     private void InstantiatePlayer()
     {
         DestroyPlayer();
+        GameObject nBody = Instantiate(NBodyPrefab, Vector3.zero, Quaternion.identity) as GameObject;
         player = Instantiate(PlayerShipPrefab, Vector3.zero, Quaternion.identity) as GameObject;
         player.GetComponent<PlayerShipController>().gameController = this;
-        //GravityEngine.instance.AddBody(player);
+        player.GetComponent<NBodyDimensions>().NBody = nBody;
+        player.GetComponent<NBodyDimensions>().PlayerNBody = nBody;
+        player.GetComponent<PlayerShipController>().NBodyDimensions = player.GetComponent<NBodyDimensions>();
+        GravityEngine.instance.AddBody(nBody);
 
         /*
         player.transform.position = PlayerSpawn.position;
@@ -462,7 +449,17 @@ public class GameController : MonoBehaviour
         GameObject playerModel = player.GetComponent<PlayerShipController>().ShipModel;
         SetupCameras(playerModel);
         playerModel.GetComponent<PlayerShip>().StartShip();
-        doInitPlayer = true; // must init GravityEngine stuff after first FixedUpdate so auto-detect finishes
+
+        switch (StartMode)
+        {
+            case PlayerStartMode.DOCKED:
+                //GetPlayerShip().Dock(EezoDockingPort.transform.GetChild(0).gameObject, false);
+                break;
+            case PlayerStartMode.SPAWN:               
+                player.transform.GetChild(0).transform.rotation = PlayerSpawn.rotation;
+                GravityEngine.instance.UpdatePositionAndVelocity(nBody.GetComponent<NBody>(), PlayerSpawn.position, Vector3.zero);
+                break;
+        }
     }
 
     public enum PlayerStartMode
@@ -473,34 +470,21 @@ public class GameController : MonoBehaviour
 
     public void LateUpdate()
     {
-        if (doInitPlayer)
+        if (transitionToStartingLateUpdate)
         {
-            switch (StartMode)
-            {
-                case PlayerStartMode.DOCKED:
-                    GetPlayerShip().Dock(EezoDockingPort.transform.GetChild(0).gameObject, false);
-                    break;
-                case PlayerStartMode.SPAWN:
-                    player.transform.position = PlayerSpawn.transform.position;
-                    player.transform.rotation = PlayerSpawn.transform.rotation;
-                    player.transform.GetChild(0).transform.rotation = PlayerSpawn.rotation;
-                    GravityEngine.instance.UpdatePositionAndVelocity(player.GetComponent<NBody>(), PlayerSpawn.position, Vector3.zero);
-                    break;
-            }
-            EnableOverviewCamera();
-            doInitPlayer = false;
+            transitionToStartingLateUpdate = false;
+            TransitionToStarting();
         }
     }
 
     private void SetupInitialVelocities()
     {
         float playerImpulse = Random.Range(0, PlayerInitialImpulse);
-        GravityEngine.instance.ApplyImpulse(player.GetComponent<NBody>(), playerImpulse * player.transform.forward);
+        player.GetComponent<PlayerShipController>().ShipModel.GetComponent<RocketShip>().ApplyImpulse(player.transform.forward, playerImpulse, 1);
         foreach (GameObject enemyShip in targetDB.GetTargets(TargetDB.TargetType.ENEMY))
         {
             float enemyImpulse = Random.Range(0.1f * EnemyInitialImpulse, EnemyInitialImpulse);
-            GravityEngine.instance.ApplyImpulse(enemyShip.GetComponent<NBody>(), enemyImpulse * enemyShip.transform.GetChild(0).transform.forward);
-            GameObject Model = enemyShip.GetComponent<EnemyShipController>().ShipModel;
+            enemyShip.GetComponent<EnemyShipController>().ShipModel.GetComponent<RocketShip>().ApplyImpulse(enemyShip.transform.forward, enemyImpulse, 1);
         }
     }
 
@@ -523,7 +507,7 @@ public class GameController : MonoBehaviour
         enemyModel.GetComponent<EnemyShip>().StartShip();
         string nameRoot = enemyModel.GetComponent<EnemyShip>().VisibleName;
         enemy.name = string.Format("{0}-{1}", nameRoot, suffix);
-        targetDB.AddTarget(enemy, TargetDB.TargetType.ENEMY, EnemyShipRadiusM);
+        targetDB.AddTarget(enemy, TargetDB.TargetType.ENEMY);
         hudController.AddTargetIndicator(enemy);
     }
 
@@ -543,12 +527,24 @@ public class GameController : MonoBehaviour
         UICamera.enabled = true;
         NearCamera.enabled = true;
         FarCamera.enabled = true;
-        RearNearCamera.enabled = true;
-        RearFarCamera.enabled = true;
-        LeftNearCamera.enabled = true;
-        LeftFarCamera.enabled = true;
-        RightNearCamera.enabled = true;
-        RightFarCamera.enabled = true;
+        if (UseAdditionalCameras)
+        {
+            RearNearCamera.enabled = true;
+            RearFarCamera.enabled = true;
+            LeftNearCamera.enabled = true;
+            LeftFarCamera.enabled = true;
+            RightNearCamera.enabled = true;
+            RightFarCamera.enabled = true;
+        }
+        else
+        {
+            RearNearCamera.enabled = false;
+            RearFarCamera.enabled = false;
+            LeftNearCamera.enabled = false;
+            LeftFarCamera.enabled = false;
+            RightNearCamera.enabled = false;
+            RightFarCamera.enabled = false;
+        }
         OverShoulderNearCamera.enabled = false;
         OverShoulderFarCamera.enabled = false;
         OverviewUICamera.enabled = false;
@@ -668,18 +664,17 @@ public class GameController : MonoBehaviour
 
     private void AddPlanetaryBodies()
     {
-        targetDB.AddTarget(ReferenceBody, TargetDB.TargetType.ASTEROID, ReferenceBodyRadiusM);
-        targetDB.AddTarget(Didymos, TargetDB.TargetType.ASTEROID, DidymosRadiusM);
-        targetDB.AddTarget(Didymoon, TargetDB.TargetType.MOON, DidymoonRadiusM);
-        //targetDB.AddTarget(EezoApproach, TargetDB.TargetType.APPROACH, 0);
-        targetDB.AddTarget(EezoDock, TargetDB.TargetType.DOCK, 0);
-        //targetDB.AddTarget(EezoDockGhost, TargetDB.TargetType.DOCK, 0);
+        GravityEngine.instance.AddBody(ReferenceBody);
+        targetDB.AddTarget(ReferenceBody, TargetDB.TargetType.PLANET);
         hudController.AddTargetIndicator(ReferenceBody);
+        /*
+        targetDB.AddTarget(Didymos, TargetDB.TargetType.ASTEROID);
+        targetDB.AddTarget(Didymoon, TargetDB.TargetType.MOON);
+        targetDB.AddTarget(EezoDock, TargetDB.TargetType.DOCK);
         hudController.AddTargetIndicator(Didymos);
         hudController.AddTargetIndicator(Didymoon);
-        //hudController.AddTargetIndicator(EezoApproach);
         hudController.AddTargetIndicator(EezoDock);
-        //hudController.AddTargetIndicator(EezoDockGhost);
+        */
     }
 
     private void AddHUDFixedIndicators()

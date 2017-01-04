@@ -6,6 +6,7 @@ public class FPSCameraController : MonoBehaviour
 
     public GameObject player;
     public CameraDirection Direction;
+    public bool isFar = false;
     public float duration = 2f;
     public float speed = 20f;
     public float collisionShakeMagnitude = 10f;
@@ -29,7 +30,10 @@ public class FPSCameraController : MonoBehaviour
 
     void Awake()
     {
-        originalPos = transform.position;
+        if (!isFar)
+        {
+            originalPos = transform.position;
+        }
     }
 
     // Use this for initialization
@@ -41,8 +45,11 @@ public class FPSCameraController : MonoBehaviour
     public void UpdatePlayer(GameObject newPlayer)
     {
         player = newPlayer;
-        transform.position = originalPos;
-        cameraOffset = transform.position - player.transform.position;
+        if (!isFar)
+        {
+            transform.position = originalPos;
+            cameraOffset = transform.position - player.transform.position;
+        }
     }
 
     // Update is called once per frame
@@ -50,33 +57,50 @@ public class FPSCameraController : MonoBehaviour
     {
         if (player != null && player.activeInHierarchy)
         {
+            UpdatePosition();
+            UpdateRotation();
+        }
+    }
+
+    private void UpdatePosition()
+    {
+        if (isFar)
+        {
+            transform.position = NUtils.GetNBodyGameObject(player).transform.position;
+        }
+        else
+        {
             transform.position = (player.transform.rotation * cameraOffset) + player.transform.position;
-            Quaternion newRotation;
-            switch (Direction)
-            {
-                default:
-                case CameraDirection.FORWARD:
-                    newRotation = player.transform.rotation;
-                    break;
-                case CameraDirection.REAR:
-                    newRotation = Quaternion.LookRotation(-player.transform.forward, player.transform.up);
-                    break;
-                case CameraDirection.RIGHT:
-                    newRotation = Quaternion.LookRotation(player.transform.right, player.transform.up);
-                    break;
-                case CameraDirection.LEFT:
-                    newRotation = Quaternion.LookRotation(-player.transform.right, player.transform.up);
-                    break;
-            }
-            if (shaking)
-            {
-                ApplyShake();
-                transform.rotation = shakeRotation * newRotation;
-            }
-            else
-            {
-                transform.rotation = newRotation;
-            }
+        }
+    }
+
+    private void UpdateRotation()
+    {
+        Quaternion newRotation;
+        switch (Direction)
+        {
+            default:
+            case CameraDirection.FORWARD:
+                newRotation = player.transform.rotation;
+                break;
+            case CameraDirection.REAR:
+                newRotation = Quaternion.LookRotation(-player.transform.forward, player.transform.up);
+                break;
+            case CameraDirection.RIGHT:
+                newRotation = Quaternion.LookRotation(player.transform.right, player.transform.up);
+                break;
+            case CameraDirection.LEFT:
+                newRotation = Quaternion.LookRotation(-player.transform.right, player.transform.up);
+                break;
+        }
+        if (shaking)
+        {
+            ApplyShake();
+            transform.rotation = shakeRotation * newRotation;
+        }
+        else
+        {
+            transform.rotation = newRotation;
         }
     }
 

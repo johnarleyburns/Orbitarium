@@ -12,8 +12,9 @@ public class OverShoulderCameraSpin : MonoBehaviour
 {
 
     //! Rate of spin (degrees per Update)
-    private float spinRateDegPerSec = 20f;
+    public float spinRateDegPerSec = 10f;
     public float zoomSize = 1f;
+    public bool isFar;
 
     //private Vector3 initialBoom;
     // factor by which zoom is changed 
@@ -37,8 +38,17 @@ public class OverShoulderCameraSpin : MonoBehaviour
     {
         if (boomCamera.enabled)
         {
-            transform.LookAt(point);//makes the camera look to it
-            transform.RotateAround(point, new Vector3(0.0f, 1.0f, 0.0f), Time.deltaTime * spinRateDegPerSec);
+            if (isFar)
+            {
+                transform.LookAt(point);//makes the camera look to it
+                transform.RotateAround(point, new Vector3(0.0f, 1.0f, 0.0f), Time.deltaTime * spinRateDegPerSec);
+            }
+            else
+            {
+                Vector3 npoint = NUtils.GetNBodyGameObject(target).transform.position;
+                transform.LookAt(npoint);//makes the camera look to it
+                transform.RotateAround(npoint, new Vector3(0.0f, 1.0f, 0.0f), Time.deltaTime * spinRateDegPerSec);
+            }
         }
         /*
         if (Input.GetKey(KeyCode.UpArrow))
@@ -80,9 +90,12 @@ public class OverShoulderCameraSpin : MonoBehaviour
     public void UpdateTarget(GameObject newTarget)
     {
         target = newTarget;
-        point = target.transform.position;//get target's coords
-        transform.position = point + new Vector3(5, 5, -40);
-        transform.LookAt(point);//makes the camera look to it
+        if (!isFar)
+        {
+            point = target.transform.position;//get target's coords
+            transform.position = point + new Vector3(5, 5, -40);
+            //transform.LookAt(point);//makes the camera look to it
+        }
     }
 
 }

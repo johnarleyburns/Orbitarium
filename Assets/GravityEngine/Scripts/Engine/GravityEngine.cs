@@ -1032,11 +1032,17 @@ public class GravityEngine : MonoBehaviour {
 	/// <param name="body">Body</param>
 	public Vector3 GetVelocity(GameObject body) {
 		NBody nbody = body.GetComponent<NBody>();
-		if (nbody == null) {
-			Debug.LogError("No NBody found on " + body.name + " cannot get velocity"); 
-			return Vector3.zero;
-		}
-		if (nbody.engineRef.bodyType == BodyType.MASSLESS) {
+        if (nbody == null)
+        {
+            Debug.LogError("No NBody found on " + body.name + " cannot get velocity");
+            return Vector3.zero;
+        }
+        if (nbody.engineRef == null)
+        {
+            Debug.LogError("No NBody engine found on " + body.name + " cannot get velocity");
+            return Vector3.zero;
+        }
+        if (nbody.engineRef.bodyType == BodyType.MASSLESS) {
 			return masslessEngine.GetVelocity(body);
 		} 
 		return integrator.GetVelocityForIndex(nbody.engineRef.index);

@@ -3,7 +3,9 @@
 public class PlayerShipController : MonoBehaviour {
 
     public GameObject ShipModel;
+    
     private GameController _gameController;
+    private NBodyDimensions _nBodyDimensions;
 
     public GameController gameController
     {
@@ -21,4 +23,19 @@ public class PlayerShipController : MonoBehaviour {
         }
     }
 
+    public NBodyDimensions NBodyDimensions
+    {
+        get
+        {
+            return _nBodyDimensions;
+        }
+        set
+        {
+            _nBodyDimensions = value;
+            ShipModel.GetComponent<PlayerShip>().NBodyDimensions = value;
+            ShipModel.GetComponent<RocketShip>().NBodyDimensions = value;
+            ShipModel.GetComponent<Autopilot>().NBodyDimensions = value;
+            ShipModel.GetComponent<ShipWeapons>().NBodyDimensions = value;
+        }
+    }
 }

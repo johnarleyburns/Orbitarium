@@ -4,6 +4,7 @@ using System.Collections;
 
 public class ShipWeapons : MonoBehaviour {
 
+    public NBodyDimensions NBodyDimensions;
     public Weapon MainGun;
     public float MainGunRangeM = 1000;
     public GameObject MissilePrefab;
@@ -43,6 +44,7 @@ public class ShipWeapons : MonoBehaviour {
 
     void LateUpdate()
     {
+        /*
         if (initMissilesOnLateUpdate)
         {
             foreach (GameObject missile in MissileSlots.Values)
@@ -51,6 +53,7 @@ public class ShipWeapons : MonoBehaviour {
             }
             initMissilesOnLateUpdate = false;
         }
+        */
     }
 
     public void AddMissiles()
@@ -70,10 +73,10 @@ public class ShipWeapons : MonoBehaviour {
                 missile.transform.GetChild(1).transform.localRotation = Quaternion.identity;
                 missile.GetComponent<MissileShipController>().SetGameController(gameController);
                 MissileSlots[missileSlotPosition] = missile;
-                if (!isPlayer) { // no autodetect 
-                    GravityEngine.instance.AddBody(missile);
-                    GravityEngine.instance.InactivateBody(missile);
-                }
+                //if (!isPlayer) { // no autodetect 
+                //    GravityEngine.instance.AddBody(missile);
+                //    GravityEngine.instance.InactivateBody(missile);
+                //}
             }
             i++;
         }
@@ -99,7 +102,7 @@ public class ShipWeapons : MonoBehaviour {
             {
                 MissileSlots.Remove(missileSlot);
                 TargetDB.TargetType missileType = isPlayer ? TargetDB.TargetType.FRIEND : TargetDB.TargetType.ENEMY;
-                gameController.TargetData().AddTarget(missile, missileType, 1);
+                gameController.TargetData().AddTarget(missile, missileType);
                 gameController.HUD().AddTargetIndicator(missile);
                 if (isPlayer)
                 {
