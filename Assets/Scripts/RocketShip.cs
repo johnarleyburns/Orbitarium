@@ -120,6 +120,11 @@ public class RocketShip : MonoBehaviour {
         return auxEngineOn;
     }
 
+    public bool IsSpinning()
+    {
+        return currentSpinPerSec != Quaternion.identity;
+    }
+
     public void RCSFineControlOn()
     {
         rcsFineControlOn = true;
@@ -320,9 +325,12 @@ public class RocketShip : MonoBehaviour {
     }
 
     private static readonly float minSpinDeltaTheta = 1f; // too small and it snafus
+    private static readonly float precisionMinSpinDeltaTheta = 0.2f; // too small and it snafus
 
-    public bool ConvergeSpin(Quaternion targetQ)
+    public bool ConvergeSpin(Quaternion targetQ, bool precision = false)
     {
+        float dTheta = precision ? precisionMinSpinDeltaTheta : minSpinDeltaTheta;
+
         Quaternion deltaQ = Quaternion.Inverse(transform.rotation) * targetQ;
 
         float angleLeft = Mathf.Abs(Quaternion.Angle(transform.rotation, targetQ));
@@ -339,8 +347,8 @@ public class RocketShip : MonoBehaviour {
         {
             currentSpinPerSec = Quaternion.RotateTowards(currentSpinPerSec, Quaternion.identity, RCSAngularDegPerSec * Time.deltaTime);
         }
-        bool convergedSpin = Mathf.Abs(Quaternion.Angle(currentSpinPerSec, Quaternion.identity)) < minSpinDeltaTheta;
-        bool convergedRotation = targetQ == Quaternion.identity || Mathf.Abs(Quaternion.Angle(transform.rotation, targetQ)) < minSpinDeltaTheta;
+        bool convergedSpin = Mathf.Abs(Quaternion.Angle(currentSpinPerSec, Quaternion.identity)) < dTheta;
+        bool convergedRotation = targetQ == Quaternion.identity || Mathf.Abs(Quaternion.Angle(transform.rotation, targetQ)) < dTheta;
         bool converged = convergedSpin && convergedRotation;
         if (converged)
         {

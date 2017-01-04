@@ -29,20 +29,6 @@ public class Autopilot : MonoBehaviour
     private bool cmgActive = false;
     private Command currentCommand = Command.OFF;
 
-    public static readonly List<Command> Commands = new List<Command>()
-    {
-        Command.OFF,
-        Command.KILL_ROTATION,
-        Command.FACE_TARGET,
-        Command.ACTIVE_TRACK,
-        Command.KILL_REL_V,
-        Command.INTERCEPT,
-        Command.STRAFE,
-        Command.RENDEZVOUS,
-        Command.HUNT,
-        Command.DOCK
-    };
-
     public enum Command
     {
         OFF,
@@ -59,20 +45,6 @@ public class Autopilot : MonoBehaviour
         RENDEZVOUS,
         HUNT,
         DOCK
-    }
-
-    public static Command CommandFromInt(int index)
-    {
-        Command command;
-        if (index >= 0 && index < Commands.Count)
-        {
-            command = Commands[index];
-        }
-        else
-        {
-            command = Command.OFF;
-        }
-        return command;
     }
 
     Stack<IEnumerator> callStack = new Stack<IEnumerator>();
@@ -106,17 +78,18 @@ public class Autopilot : MonoBehaviour
         return currentCommand;
     }
 
+    private delegate void CompletedCallback();
+
     private void KillRot()
     {
-        AutopilotOff();
-        ship.MainEngineCutoff();
-        PushAndStartCoroutine(KillRotCo());
     }
 
     private void AutopilotOff()
     {
         StopAll();
         ship.MainEngineCutoff();
+        ship.AuxEngineCutoff();
+        ship.RCSCutoff();
         cmgActive = false;
     }
 
@@ -128,34 +101,34 @@ public class Autopilot : MonoBehaviour
     public void ExecuteCommand(Command command, GameObject target)
     {
         currentCommand = command;
+        AutopilotOff();
         switch (command)
         {
             case Command.OFF:
-                AutopilotOff();
                 break;
             case Command.KILL_ROTATION:
-                KillRot();
+                PushAndStartCoroutine(KillRotCo(AutopilotOff));
                 break;
             case Command.FACE_TARGET:
-                TurnToTarget(target);
+                PushAndStartCoroutine(FaceTargetCo(target, true, AutopilotOff));
                 break;
             case Command.FACE_NML_POS:
-                TurnToTargetNmlPos(target);
+                PushAndStartCoroutine(RotToUnitVec(RelVNmlPosVec(target).normalized, true, AutopilotOff));
                 break;
             case Command.FACE_NML_NEG:
-                TurnToTargetNmlNeg(target);
+                PushAndStartCoroutine(RotToUnitVec(-RelVNmlPosVec(target).normalized, true, AutopilotOff));
                 break;
             case Command.FACE_POS:
-                TurnToTargetPos(target);
+                PushAndStartCoroutine(RotToUnitVec(RelVPosVec(target), true, AutopilotOff));
                 break;
             case Command.FACE_NEG:
-                TurnToTargetNeg(target);
+                PushAndStartCoroutine(RotToUnitVec(-RelVPosVec(target), true, AutopilotOff));
                 break;
             case Command.ACTIVE_TRACK:
-                ActiveTrackTarget(target);
+                PushAndStartCoroutine(ActiveTrackTargetCo(target));
                 break;
             case Command.KILL_REL_V:
-                KillRelV(target);
+                PushAndStartCoroutine(KillRelVCo(target, AutopilotOff));
                 break;
             case Command.INTERCEPT:
                 APNGToTarget(target);
@@ -175,57 +148,20 @@ public class Autopilot : MonoBehaviour
         }
     }
 
-    private void ActiveTrackTarget(GameObject target)
+    private Vector3 RelVPosVec(GameObject target)
     {
-        AutopilotOff();
-        PushAndStartCoroutine(ActiveTrackTargetCo(target));
+        return PhysicsUtils.CalcRelV(transform, target);
     }
 
-    private void TurnToTarget(GameObject target)
+    private Vector3 RelVNmlPosVec(GameObject target)
     {
-        AutopilotOff();
-        PushAndStartCoroutine(FaceTargetCo(target));
-    }
-
-    private void TurnToTargetPos(GameObject target)
-    {
-        AutopilotOff();
-        Vector3 relVec = PhysicsUtils.CalcRelV(transform, target);
-        PushAndStartCoroutine(RotToUnitVec(relVec.normalized));
-    }
-
-    private void TurnToTargetNeg(GameObject target)
-    {
-        AutopilotOff();
-        Vector3 relVec = PhysicsUtils.CalcRelV(transform, target);
-        PushAndStartCoroutine(RotToUnitVec(-relVec.normalized));
-    }
-
-    private void TurnToTargetNmlPos(GameObject target)
-    {
-        AutopilotOff();
         Vector3 relVec = PhysicsUtils.CalcRelV(transform, target);
         Vector3 a = relVec.normalized;
         Vector3 b = transform.up;
         Vector3 nmlPos = -Vector3.Cross(a, b); // left handed coordinate system
-        PushAndStartCoroutine(RotToUnitVec(nmlPos.normalized));
+        return nmlPos;
     }
 
-    private void TurnToTargetNmlNeg(GameObject target)
-    {
-        AutopilotOff();
-        Vector3 relVec = PhysicsUtils.CalcRelV(transform, target);
-        Vector3 a = relVec.normalized;
-        Vector3 b = transform.up;
-        Vector3 nmlPos = -Vector3.Cross(a, b);
-        PushAndStartCoroutine(RotToUnitVec(-nmlPos.normalized));
-    }
-
-    private void KillRelV(GameObject target)
-    {
-        AutopilotOff();
-        PushAndStartCoroutine(KillRelVCo(target));
-    }
 
     private void APNGToTarget(GameObject target)
     {
@@ -302,7 +238,7 @@ public class Autopilot : MonoBehaviour
 
     #region Coroutines
 
-    IEnumerator KillRotCo()
+    IEnumerator KillRotCo(CompletedCallback callback = null)
     {
         for (;;)
         {
@@ -311,6 +247,10 @@ public class Autopilot : MonoBehaviour
             {
                 cmgActive = false;
                 PopCoroutine();
+                if (callback != null)
+                {
+                    callback();
+                }
                 yield break;
             }
             else
@@ -321,16 +261,20 @@ public class Autopilot : MonoBehaviour
         }
     }
 
-    IEnumerator RotToUnitVec(Vector3 b)
+    IEnumerator RotToUnitVec(Vector3 b, bool precision = false, CompletedCallback callback = null)
     {
         for (;;)
         {
             Quaternion q = Quaternion.LookRotation(b);
-            bool converged = ship.ConvergeSpin(q);
+            bool converged = ship.ConvergeSpin(q, precision);
             if (converged)
             {
                 cmgActive = false;
                 PopCoroutine();
+                if (callback != null)
+                {
+                    callback();
+                }
                 yield break;
             }
             else
@@ -360,7 +304,7 @@ public class Autopilot : MonoBehaviour
             Vector3 deltaB = (tVec - prevTVec) / UpdateTrackTime;
             Vector3 b = tVec + NavigationalConstant * deltaB;
             Quaternion q = Quaternion.LookRotation(b);
-            bool converged = ship.ConvergeSpin(q);
+            bool converged = ship.ConvergeSpin(q, true);
             cmgActive = !converged;
             yield return new WaitForEndOfFrame();
         }
@@ -399,18 +343,22 @@ public class Autopilot : MonoBehaviour
         }
     }
 
-    IEnumerator FaceTargetCo(GameObject target)
+    IEnumerator FaceTargetCo(GameObject target, bool precision = false, CompletedCallback callback = null)
     {
         for (;;)
         {
             Vector3 b = CalcVectorToTarget(target).normalized;
             Vector3 up = target.transform.childCount > 0 ? target.transform.GetChild(0).transform.up : target.transform.up;
             Quaternion q = Quaternion.LookRotation(b, target.transform.GetChild(0).transform.up);
-            bool converged = ship.ConvergeSpin(q);
+            bool converged = ship.ConvergeSpin(q, precision);
             if (converged)
             {
                 cmgActive = false;
                 PopCoroutine();
+                if (callback != null)
+                {
+                    callback();
+                }
                 yield break;
             }
             else
@@ -550,9 +498,9 @@ public class Autopilot : MonoBehaviour
     }
 
     private float RCSDist = 10f;
-    private float RCSMaxV = 0.1f;
+    private float RCSMaxV = 0.02f;
 
-    IEnumerator KillRelVCo(GameObject target)
+    IEnumerator KillRelVCo(GameObject target, CompletedCallback callback = null)
     {
         Vector3 relVec = PhysicsUtils.CalcRelV(transform.parent.transform, target);
         float dist;
@@ -563,14 +511,12 @@ public class Autopilot : MonoBehaviour
         bool closeEnough = arelv <= RCSMaxV;
         float secMain = CalcDeltaVMainBurnSec(arelv);
         float secAux = CalcDeltaVAuxBurnSec(arelv);
-//        float secRCS = CalcDeltaVBurnRCSSec(arelv);
+        float secRCS = CalcDeltaVBurnRCSSec(arelv);
         if (closeEnough)
         {
             ship.MainEngineCutoff();
             ship.AuxEngineCutoff();
-            PopCoroutine();
-            yield break;
-
+            ship.RCSCutoff();
         }
         else if (secMain >= MinMainEngineBurnSec)
         {
@@ -580,11 +526,17 @@ public class Autopilot : MonoBehaviour
         {
             yield return PushAndStartCoroutine(RotThenBurnAux(negVec, secAux));
         }
-//        else if (secRCS >= ship.RCSBurnMinSec)
-//        {
-//            ship.RCSBurst(negVec, secRCS);
-//            yield return new WaitForSeconds(secRCS);
-//        }
+        else if (secRCS >= ship.RCSBurnMinSec)
+        {
+            ship.RCSBurst(negVec, secRCS);
+            yield return new WaitForSeconds(secRCS);
+        }
+        PopCoroutine();
+        if (callback != null)
+        {
+            callback();
+        }
+        yield break;
     }
 
     IEnumerator APNGRotateBurnCo(GameObject target)
@@ -746,7 +698,8 @@ public class Autopilot : MonoBehaviour
             }
             //GameObject targetApproach = CreateVirtualApproachTarget(target);
             Vector3 targetApproach = CreateVirtualApproach(target);
-            yield return PushAndStartCoroutine(KillRelVCo(target));
+            KillRelVCo(target);
+            //yield return PushAndStartCoroutine(KillRelVCo(target));
             Vector3 b = (targetApproach - transform.position).normalized;
             float dist;
             PhysicsUtils.CalcDistance(transform.position, targetApproach, NUtils.GetNBodyToModelScale(target), out dist);
@@ -785,7 +738,7 @@ public class Autopilot : MonoBehaviour
 //            }
             if (closeEnough)
             {
-                yield return PushAndStartCoroutine(FaceTargetCo(target));
+                yield return PushAndStartCoroutine(FaceTargetCo(target, true));
                 yield break;
             }
         }

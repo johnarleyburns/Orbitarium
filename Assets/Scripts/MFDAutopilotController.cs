@@ -17,6 +17,18 @@ public class MFDAutopilotController : IPropertyChangeObserver
     private Button CommandOffButton;
     private bool isPrimaryPanel = false;
 
+    private static readonly List<Autopilot.Command> DropdownCommands = new List<Autopilot.Command>()
+    {
+        Autopilot.Command.OFF,
+        Autopilot.Command.ACTIVE_TRACK,
+        Autopilot.Command.KILL_REL_V,
+        Autopilot.Command.INTERCEPT,
+        Autopilot.Command.STRAFE,
+        Autopilot.Command.RENDEZVOUS,
+        Autopilot.Command.HUNT,
+        Autopilot.Command.DOCK
+    };
+
     public void Connect(GameObject autoPanel, InputController input, GameController game, bool panelIsPrimaryPanel)
     {
         inputController = input;
@@ -74,6 +86,20 @@ public class MFDAutopilotController : IPropertyChangeObserver
         gameController.GetComponent<MFDController>().Speak(text);
     }
 
+    private static Autopilot.Command CommandFromDropdownValue(int index)
+    {
+        Autopilot.Command command;
+        if (index >= 0 && index < DropdownCommands.Count)
+        {
+            command = DropdownCommands[index];
+        }
+        else
+        {
+            command = Autopilot.Command.OFF;
+        }
+        return command;
+    }
+
     public void PropertyChanged(string name, object value)
     {
         switch (name)
@@ -123,7 +149,7 @@ public class MFDAutopilotController : IPropertyChangeObserver
             case "CommandExecuted":
                 Autopilot.Command? commandP = value as Autopilot.Command?;
                 Autopilot.Command command = commandP == null ? Autopilot.Command.OFF : commandP.Value;
-                int commandIdx = Autopilot.Commands.IndexOf(command);
+                int commandIdx = DropdownCommands.IndexOf(command);
                 if (CommandDropdown.value != commandIdx)
                 {
                     CommandDropdown.value = commandIdx;
@@ -164,7 +190,7 @@ public class MFDAutopilotController : IPropertyChangeObserver
     private void CommandButtonClicked()
     {
         int index = CommandDropdown.value;
-        Autopilot.Command command = Autopilot.CommandFromInt(index);
+        Autopilot.Command command = CommandFromDropdownValue(index);
         gameController.GetPlayerShip().ExecuteAutopilotCommand(command);
     }
 
@@ -173,8 +199,8 @@ public class MFDAutopilotController : IPropertyChangeObserver
         gameController.GetPlayerShip().ExecuteAutopilotCommand(Autopilot.Command.OFF);
     }
 
-    /*
-  //public float DoubleTapInterval = 0.2f;
+ /*
+//public float DoubleTapInterval = 0.2f;
 //private float doubleTapEngineTimer;
 //private float doubleTapRotatePlusTimer;
 //private float doubleTapRotateMinusTimer;
