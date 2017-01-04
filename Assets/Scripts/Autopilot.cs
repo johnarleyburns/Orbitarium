@@ -119,7 +119,7 @@ public class Autopilot : MonoBehaviour
                 PushAndStartCoroutine(RotToUnitVec(-RelVNmlPosVec(target).normalized, true, AutopilotOff));
                 break;
             case Command.FACE_POS:
-                PushAndStartCoroutine(RotToUnitVec(RelVPosVec(target), true, AutopilotOff));
+                PushAndStartCoroutine(RotToUnitVec2(RelVPosVec(target), true, AutopilotOff));
                 break;
             case Command.FACE_NEG:
                 PushAndStartCoroutine(RotToUnitVec(-RelVPosVec(target), true, AutopilotOff));
@@ -282,6 +282,81 @@ public class Autopilot : MonoBehaviour
                 cmgActive = true;
             }
             yield return new WaitForEndOfFrame();
+        }
+    }
+
+    private IEnumerator PerformTurnCo(Quaternion direction, Quaternion phaseCompleteQ, bool precision)
+    {
+        const float minApplyTheta = 0.01f;
+        float minTheta = precision ? minPrecisionRotTheta : minRotTheta;
+        float prevTheta = 361;
+        for (;;)
+        {
+            float theta = Quaternion.Angle(transform.rotation, phaseCompleteQ);
+            float delta = prevTheta > 360 ? 0 : theta - prevTheta;
+            if (theta <= minApplyTheta || theta >= (prevTheta - delta))
+            {
+                PopCoroutine();
+                yield break;
+            }
+            else
+            {
+                if (direction != Quaternion.identity)
+                {
+                    ship.ApplyRCSSpin(direction);
+                }
+                prevTheta = theta;
+                yield return new WaitForEndOfFrame();
+            }
+        }
+    }
+
+    private IEnumerator PerformCoastCo(Quaternion phaseCompleteQ, bool precision)
+    {
+        yield return PerformTurnCo(Quaternion.identity, phaseCompleteQ, precision);
+    }
+
+    const float minPrecisionRotTheta = 0.2f;
+    const float minRotTheta = 1f;
+
+    private IEnumerator RotToUnitVec2(Vector3 b, bool precision = false, CompletedCallback callback = null)
+    {
+        float minTheta = precision ? minPrecisionRotTheta : minRotTheta;
+
+        yield return PushAndStartCoroutine(KillRotCo());
+        float prevAngle = 360;
+        for(;;)
+        {
+            Quaternion p = transform.rotation;
+            Quaternion q = Quaternion.LookRotation(b);
+            float angle = Quaternion.Angle(p, q);
+            if (!(minTheta < angle && angle < prevAngle))
+            {
+                PopCoroutine();
+                if (callback != null)
+                {
+                    callback();
+                }
+                yield break;
+            }
+            prevAngle = angle;
+            Quaternion dTheta = q * Quaternion.Inverse(p);
+
+            // start turn
+            Quaternion dUnitAngle = Quaternion.RotateTowards(Quaternion.identity, dTheta, 1f);
+            Quaternion startPhaseCompleteQ = Quaternion.RotateTowards(p, q, 0.1f * angle);
+            cmgActive = true;
+            yield return PushAndStartCoroutine(PerformTurnCo(dUnitAngle, startPhaseCompleteQ, precision));
+            cmgActive = false;
+
+            // coast
+            p = transform.rotation;
+            q = Quaternion.LookRotation(b);
+            Quaternion coastPhaseCompleteQ = Quaternion.RotateTowards(p, q, 0.7f * angle);
+            yield return PushAndStartCoroutine(PerformCoastCo(coastPhaseCompleteQ, precision));
+
+            // stop turn
+            yield return PushAndStartCoroutine(KillRotCo());
         }
     }
 
@@ -676,9 +751,9 @@ public class Autopilot : MonoBehaviour
             }
         }
         */
-    }
+}
 
-    private float MinRendezvousEpsilonM = 1;
+private float MinRendezvousEpsilonM = 1;
 
     IEnumerator RendezvousCo(GameObject target)
     {

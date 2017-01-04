@@ -289,11 +289,10 @@ public class RocketShip : MonoBehaviour {
         RCSAngularDegPerSec = Mathf.Rad2Deg * Mathf.Sqrt(RCSThrustPerSec / RCSRadiusM);
     }
 
-    public bool ApplyRCSSpin(Quaternion unitQuaternion)
+    public void ApplyRCSSpin(Quaternion unitQuaternion)
     {
         Quaternion q = Quaternion.LerpUnclamped(currentSpinPerSec, currentSpinPerSec * unitQuaternion, RCSAngularDegPerSec * Time.deltaTime);
         currentSpinPerSec = q;
-        return unitQuaternion != Quaternion.identity;
     }
 
     public void UpdateApplyCurrentSpin()
