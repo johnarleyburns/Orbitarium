@@ -100,6 +100,13 @@ public class RocketShip : MonoBehaviour {
         mainEngineOn = false;
     }
 
+    public void CutoffAll()
+    {
+        MainEngineCutoff();
+        AuxEngineCutoff();
+        RCSCutoff();
+    }
+
     public bool IsMainEngineGo()
     {
         return mainEngineOn;
@@ -289,33 +296,24 @@ public class RocketShip : MonoBehaviour {
         RCSAngularDegPerSec = Mathf.Rad2Deg * Mathf.Sqrt(RCSThrustPerSec / RCSRadiusM);
     }
 
-    public void ApplyRCSSpin(Quaternion unitQuaternion)
+    public void ApplyRCSSpin(Quaternion spinDelta)
     {
-        Quaternion q = Quaternion.LerpUnclamped(currentSpinPerSec, currentSpinPerSec * unitQuaternion, RCSAngularDegPerSec * Time.deltaTime);
-        currentSpinPerSec = q;
+        Quaternion timeSpinQ = Quaternion.Slerp(currentSpinPerSec, currentSpinPerSec * spinDelta, Time.deltaTime);
+        currentSpinPerSec = timeSpinQ;
     }
 
     public void UpdateApplyCurrentSpin()
     {
-        Quaternion timeQ = Quaternion.Lerp(transform.rotation, transform.rotation * currentSpinPerSec, Time.deltaTime);
+        Quaternion timeQ = Quaternion.Slerp(transform.rotation, transform.rotation * currentSpinPerSec, Time.deltaTime);
         transform.rotation = timeQ;
     }
 
-    public bool KillRotation()
+    public Quaternion CurrentSpinPerSec
     {
-        bool converged;
-        currentSpinPerSec = Quaternion.RotateTowards(currentSpinPerSec, Quaternion.identity, RCSAngularDegPerSec * Time.deltaTime);
-        bool convergedSpin = Mathf.Abs(Quaternion.Angle(currentSpinPerSec, Quaternion.identity)) < minSpinDeltaDegPerSec;
-        if (convergedSpin)
+        get
         {
-            NullSpin();
-            converged = true;
+            return currentSpinPerSec;
         }
-        else
-        {
-            converged = false;
-        }
-        return converged;
     }
 
     public void NullSpin() // only for things like docking

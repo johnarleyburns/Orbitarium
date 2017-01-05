@@ -233,6 +233,7 @@ public class MFDControlController : IPropertyChangeObserver
                 break;
             case RotToggle.KILL:
                 gameController.GetPlayerShip().ExecuteAutopilotCommand(Autopilot.Command.KILL_ROTATION);
+                MarkKillRot();
                 break;
             case RotToggle.NML_POS:
                 gameController.GetPlayerShip().ExecuteAutopilotCommand(Autopilot.Command.FACE_NML_POS);
@@ -527,15 +528,13 @@ public class MFDControlController : IPropertyChangeObserver
     private void MarkKillRot()
     {
         Circle2Kill.GetChild(0).GetComponent<Image>().color = HUD_GREEN;
-        //        if (currentRCSMode != RCSMode.Rotate)
-        //        {
-        //            ToggleRCSMode();
-        //        }
+        toggleMap[RotToggle.KILL].isToggled = true;
     }
 
     private void UnmarkKillRot()
     {
         Circle2Kill.GetChild(0).GetComponent<Image>().color = BUTTON_GREY;
+        toggleMap[RotToggle.KILL].isToggled = false;
     }
 
     private void HandleFuelPropertyChanged(string name, object value)
@@ -771,10 +770,16 @@ public class MFDControlController : IPropertyChangeObserver
         PlayerShip playerShip = gameController.GetPlayerShip();
         if (rotatePointerDown)
         {
-            Quaternion q = Quaternion.Euler(rotateVec.x, rotateVec.y, rotateVec.z);
             playerShip.ExecuteAutopilotCommand(Autopilot.Command.OFF);
-            playerShip.ApplyRCSSpin(q);
             playerShip.SetRCSMode(PlayerShip.RCSMode.Rotate);
+            float s = playerShip.GetComponent<RocketShip>().CurrentRCSAngularDegPerSec();
+            Vector3 v = s * rotateVec.normalized;
+            Quaternion p = Quaternion.Euler(v.x, 0, 0);
+            playerShip.ApplyRCSSpin(p);
+            Quaternion q = Quaternion.Euler(0, v.y, 0);
+            playerShip.ApplyRCSSpin(q);
+            Quaternion r = Quaternion.Euler(0, 0, v.z);
+            playerShip.ApplyRCSSpin(r);
         }
         if (playerShip.CurrentAutopilotCommand() != Autopilot.Command.KILL_ROTATION && IsKillRotMarked())
         {

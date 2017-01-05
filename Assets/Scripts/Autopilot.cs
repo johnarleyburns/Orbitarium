@@ -80,10 +80,6 @@ public class Autopilot : MonoBehaviour
 
     private delegate void CompletedCallback();
 
-    private void KillRot()
-    {
-    }
-
     private void AutopilotOff()
     {
         StopAll();
@@ -119,7 +115,7 @@ public class Autopilot : MonoBehaviour
                 PushAndStartCoroutine(RotToUnitVec(-RelVNmlPosVec(target).normalized, true, AutopilotOff));
                 break;
             case Command.FACE_POS:
-                PushAndStartCoroutine(RotToUnitVec2(RelVPosVec(target), true, AutopilotOff));
+                PushAndStartCoroutine(RotToUnitVec(RelVPosVec(target), true, AutopilotOff));
                 break;
             case Command.FACE_NEG:
                 PushAndStartCoroutine(RotToUnitVec(-RelVPosVec(target), true, AutopilotOff));
@@ -131,19 +127,19 @@ public class Autopilot : MonoBehaviour
                 PushAndStartCoroutine(KillRelVCo(target, AutopilotOff));
                 break;
             case Command.INTERCEPT:
-                APNGToTarget(target);
+                PushAndStartCoroutine(APNGToTargetCo(target, AutopilotOff));
                 break;
             case Command.STRAFE:
-                Strafe(target);
+                PushAndStartCoroutine(StrafeTargetCo(target, AutopilotOff));
                 break;
             case Command.RENDEZVOUS:
-                Rendezvous(target);
+                PushAndStartCoroutine(RendezvousCo(target, AutopilotOff));
                 break;
             case Command.HUNT:
-                Hunt(target);
+                PushAndStartCoroutine(HuntCo(target, AutopilotOff));
                 break;
             case Command.DOCK:
-                Dock(target);
+                PushAndStartCoroutine(DockCo(target, AutopilotOff));
                 break;
         }
     }
@@ -160,37 +156,6 @@ public class Autopilot : MonoBehaviour
         Vector3 b = transform.up;
         Vector3 nmlPos = -Vector3.Cross(a, b); // left handed coordinate system
         return nmlPos;
-    }
-
-
-    private void APNGToTarget(GameObject target)
-    {
-        AutopilotOff();
-        PushAndStartCoroutine(APNGToTargetCo(target));
-    }
-
-    private void Strafe(GameObject target)
-    {
-        AutopilotOff();
-        PushAndStartCoroutine(StrafeTargetCo(target));
-    }
-
-    private void Rendezvous(GameObject target)
-    {
-        AutopilotOff();
-        PushAndStartCoroutine(RendezvousCo(target));
-    }
-
-    private void Hunt(GameObject target)
-    {
-        AutopilotOff();
-        PushAndStartCoroutine(ApproachCo(target));
-    }
-
-    private void Dock(GameObject target)
-    {
-        AutopilotOff();
-        PushAndStartCoroutine(DockCo(target));
     }
 
     #region CoroutineHandlers
@@ -238,29 +203,6 @@ public class Autopilot : MonoBehaviour
 
     #region Coroutines
 
-    IEnumerator KillRotCo(CompletedCallback callback = null)
-    {
-        for (;;)
-        {
-            bool convergedSpin = ship.KillRotation();
-            if (convergedSpin)
-            {
-                cmgActive = false;
-                PopCoroutine();
-                if (callback != null)
-                {
-                    callback();
-                }
-                yield break;
-            }
-            else
-            {
-                cmgActive = true;
-            }
-            yield return new WaitForEndOfFrame();
-        }
-    }
-
     IEnumerator RotToUnitVec(Vector3 b, bool precision = false, CompletedCallback callback = null)
     {
         for (;;)
@@ -284,54 +226,24 @@ public class Autopilot : MonoBehaviour
             yield return new WaitForEndOfFrame();
         }
     }
+    
+    private const float minKillRotTheta = 0.1f;
 
-    private IEnumerator PerformTurnCo(Quaternion direction, Quaternion phaseCompleteQ, bool precision)
+    IEnumerator KillRotCo(CompletedCallback callback = null)
     {
-        const float minApplyTheta = 0.01f;
-        float minTheta = precision ? minPrecisionRotTheta : minRotTheta;
-        float prevTheta = 361;
+        Quaternion p = ship.CurrentSpinPerSec;
+        Quaternion q = Quaternion.identity;
+        Quaternion delta = q * Quaternion.Inverse(p);
+        Quaternion spinDelta = Quaternion.RotateTowards(q, delta, ship.CurrentRCSAngularDegPerSec());
+        cmgActive = true;
+        float prevAngle = 360;
         for (;;)
         {
-            float theta = Quaternion.Angle(transform.rotation, phaseCompleteQ);
-            float delta = prevTheta > 360 ? 0 : theta - prevTheta;
-            if (theta <= minApplyTheta || theta >= (prevTheta - delta))
+            float angle = Quaternion.Angle(ship.CurrentSpinPerSec, Quaternion.identity);
+            if (angle <= minKillRotTheta || angle > prevAngle)
             {
-                PopCoroutine();
-                yield break;
-            }
-            else
-            {
-                if (direction != Quaternion.identity)
-                {
-                    ship.ApplyRCSSpin(direction);
-                }
-                prevTheta = theta;
-                yield return new WaitForEndOfFrame();
-            }
-        }
-    }
-
-    private IEnumerator PerformCoastCo(Quaternion phaseCompleteQ, bool precision)
-    {
-        yield return PerformTurnCo(Quaternion.identity, phaseCompleteQ, precision);
-    }
-
-    const float minPrecisionRotTheta = 0.2f;
-    const float minRotTheta = 1f;
-
-    private IEnumerator RotToUnitVec2(Vector3 b, bool precision = false, CompletedCallback callback = null)
-    {
-        float minTheta = precision ? minPrecisionRotTheta : minRotTheta;
-
-        yield return PushAndStartCoroutine(KillRotCo());
-        float prevAngle = 360;
-        for(;;)
-        {
-            Quaternion p = transform.rotation;
-            Quaternion q = Quaternion.LookRotation(b);
-            float angle = Quaternion.Angle(p, q);
-            if (!(minTheta < angle && angle < prevAngle))
-            {
+                ship.NullSpin();
+                cmgActive = false;
                 PopCoroutine();
                 if (callback != null)
                 {
@@ -340,23 +252,8 @@ public class Autopilot : MonoBehaviour
                 yield break;
             }
             prevAngle = angle;
-            Quaternion dTheta = q * Quaternion.Inverse(p);
-
-            // start turn
-            Quaternion dUnitAngle = Quaternion.RotateTowards(Quaternion.identity, dTheta, 1f);
-            Quaternion startPhaseCompleteQ = Quaternion.RotateTowards(p, q, 0.1f * angle);
-            cmgActive = true;
-            yield return PushAndStartCoroutine(PerformTurnCo(dUnitAngle, startPhaseCompleteQ, precision));
-            cmgActive = false;
-
-            // coast
-            p = transform.rotation;
-            q = Quaternion.LookRotation(b);
-            Quaternion coastPhaseCompleteQ = Quaternion.RotateTowards(p, q, 0.7f * angle);
-            yield return PushAndStartCoroutine(PerformCoastCo(coastPhaseCompleteQ, precision));
-
-            // stop turn
-            yield return PushAndStartCoroutine(KillRotCo());
+            ship.ApplyRCSSpin(spinDelta);
+            yield return new WaitForEndOfFrame();
         }
     }
 
@@ -717,14 +614,20 @@ public class Autopilot : MonoBehaviour
         float approachDir = isDock ? -1 : 1;
 //        Vector3 approachForward = approachDir * target.transform.GetChild(0).transform.forward;
         Vector3 approachForward = approachDir * target.transform.forward;
-        Vector3 approachPos = target.transform.position + dist * approachForward;
+        GameObject nBody = NUtils.GetNBodyGameObject(target);
+        Vector3 approachPos = nBody.transform.position + dist * approachForward;
         return approachPos;
     }
 
     private float MinRendezvousBurnSec = 0.5f;
 
-    IEnumerator ApproachCo(GameObject targetDock)
+    IEnumerator HuntCo(GameObject targetDock, CompletedCallback callback)
     {
+        PopCoroutine();
+        if (callback != null)
+        {
+            callback();
+        }
         yield break;
         /*
         for (;;)
@@ -755,26 +658,13 @@ public class Autopilot : MonoBehaviour
 
 private float MinRendezvousEpsilonM = 1;
 
-    IEnumerator RendezvousCo(GameObject target)
+    IEnumerator RendezvousCo(GameObject target, CompletedCallback callback)
     {
         for (;;)
         {
-            if (ship.IsMainEngineGo())
-            {
-                ship.MainEngineCutoff();
-            }
-            if (ship.IsAuxEngineGo())
-            {
-                ship.AuxEngineCutoff();
-            }
-            if (ship.IsRCSFiring())
-            {
-                ship.RCSCutoff();
-            }
-            //GameObject targetApproach = CreateVirtualApproachTarget(target);
+            ship.CutoffAll();
             Vector3 targetApproach = CreateVirtualApproach(target);
-            KillRelVCo(target);
-            //yield return PushAndStartCoroutine(KillRelVCo(target));
+            yield return KillRelVCo(target);
             Vector3 b = (targetApproach - transform.position).normalized;
             float dist;
             PhysicsUtils.CalcDistance(transform.position, targetApproach, NUtils.GetNBodyToModelScale(target), out dist);
@@ -814,6 +704,11 @@ private float MinRendezvousEpsilonM = 1;
             if (closeEnough)
             {
                 yield return PushAndStartCoroutine(FaceTargetCo(target, true));
+                PopCoroutine();
+                if (callback != null)
+                {
+                    callback();
+                }
                 yield break;
             }
         }
@@ -885,7 +780,7 @@ private float MinRendezvousEpsilonM = 1;
 
     private float MainEngineDockBurstSec = 1f;
 
-    IEnumerator DockCo(GameObject targetDock)
+    IEnumerator DockCo(GameObject targetDock, CompletedCallback callback)
     {
         for (;;)
         {
@@ -911,6 +806,10 @@ private float MinRendezvousEpsilonM = 1;
             if (dist <= DockContactDistM && Mathf.Abs(targetAngle) < MinDockDeltaTheta && Mathf.Abs(relv) < MinDeltaVForRCSBurn) // close enough
             {
                 PopCoroutine();
+                if (callback != null)
+                {
+                    callback();
+                }
                 yield break;
             }
             else if (relv > MaxCenteredRelv)
@@ -1022,7 +921,7 @@ private float MinRendezvousEpsilonM = 1;
         return t;
     }
 
-    IEnumerator APNGToTargetCo(GameObject target)
+    IEnumerator APNGToTargetCo(GameObject target, CompletedCallback callback)
     {
         float maxDeltaV = CalcMainEngineMaxDeltaV();
         float secToMax = CalcDeltaVMainBurnSec(maxDeltaV);
@@ -1038,17 +937,38 @@ private float MinRendezvousEpsilonM = 1;
 
         for (;;)
         {
-            yield return PushAndStartCoroutine(APNGRotateBurnCo(target));
-            yield return new WaitForEndOfFrame();
+            if (!gameController.TargetData().HasTarget(target))
+            {
+                PopCoroutine();
+                if (callback != null)
+                {
+                    callback();
+                }
+                yield break;
+            }
+            else
+            {
+                yield return PushAndStartCoroutine(APNGRotateBurnCo(target));
+                yield return new WaitForEndOfFrame();
+            }
         }
     }
 
-    IEnumerator StrafeTargetCo(GameObject target)
+    IEnumerator StrafeTargetCo(GameObject target, CompletedCallback callback)
     {
         ship.MainEngineGo();
         for (;;)
         {
-            if (ship.IsMainEngineGo())
+            if (!gameController.TargetData().HasTarget(target))
+            {
+                PopCoroutine();
+                if (callback != null)
+                {
+                    callback();
+                }
+                yield break;
+            }
+            else if (ship.IsMainEngineGo())
             {
                 yield return PushAndStartCoroutine(StrafeCo(target));
                 yield return new WaitForEndOfFrame();

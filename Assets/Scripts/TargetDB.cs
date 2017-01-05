@@ -103,6 +103,11 @@ public class TargetDB : MonoBehaviour {
         return i >= 0 && i < targetOrder.Count ? targetOrder[i] : null;
     }
 
+    public bool HasTarget(GameObject target)
+    {
+        return target != null && targetOrder.IndexOf(target) != -1;
+    }
+
     public int GetTargetIndex(GameObject target)
     {
         int i;
