@@ -45,15 +45,15 @@ public class NBodyEditor : Editor {
 			switch(units) {
 				case GravityScaler.Units.DIMENSIONLESS:
 					EditorGUILayout.LabelField("Initial position set via transform");
-					velocity = EditorGUILayout.Vector3Field(new GUIContent("Velocity", velTip), nbody.vel);
+					velocity = EditorGUILayout.Vector3Field(new GUIContent("Velocity", velTip), nbody.vel.ToVector3());
 					initialPos = nbody.transform.position;
 					break;
 				default:
 					string prompt = string.Format("Initial Pos ({0})", GravityScaler.LengthUnits(units));
-					initialPos = EditorGUILayout.Vector3Field(new GUIContent(prompt, iposTip), nbody.initialPos);
+					initialPos = EditorGUILayout.Vector3Field(new GUIContent(prompt, iposTip), nbody.initialPos.ToVector3());
 
 					prompt = string.Format("Velocity ({0})", GravityScaler.VelocityUnits(units));
-					velocity = EditorGUILayout.Vector3Field(new GUIContent(prompt, velTip), nbody.vel);
+					velocity = EditorGUILayout.Vector3Field(new GUIContent(prompt, velTip), nbody.vel.ToVector3());
 					break;
 			}
 		} else {
@@ -91,17 +91,17 @@ public class NBodyEditor : Editor {
 			if (units != GravityScaler.Units.DIMENSIONLESS) {
 				initialPos = nbody.transform.position/GravityEngine.Instance().GetLengthScale();
 			}
-			nbody.initialPos = initialPos;
+			nbody.initialPos = new DVector3(initialPos);
 			nbody.transform.hasChanged = false;
 		}
 
 		if (GUI.changed) {
 			Undo.RecordObject(nbody, "NBody Change");
 			nbody.mass = FixNaN.FixIfNaN(mass);
-			nbody.vel = FixNaN.FixIfNaN(velocity);
+			nbody.vel = FixNaN.FixIfNaN(new DVector3(velocity));
 			nbody.size = size;
 			nbody.automaticParticleCapture = autoSize;
-			nbody.initialPos = initialPos;
+			nbody.initialPos = new DVector3(initialPos);
 			Debug.Log("new v=" + velocity);
 			// must be after initialPos is updated
 			nbody.ApplyScale(GravityEngine.Instance().GetLengthScale(), 

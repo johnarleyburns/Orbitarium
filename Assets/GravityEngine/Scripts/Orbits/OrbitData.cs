@@ -40,7 +40,7 @@ public class OrbitData  {
 	/// </summary>
 	/// <param name="vel">Vel.</param>
 	public void SetOrbitForVelocity(NBody forNbody, NBody aroundNBody) {
-		float velSq = forNbody.vel_scaled.sqrMagnitude;
+		float velSq = (float)forNbody.vel_scaled.sqrMagnitude;
 		Vector3 r_vec = forNbody.transform.position - aroundNBody.transform.position;
 		float r = Vector3.Magnitude(r_vec);
 		float mu = aroundNBody.mass;
@@ -55,7 +55,7 @@ public class OrbitData  {
 
 	private void EllipseOrbitForVelocity(NBody forNbody, NBody aroundNBody) {
 		// Murray and Dermott Ch2.8 (2.134) - (2.140)
-		float velSq = forNbody.vel_scaled.sqrMagnitude;
+		float velSq = (float)forNbody.vel_scaled.sqrMagnitude;
 
 		Vector3 r_vec = forNbody.transform.position - aroundNBody.transform.position;
 		float r = Vector3.Magnitude(r_vec);
@@ -64,7 +64,7 @@ public class OrbitData  {
 		a = 1f/(2/r - velSq/mu);
 
 		// Determine angular momentum, h
-		Vector3 h_vec = Vector3.Cross(r_vec, forNbody.vel_scaled);
+		Vector3 h_vec = Vector3.Cross(r_vec, forNbody.vel_scaled.ToVector3());
 		float h = Vector3.Magnitude(h_vec);
 		//Debug.Log("h_vec = " + h_vec + " r_vec=" + r_vec + " v=" + forNbody.vel + " planet pos=" + forNbody.transform.position);
 
@@ -101,7 +101,7 @@ public class OrbitData  {
 		if (ecc > 1E-3) {
 			// Ellipse (from Sidi)
 			float cosPhi = (a - r)/(a * ecc); 
-			float sinPhi = Vector3.Dot(r_vec, forNbody.vel_scaled)/(ecc*Mathf.Sqrt(mu*a));
+			float sinPhi = Vector3.Dot(r_vec, forNbody.vel_scaled.ToVector3())/(ecc*Mathf.Sqrt(mu*a));
 			float cosf = (cosPhi - ecc)/(1-ecc*cosPhi); 
 			float sinf = sinPhi*Mathf.Sqrt(1-ecc*ecc)/(1-ecc*cosPhi);
 			f = NUtils.AngleFromSinCos(sinf, cosf);
@@ -151,7 +151,7 @@ public class OrbitData  {
 
 	private void HyperOrbitForVelocity(NBody forNbody, NBody aroundNBody) {
 		// Murray and Dermott Ch2.8 (2.134) - (2.140)
-		float velSq = forNbody.vel_scaled.sqrMagnitude;
+		float velSq = (float)forNbody.vel_scaled.sqrMagnitude;
 
 		Vector3 r_vec = forNbody.transform.position - aroundNBody.transform.position;
 		float r = Vector3.Magnitude(r_vec);
@@ -162,7 +162,7 @@ public class OrbitData  {
 		a = 1f/(velSq/mu - 2/r);
 
 		// Determine angular momentum, h
-		Vector3 h_vec = Vector3.Cross(r_vec, forNbody.vel_scaled);
+		Vector3 h_vec = Vector3.Cross(r_vec, forNbody.vel_scaled.ToVector3());
 		float h = Vector3.Magnitude(h_vec);
 		//Debug.Log("h_vec = " + h_vec + " r_vec=" + r_vec + " v=" + forNbody.vel + " planet pos=" + forNbody.transform.position);
 
@@ -194,7 +194,7 @@ public class OrbitData  {
 		if (ecc > 1E-3) {
 			// Like M&D 2.31 but for e^2-1 not 1-e^2
 			float rdot = Mathf.Sqrt(velSq - h*h/(r*r));
-			if (Vector3.Dot(r_vec, forNbody.vel_scaled) < 0) {
+			if (Vector3.Dot(r_vec, forNbody.vel_scaled.ToVector3()) < 0) {
 				rdot *= -1f;
 			} 
 			float cos_f = (1/ecc)*(a*(ecc*ecc-1)/r - 1f);

@@ -111,8 +111,8 @@ public class GameController : MonoBehaviour
             //shadow.transform.GetChild(0).localScale = ghost.transform.GetChild(0).localScale;
             //shadow.transform.GetChild(0).position = ghost.transform.GetChild(0).position;
             shadow.transform.GetChild(0).rotation = ghost.transform.GetChild(0).rotation;
-            Vector3 pos = ghost.transform.position;
-            Vector3 vel = GravityEngine.instance.GetVelocity(NUtils.GetNBodyGameObject(ghost));
+            DVector3 pos = new DVector3(ghost.transform.position);
+            DVector3 vel = GravityEngine.instance.GetVelocity(NUtils.GetNBodyGameObject(ghost));
             GravityEngine.instance.UpdatePositionAndVelocity(shadow.GetComponent<NBody>(), pos, vel);
         }
     }
@@ -619,7 +619,7 @@ public class GameController : MonoBehaviour
         foreach (GameObject t in targetDB.GetAllTargets())
         {
             float d;
-            PhysicsUtils.CalcDistance(player.transform, t, out d);
+            PhysicsUtils.CalcDistance(player, t, out d);
             if (d < dist || dist == 0)
             {
                 dist = d;
@@ -645,7 +645,7 @@ public class GameController : MonoBehaviour
         foreach (GameObject t in targets)
         {
             float d;
-            PhysicsUtils.CalcDistance(player.transform, t, out d);
+            PhysicsUtils.CalcDistance(player, t, out d);
             targetDist.Add(t, d);
         }
         targets.Sort((x, y) => targetDist[x].CompareTo(targetDist[y]));
@@ -789,8 +789,8 @@ public class GameController : MonoBehaviour
         GameObject myNBody = NUtils.GetNBodyGameObject(ship);
         GameObject dockNBody = NUtils.GetNBodyGameObject(dockGhost);
 //      Vector3 shipDockOffset = shipDockingPort.transform.position - ship.transform.position;
-        Vector3 pos = dockGhost.transform.position;
-        Vector3 vel = GravityEngine.instance.GetVelocity(dockNBody);
+        DVector3 pos = new DVector3(dockGhost.transform.position);
+        DVector3 vel = GravityEngine.instance.GetVelocity(dockNBody);
         GravityEngine.instance.UpdatePositionAndVelocity(myNBody.GetComponent<NBody>(), pos, vel);
         GravityEngine.instance.InactivateBody(ship);
         ship.transform.parent = dockGhost.transform.parent;

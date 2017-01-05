@@ -13,9 +13,9 @@ public class NBody : MonoBehaviour {
 	public float mass;	
 
 	//! Velocity - as set in the inspector
-	public Vector3 vel; 
+	public DVector3 vel; 
 	//! Velocity adjusted for the units/scale chosen by Gravity Engine
-	public Vector3 vel_scaled; 
+	public DVector3 vel_scaled; 
 
 	/// <summary>
 	/// The initial position/velocity
@@ -29,7 +29,7 @@ public class NBody : MonoBehaviour {
 	/// Positions are affected by changes in the lengthScale
 	/// Velocities are affected by changes in both the length scale and the timeScale. (See ApplyScale() )
 	/// </summary>
-	public Vector3 initialPos; 
+	public DVector3 initialPos; 
 
 	//! Automatically detect particle capture size from a child with a mesh
 	public bool automaticParticleCapture = true;
@@ -87,8 +87,8 @@ public class NBody : MonoBehaviour {
 	/// </summary>
 	/// <param name="lengthScale">Length scale.</param>
 	/// <param name="velocityScale">Length scale.</param>
-	public void ApplyScale(float lengthScale, float velocityScale) {
-		transform.position = lengthScale * initialPos;
+	public void ApplyScale(double lengthScale, float velocityScale) {
+		transform.position = (lengthScale * initialPos).ToVector3();
 		vel_scaled = vel * velocityScale;
 		#pragma warning disable 162		// disable unreachable code warning
 			if (GravityEngine.DEBUG) {

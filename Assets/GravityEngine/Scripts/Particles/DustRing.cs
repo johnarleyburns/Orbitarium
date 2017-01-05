@@ -65,8 +65,8 @@ public class DustRing : EllipseBase, IGravityParticlesInit {
 			r[i,1] = pos.y;
 			r[i,2] = pos.z;
 		
-			Vector3 v_xy = new Vector3( xdot, ydot, 0);
-			Vector3 vVec = ellipse_orientation * v_xy + centerNbody.vel_scaled;
+			DVector3 v_xy = new DVector3( xdot, ydot, 0);
+			DVector3 vVec = ellipse_orientation * v_xy + centerNbody.vel_scaled;
 			v[i,0] = vVec.x;
 			v[i,1] = vVec.y;
 			v[i,2] = vVec.z;

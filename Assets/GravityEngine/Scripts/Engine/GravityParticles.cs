@@ -22,7 +22,7 @@ public class GravityParticles : MonoBehaviour {
 	//! If the particle system has an NBody or NBody parent, add the velocity of the NBody to particles that are created.
 	public bool addNBodyVelocity = false;
 	//! Initial velocity to be added to particles (may be over-riden by an IGravityParticlesInit script, if present)
-	public Vector3 initialVelocity = Vector3.zero;
+	public DVector3 initialVelocity = DVector3.zero;
 
 	private ParticleSystem gravityParticles; 
 	private ParticleSystem.Particle[] particles;
@@ -219,8 +219,8 @@ public class GravityParticles : MonoBehaviour {
 	// If there is no init delegate use the initial particle position (scaled to physics space) and the
 	// initial particle velocity to seed the particle physics data. 
 	private void NoInitDelegateSetup(int fromP, int toP) {
-		float scale = gravityEngine.physToWorldFactor;
-		Vector3 sourceVelocity = Vector3.zero;
+		double scale = gravityEngine.physToWorldFactor;
+		DVector3 sourceVelocity = DVector3.zero;
 		if (addNBodyVelocity && nbodySource != null) {
 			sourceVelocity = gravityEngine.GetVelocity(nbodySource);
 		} 

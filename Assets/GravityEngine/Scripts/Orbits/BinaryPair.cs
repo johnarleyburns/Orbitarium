@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -15,7 +16,7 @@ using System.Collections;
 public class BinaryPair :  EllipseBase, IOrbitScalable {
 
 	//! Velocity of center of mass of the binary pair
-	public Vector3 velocity;
+	public DVector3 velocity;
 
 	private NBody body1; 
 	private NBody body2; 
@@ -69,14 +70,14 @@ public class BinaryPair :  EllipseBase, IOrbitScalable {
 		float xdot = -1f * n * a_phy * Mathf.Sin(f)/denom;
 		float ydot = n * a_phy * (ecc + Mathf.Cos(f))/denom;
 
-		Vector3 position_xy = new Vector3( reflect_in_y * r * Mathf.Cos(f), r* Mathf.Sin(f), 0);
+		DVector3 position_xy = new DVector3( reflect_in_y * r * Math.Cos(f), r* Mathf.Sin(f), 0);
 		// move from XY plane to the orbital plane and scale to world space
 		// orbit position is WRT center
-		Vector3 position =  ellipse_orientation * position_xy;
-		position += transform.position/GravityEngine.instance.physToWorldFactor;
+		DVector3 position =  ellipse_orientation * position_xy;
+		position += new DVector3(transform.position)/GravityEngine.instance.physToWorldFactor;
 		nbody.initialPos = position;
 
-		Vector3 v_xy = new Vector3( xdot, ydot, 0);
+		DVector3 v_xy = new DVector3( xdot, ydot, 0);
 		v_xy *= reflect_in_y;
 		// velocity will be scaled when NBody is scaled
 		nbody.vel = ellipse_orientation * v_xy + velocity;

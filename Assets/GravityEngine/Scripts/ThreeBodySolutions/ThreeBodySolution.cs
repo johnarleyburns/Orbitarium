@@ -65,13 +65,13 @@ public class ThreeBodySolution : MonoBehaviour {
 				return;
 		}
 		for (int i=0; i < 3; i++) {
-			nbodies[i].vel = new Vector3((float) v[i,0],(float) v[i,1],(float) v[i,2]);
+			nbodies[i].vel = new DVector3(v[i,0], v[i,1], v[i,2]);
 			// Awkward: Inflate positions by the NBE scale factor so that when NBE adds them (and removes the scale
 			// factor) it comes out as a wash. This is because the literature uses [-1..1] and this awkward approach
 			// is easier than scaling the velocities and masses. 
-			Vector3 position = new Vector3((float) x[i,0], (float) x[i,1], (float) x[i,2]) * gravityEngine.physToWorldFactor;
+			DVector3 position = new DVector3( x[i,0],  x[i,1],  x[i,2]) * gravityEngine.physToWorldFactor;
 			nbodies[i].initialPos = position;
-			nbodies[i].transform.position = position;
+			nbodies[i].transform.position = position.ToVector3();
 		}
 		// solution server provides a per-solution algorithm
 		GravityEngine.instance.algorithm = algorithm;

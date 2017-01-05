@@ -49,7 +49,7 @@ public class MissileShip : MonoBehaviour
         GameObject parent = nBody.transform.parent.gameObject;
         nBody.transform.parent = null;
         Vector3 pos = nBody.transform.position;
-        Vector3 vel = GravityEngine.instance.GetVelocity(NUtils.GetNBodyGameObject(parent));
+        Vector3 vel = GravityEngine.instance.GetVelocity(NUtils.GetNBodyGameObject(parent)).ToVector3();
         GravityEngine.instance.UpdatePositionAndVelocity(nBody.GetComponent<NBody>(), pos, vel);
         GravityEngine.instance.ActivateBody(nBody);
         GravityEngine.instance.ApplyImpulse(nBody.GetComponent<NBody>(), MissileEjectV * nBody.transform.forward);

@@ -62,8 +62,8 @@ public class OrbitEllipse : EllipseBase, INbodyInit, IFixedOrbit, IOrbitScalable
 
 		SetTransform();
 
-		Vector3 v_xy = new Vector3( xdot, ydot, 0);
-		Vector3 vphy = ellipse_orientation * v_xy + centerNbody.vel_scaled;
+		DVector3 v_xy = new DVector3( xdot, ydot, 0);
+		DVector3 vphy = ellipse_orientation * v_xy + centerNbody.vel_scaled;
 		nbody.vel_scaled = vphy;
 		SetTransform();
 	}	

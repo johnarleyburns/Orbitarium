@@ -73,7 +73,7 @@ public sealed class HermiteIntegrator : INBodyIntegrator {
 		Debug.Log ("Hermite setup complete n=" + maxBodies);
 	}
 
-	public void AddNBody( int bodyNum, NBody nbody, Vector3 position, Vector3 velocity) {
+	public void AddNBody( int bodyNum, NBody nbody, DVector3 position, DVector3 velocity) {
 
 		if (numBodies > maxBodies) {
 			Debug.LogError("Added more than maximum allocated bodies! max=" + maxBodies);
@@ -168,18 +168,18 @@ public sealed class HermiteIntegrator : INBodyIntegrator {
 		maxBodies = newSize;
 	}
 
-	public Vector3 GetVelocityForIndex(int i) {
-		return new Vector3( (float)vel[i,0], (float)vel[i,1], (float)vel[i,2]);
+	public DVector3 GetVelocityForIndex(int i) {
+		return new DVector3( vel[i,0], vel[i,1], vel[i,2]);
 	}
 
-	public void SetVelocityForIndex(int i, Vector3 velocity) {
+	public void SetVelocityForIndex(int i, DVector3 velocity) {
 		vel[i,0] = velocity.x;
 		vel[i,1] = velocity.y;
 		vel[i,2] = velocity.z;
 	}
 
-	public Vector3 GetAccelerationForIndex(int i) {
-		return new Vector3( (float)acc[i,0], (float)acc[i,1], (float)acc[i,2]);
+	public DVector3 GetAccelerationForIndex(int i) {
+		return new DVector3( acc[i,0], acc[i,1], acc[i,2]);
 	}
 
 	public float GetEnergy(ref double[] m, ref double[,] r) {

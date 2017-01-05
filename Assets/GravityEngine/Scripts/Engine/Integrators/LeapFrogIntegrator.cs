@@ -44,7 +44,7 @@ public sealed class LeapFrogIntegrator : INBodyIntegrator {
 	}
 	
 	// TODO - If add during sim - would be useful to do a PreEvolve()
-	public void AddNBody( int bodyNum, NBody nbody, Vector3 position, Vector3 velocity) {
+	public void AddNBody( int bodyNum, NBody nbody, DVector3 position, DVector3 velocity) {
 
 		if (numBodies > maxBodies) {
 			Debug.LogError("Added more than maximum allocated bodies! max=" + maxBodies);
@@ -96,18 +96,18 @@ public sealed class LeapFrogIntegrator : INBodyIntegrator {
 		maxBodies += growBy;
 	}
 
-	public Vector3 GetVelocityForIndex(int i) {
-		return new Vector3( (float)v[i,0], (float)v[i,1], (float)v[i,2]);
+	public DVector3 GetVelocityForIndex(int i) {
+		return new DVector3( v[i,0], v[i,1], v[i,2]);
 	}
 
-	public void SetVelocityForIndex(int i, Vector3 vel) {
+	public void SetVelocityForIndex(int i, DVector3 vel) {
 		v[i,0] = vel.x;
 		v[i,1] = vel.y;
 		v[i,2] = vel.z;
 	}
 
-	public Vector3 GetAccelerationForIndex(int i) {
-		return new Vector3( (float)a[i,0], (float)a[i,1], (float)a[i,2]);
+	public DVector3 GetAccelerationForIndex(int i) {
+		return new DVector3( a[i,0], a[i,1], a[i,2]);
 	}
 
 	public void PreEvolve(ref double[] m, ref double[,] r, ref byte[] info) {

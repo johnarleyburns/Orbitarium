@@ -682,7 +682,7 @@ public class GravityEngine : MonoBehaviour {
 
 		// Backwards compatibility. Pre 1.3 position was in transform. Now in initialPos (in specified units)
 		if (units == GravityScaler.Units.DIMENSIONLESS && _lengthScale == 1f ) {
-			nbody.initialPos = nbody.transform.position;
+			nbody.initialPos = new DVector3(nbody.transform.position);
 		}
 
 		if (fixedOrbit != null && fixedOrbit.IsFixed()) {
@@ -721,8 +721,8 @@ public class GravityEngine : MonoBehaviour {
 			}
 			// mass scale is applied to internal record BUT leave nbody mass as is
 			m[numBodies] = nbody.mass * massScale;
-			// divide by the physics to world scale factor - required for threebody solutions
-			Vector3 physicsPosition = gameObject.transform.position/physToWorldFactor;
+            // divide by the physics to world scale factor - required for threebody solutions
+            DVector3 physicsPosition = new DVector3(gameObject.transform.position, physToWorldFactor);
 			r[numBodies,0] = physicsPosition.x;
 			r[numBodies,1] = physicsPosition.y;
 			r[numBodies,2] = physicsPosition.z; 
@@ -866,7 +866,7 @@ public class GravityEngine : MonoBehaviour {
     /// <param name="nbody">Nbody.</param>
     /// <param name="pos">Position.</param>
     /// <param name="vel">Vel.</param>
-    public void UpdatePositionAndVelocity(NBody nbody, Vector3 pos, Vector3 vel) {
+    public void UpdatePositionAndVelocity(NBody nbody, DVector3 pos, DVector3 vel) {
 
 		if (nbody == null) {
 			Debug.LogError("object to update has no NBody: ");
@@ -885,17 +885,22 @@ public class GravityEngine : MonoBehaviour {
 		}
 	}
 
-	/// <summary>
-	/// Changes the length scale of all NBody objects in the scene due to a change in the inspector.
-	/// Find all NBody containing objects.
-	/// - independent objects are rescaled
-	/// - orbit based objects have their primary dimension adjusted (e.g. for ellipse, a)
-	///   (these objects are scalable and are asked to rescale themselves)
-	///
-	/// Length scale is Nbody units/Unity Length e.g. km/Unity Length
-	/// Not intended for run-time use.
-	/// </summary>
-	private void UpdateLengthScale(float newScale) {
+    public void UpdatePositionAndVelocity(NBody nbody, Vector3 pos, Vector3 vel)
+    {
+        UpdatePositionAndVelocity(nbody, new DVector3(pos), new DVector3(vel));
+    }
+
+    /// <summary>
+    /// Changes the length scale of all NBody objects in the scene due to a change in the inspector.
+    /// Find all NBody containing objects.
+    /// - independent objects are rescaled
+    /// - orbit based objects have their primary dimension adjusted (e.g. for ellipse, a)
+    ///   (these objects are scalable and are asked to rescale themselves)
+    ///
+    /// Length scale is Nbody units/Unity Length e.g. km/Unity Length
+    /// Not intended for run-time use.
+    /// </summary>
+    private void UpdateLengthScale(float newScale) {
 		_lengthScale = newScale;
 		GravityScaler.UpdateTimeScale(units, _timeScale, _lengthScale);
 		GravityScaler.ScaleScene(units, _timeScale, _lengthScale);
@@ -963,20 +968,20 @@ public class GravityEngine : MonoBehaviour {
 				// reverse the velocities
 				if (nbody1.mass == 0) {
 					if (nbody1.engineRef.bodyType == BodyType.MASSLESS) {
-						Vector3 vel1_ml = masslessEngine.GetVelocity(body1);
-						masslessEngine.SetVelocity(body1, -1f*vel1_ml);
+						DVector3 vel1_ml = masslessEngine.GetVelocity(body1);
+						masslessEngine.SetVelocity(body1, -1d*vel1_ml);
 					} else {
-						Vector3 vel1_m = integrator.GetVelocityForIndex(index1);
-						integrator.SetVelocityForIndex(index1, -1f*vel1_m);
+						DVector3 vel1_m = integrator.GetVelocityForIndex(index1);
+						integrator.SetVelocityForIndex(index1, -1d*vel1_m);
 					}
 				}
 				if (nbody2.mass == 0) {
 					if (nbody2.engineRef.bodyType == BodyType.MASSLESS) {
-						Vector3 vel2_ml = masslessEngine.GetVelocity(body2);
+						DVector3 vel2_ml = masslessEngine.GetVelocity(body2);
 						masslessEngine.SetVelocity(body1, vel2_ml);
 					} else {
-						Vector3 vel2_m = integrator.GetVelocityForIndex(index2);
-						integrator.SetVelocityForIndex(index1, -1f*vel2_m);
+						DVector3 vel2_m = integrator.GetVelocityForIndex(index2);
+						integrator.SetVelocityForIndex(index1, -1d*vel2_m);
 					}
 				}
 			}
@@ -984,18 +989,18 @@ public class GravityEngine : MonoBehaviour {
 		}
 		// velocity information is in the integrators. 
 		// 
-		Vector3 vel1 = integrator.GetVelocityForIndex(index1);
-		Vector3 vel2 = integrator.GetVelocityForIndex(index2);
+		DVector3 vel1 = integrator.GetVelocityForIndex(index1);
+		DVector3 vel2 = integrator.GetVelocityForIndex(index2);
 		// work in CM frame of B1 and B2
-		float m_total = (float)(nbody1.mass + nbody2.mass);
-		Vector3 cm_vel = (((float) nbody1.mass)*vel1 + ((float)nbody2.mass)*vel2)/m_total;
+		float m_total = nbody1.mass + nbody2.mass;
+		DVector3 cm_vel = (nbody1.mass*vel1 + nbody2.mass*vel2)/m_total;
 		// Determine new velocities in CM frame
-		Vector3 vel1_cm = vel1 - cm_vel;
-		Vector3 vel2_cm = vel2 - cm_vel;
+		DVector3 vel1_cm = vel1 - cm_vel;
+		DVector3 vel2_cm = vel2 - cm_vel;
 		if (collisionType == NBodyCollision.CollisionType.ABSORB_IMMEDIATE ||
 			collisionType == NBodyCollision.CollisionType.EXPLODE) {
 			// hit and stick 
-			Vector3 v_final_cm = (((float) nbody1.mass)*vel1_cm + ((float)nbody2.mass)*vel2_cm)/m_total;
+			DVector3 v_final_cm = (nbody1.mass*vel1_cm + nbody2.mass*vel2_cm)/m_total;
 			// Translate back to world frame
 			vel1 = v_final_cm + cm_vel;
 			// update mass of body1 to include body2
@@ -1023,6 +1028,27 @@ public class GravityEngine : MonoBehaviour {
 		}
 	}
 
+    public void GetPosition(NBody nBody, out DVector3 v)
+    {
+        if (nBody != null && nBody.engineRef != null)
+        {
+            int i = nBody.engineRef.index;
+            if (nBody.engineRef.bodyType == BodyType.MASSLESS)
+            {
+                masslessEngine.GetPositionAtIndex(i, out v);
+            }
+            else
+            {
+                v = new DVector3(r, i);
+            }
+        }
+        else
+        {
+            Debug.LogWarning("nBody or nBody engine ref is null");
+            v = DVector3.zero;
+        }
+    }
+
 	/// <summary>
 	/// Gets the velocity of the body in "Physics Space". 
 	/// May be different from Unity co-ordinates if physToWorldFactor is not 1. 
@@ -1030,17 +1056,17 @@ public class GravityEngine : MonoBehaviour {
 	/// </summary>
 	/// <returns>The velocity.</returns>
 	/// <param name="body">Body</param>
-	public Vector3 GetVelocity(GameObject body) {
+	public DVector3 GetVelocity(GameObject body) {
 		NBody nbody = body.GetComponent<NBody>();
         if (nbody == null)
         {
             Debug.LogError("No NBody found on " + body.name + " cannot get velocity");
-            return Vector3.zero;
+            return DVector3.zero;
         }
         if (nbody.engineRef == null)
         {
             Debug.LogError("No NBody engine found on " + body.name + " cannot get velocity");
-            return Vector3.zero;
+            return DVector3.zero;
         }
         if (nbody.engineRef.bodyType == BodyType.MASSLESS) {
 			return masslessEngine.GetVelocity(body);
@@ -1054,12 +1080,12 @@ public class GravityEngine : MonoBehaviour {
 	/// </summary>
 	/// <returns>The velocity.</returns>
 	/// <param name="body">Body</param>
-	public Vector3 GetScaledVelocity(GameObject body) {
-		Vector3 velocity = Vector3.zero; 
+	public DVector3 GetScaledVelocity(GameObject body) {
+		DVector3 velocity = DVector3.zero; 
 		NBody nbody = body.GetComponent<NBody>();
 		if (nbody == null) {
 			Debug.LogError("No NBody found on " + body.name + " cannot get velocity"); 
-			return Vector3.zero;
+			return DVector3.zero;
 		}
 		if (nbody.engineRef.bodyType == BodyType.MASSLESS) {
 			velocity = masslessEngine.GetVelocity(body);
@@ -1076,11 +1102,11 @@ public class GravityEngine : MonoBehaviour {
 	/// </summary>
 	/// <returns>The acceleration.</returns>
 	/// <param name="body">Body.</param>
-	public Vector3 GetAcceleration(GameObject body) {
+	public DVector3 GetAcceleration(GameObject body) {
 		NBody nbody = body.GetComponent<NBody>();
 		if (nbody == null) {
 			Debug.LogError("No NBody found on " + body.name + " cannot get velocity"); 
-			return Vector3.zero;
+			return DVector3.zero;
 		}
 		if (optimizeMassless && nbody.mass < MASSLESS_LIMIT) {
 			return masslessEngine.GetAcceleration(body);
@@ -1088,35 +1114,41 @@ public class GravityEngine : MonoBehaviour {
 		return integrator.GetAccelerationForIndex(nbody.engineRef.index);
 	}
 
-	/// <summary>
-	/// Applies an impulse to an evolving body. The impulse is a change in momentum. The resulting
-	/// velocity change will be impulse/mass. In the case of a massless body the velocity will be
-	/// changed by the impulse value directly. 
-	/// </summary>
-	/// <param name="nbody">Nbody.</param>
-	/// <param name="impulse">Impulse.</param>
-	public void ApplyImpulse(NBody nbody, Vector3 impulse) {
-		ApplyImpulseInternal(nbody, impulse, true);
-	}
+    /// <summary>
+    /// Applies an impulse to an evolving body. The impulse is a change in momentum. The resulting
+    /// velocity change will be impulse/mass. In the case of a massless body the velocity will be
+    /// changed by the impulse value directly. 
+    /// </summary>
+    /// <param name="nbody">Nbody.</param>
+    /// <param name="impulse">Impulse.</param>
+    public void ApplyImpulse(NBody nbody, DVector3 impulse)
+    {
+        ApplyImpulseInternal(nbody, impulse, true);
+    }
 
-	/// <summary>
-	/// Determine the velocity that will result if the impulse is applied BUT
-	/// do not apply the impulse
-	/// </summary>
-	/// <returns>The for impulse.</returns>
-	/// <param name="nbody">Nbody.</param>
-	/// <param name="impulse">Impulse.</param>
-	public Vector3 VelocityForImpulse(NBody nbody, Vector3 impulse) {
+    public void ApplyImpulse(NBody nbody, Vector3 impulse)
+    {
+        ApplyImpulseInternal(nbody, new DVector3(impulse), true);
+    }
+
+    /// <summary>
+    /// Determine the velocity that will result if the impulse is applied BUT
+    /// do not apply the impulse
+    /// </summary>
+    /// <returns>The for impulse.</returns>
+    /// <param name="nbody">Nbody.</param>
+    /// <param name="impulse">Impulse.</param>
+    public DVector3 VelocityForImpulse(NBody nbody, DVector3 impulse) {
 		return ApplyImpulseInternal(nbody, impulse, false);
 	}
 
-	private Vector3 ApplyImpulseInternal(NBody nbody, Vector3 impulse, bool apply) {
+	private DVector3 ApplyImpulseInternal(NBody nbody, DVector3 impulse, bool apply) {
 		// apply an impulse to the indicated NBody
 		// impulse = step change in the momentum (p) of a body
 		// delta v = delta p/m
 		// If the spaceship is massless, then treat impulse as a change in velocity
 		// TODO: Need to think about mass scale here?
-		Vector3 velocity = Vector3.zero;
+		DVector3 velocity = DVector3.zero;
 		if (nbody.engineRef.bodyType == BodyType.MASSIVE) {
 			velocity = integrator.GetVelocityForIndex(nbody.engineRef.index);
 			velocity += impulse/(nbody.mass * massScale);
@@ -1152,15 +1184,15 @@ public class GravityEngine : MonoBehaviour {
 	/// Gets the world center of mass in world space co-ordinates.
 	/// </summary>
 	/// <returns>The world center of mass.</returns>
-	public Vector3 GetWorldCenterOfMass() {
+	public DVector3 GetWorldCenterOfMass() {
 		// called by editor prior to setup - need to find all the NBodies
 		NBody[] nbodies = (NBody[]) Object.FindObjectsOfType(typeof(NBody));
 
-		Vector3 cmVector = Vector3.zero;
-		float mTotal = 0.0f; 
+		DVector3 cmVector = DVector3.zero;
+		double mTotal = 0.0d; 
 		foreach( NBody nbody in nbodies) {
-			cmVector += ((float) nbody.mass) * nbody.transform.position;
-			mTotal += ((float) nbody.mass);
+			cmVector += nbody.mass * new DVector3(nbody.transform.position);
+			mTotal += nbody.mass;
 		}
 		return cmVector/mTotal;		
 	}
@@ -1169,15 +1201,15 @@ public class GravityEngine : MonoBehaviour {
 	/// Gets the world center of mass velocity.
 	/// </summary>
 	/// <returns>The world center of mass velocity.</returns>
-	public Vector3 GetWorldCenterOfMassVelocity() {
+	public DVector3 GetWorldCenterOfMassVelocity() {
 		// called by editor prior to setup - need to find all the NBodies
 		NBody[] nbodies = (NBody[]) Object.FindObjectsOfType(typeof(NBody));
 
-		Vector3 cmVector = Vector3.zero;
-		float mTotal = 0.0f; 
+		DVector3 cmVector = DVector3.zero;
+		double mTotal = 0.0d; 
 		foreach( NBody nbody in nbodies) {
-			cmVector += ((float) nbody.mass) * nbody.vel;
-			mTotal += ((float) nbody.mass);
+			cmVector += nbody.mass * nbody.vel;
+			mTotal += nbody.mass;
 		}
 		return cmVector/mTotal;		
 	}
@@ -1221,7 +1253,7 @@ public class GravityEngine : MonoBehaviour {
 		System.Text.StringBuilder sb = new System.Text.StringBuilder();
 		sb.Append(string.Format("massScale={0} timeScale={1}\n", massScale, timeScale));
 		for (int i=0; i < numBodies; i++) {
-			Vector3 vel = GetVelocity(gameObjects[i]);
+			DVector3 vel = GetVelocity(gameObjects[i]);
 			sb.Append(string.Format("n={0} {1} m={2} r={3} {4} {5} v={6} {7} {8} info={9} \n", i, gameObjects[i].name, 
 						m[i], r[i,0], r[i,1], r[i,2], vel.x, vel.y, vel.z, info[i]
 					));

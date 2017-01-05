@@ -385,7 +385,7 @@ public class Autopilot : MonoBehaviour
             float targetAngle = Quaternion.Angle(transform.rotation, q);
             bool aligned = targetAngle <= MinFireTargetAngle;
             float dist;
-            PhysicsUtils.CalcDistance(transform, target, out dist);
+            PhysicsUtils.CalcDistance(gameObject, target, out dist);
             bool inRange = weapons == null ? true : dist <= weapons.MainGunRangeM;
             bool hasAmmo = weapons == null ? false : weapons.CurrentAmmo() > 0;
             bool gunsReady = weapons.GunsReady();
@@ -476,7 +476,7 @@ public class Autopilot : MonoBehaviour
     {
         Vector3 relVec = PhysicsUtils.CalcRelV(transform.parent.transform, target);
         float dist;
-        PhysicsUtils.CalcDistance(transform, target, out dist);
+        PhysicsUtils.CalcDistance(gameObject, target, out dist);
 
         float arelv = relVec.magnitude;
         Vector3 negVec = -relVec;
@@ -577,46 +577,40 @@ public class Autopilot : MonoBehaviour
     }
 
     private float AimTimeSec = 3.45f;
-
-    private Vector3 CreateVirtualApproach(GameObject target)
+    
+    private void CreateVirtualApproachTarget(GameObject target, GameObject approachNBody, GameObject approach) // destroy gameobjects after using
     {
         float radius = gameController.TargetData().GetTargetRadius(target);
         float dist = radius + RendezvousDistM;
-        Vector3 approachVec = PointForwardVec(target, dist);
-        return approachVec;
+        PointForward(target, dist, approachNBody, approach);
     }
 
-    private GameObject CreateVirtualApproachTarget(GameObject target) // destroy g after using
-    {
-        float radius = gameController.TargetData().GetTargetRadius(target);
-        float dist = radius + RendezvousDistM;
-        GameObject approach = PointForward(target, dist);
-        return approach;
-    }
-
-    private GameObject PointForward(GameObject target, float dist) // destroy g after using
-    {
-        Vector3 approachPos = PointForwardVec(target, dist);
-        Quaternion forwardQ = target.transform.rotation;
-//        Quaternion forwardQ = target.transform.GetChild(0).transform.rotation;
-        //bool isDock = gameController.TargetData().GetTargetType(target) == TargetDB.TargetType.DOCK;
-        //Quaternion approachRot = isDock ? forwardQ : Quaternion.Euler(0f, 180f, 0f) * forwardQ;
-        Quaternion approachRot = Quaternion.Euler(0f, 180f, 0f) * forwardQ;
-        GameObject g = new GameObject();
-        g.transform.position = approachPos;
-        g.transform.rotation = approachRot;
-        return g;
-    }
-
-    private Vector3 PointForwardVec(GameObject target, float dist)
+    private void PointForward(GameObject target, float dist, GameObject nBody, GameObject g) // destroy g after using
     {
         bool isDock = gameController.TargetData().GetTargetType(target) == TargetDB.TargetType.DOCK;
         float approachDir = isDock ? -1 : 1;
-//        Vector3 approachForward = approachDir * target.transform.GetChild(0).transform.forward;
-        Vector3 approachForward = approachDir * target.transform.forward;
-        GameObject nBody = NUtils.GetNBodyGameObject(target);
-        Vector3 approachPos = nBody.transform.position + dist * approachForward;
-        return approachPos;
+        DVector3 approachForward = new DVector3(approachDir * target.transform.forward);
+        DVector3 approachPos = new DVector3(target.transform.position) + dist * approachForward;
+        Quaternion forwardQ = target.transform.rotation;
+        Quaternion approachRot = Quaternion.Euler(0f, 180f, 0f) * forwardQ;
+
+        NBodyDimensions dim = g.GetComponent<NBodyDimensions>();
+        DVector3 nBodyPos = TransformNearToFar(approachPos, dim.PlayerNBody, dim.NBodyToModelScaleFactor);
+        g.transform.position = approachPos.ToVector3();
+        g.transform.rotation = approachRot;
+        DVector3 tVel = GravityEngine.instance.GetVelocity(NUtils.GetNBodyGameObject(target));
+
+        GravityEngine.instance.InactivateBody(nBody);
+        GravityEngine.instance.UpdatePositionAndVelocity(nBody.GetComponent<NBody>(), nBodyPos, tVel);
+        GravityEngine.instance.ActivateBody(nBody);
+    }
+
+    private DVector3 TransformNearToFar(DVector3 near, GameObject playerNBody, float scale)
+    {
+        DVector3 farOrigin = new DVector3(playerNBody.transform.position);
+        DVector3 farFromOrigin = (1d / scale) * near;
+        DVector3 far = farOrigin + farFromOrigin;
+        return far;
     }
 
     private float MinRendezvousBurnSec = 0.5f;
@@ -656,62 +650,64 @@ public class Autopilot : MonoBehaviour
         */
 }
 
-private float MinRendezvousEpsilonM = 1;
+    private float MinRendezvousEpsilonM = 10f;
 
     IEnumerator RendezvousCo(GameObject target, CompletedCallback callback)
     {
+        GameObject player = gameController.GetPlayer();
+        GameObject playerNBody = NUtils.GetNBodyGameObject(player);
+        float scale = NUtils.GetNBodyToModelScale(player);
+        GameObject approachNBody = GameObject.Instantiate(gameController.NBodyPrefab);
+        approachNBody.name = "NBody Approach " + target.name + " For " + gameObject.name;
+        GravityEngine.instance.AddBody(approachNBody);
+
+        GameObject approachTarget = new GameObject();
+        NBodyDimensions dim = approachTarget.AddComponent<NBodyDimensions>();
+        dim.PlayerNBody = playerNBody;
+        dim.NBodyToModelScaleFactor = scale;
+        dim.NBody = approachNBody;
+
         for (;;)
         {
             ship.CutoffAll();
-            Vector3 targetApproach = CreateVirtualApproach(target);
+            CreateVirtualApproachTarget(target, approachNBody, approachTarget);
             yield return KillRelVCo(target);
-            Vector3 b = (targetApproach - transform.position).normalized;
+            Vector3 b = (approachTarget.transform.position - transform.position).normalized;
             float dist;
-            PhysicsUtils.CalcDistance(transform.position, targetApproach, NUtils.GetNBodyToModelScale(target), out dist);
+            PhysicsUtils.CalcDistance(gameObject, approachTarget, out dist);
             float minMainBurnDist = MinMainBurnDist(MinRendezvousBurnSec);
             float minAuxBurnDist = MinAuxBurnDist(MinRendezvousBurnSec);
-//            float minRCSBurnDist = MinRCSBurnDist(MinRendezvousBurnSec);
-            bool closeEnough = dist < MinRendezvousEpsilonM;
-            bool fireMain = dist >= minMainBurnDist;
-            bool fireAux = dist >= minAuxBurnDist && dist > RCSDist;
-//            bool fireRCS = dist >= minRCSBurnDist && dist > MinRendezvousEpsilonM;
-            if (!closeEnough && fireMain)
+            bool fireMain = dist >= minMainBurnDist && dist > MinRendezvousEpsilonM;
+            bool fireAux = dist >= minAuxBurnDist && dist > MinRendezvousEpsilonM;
+            if (fireMain)
             {
                 float idealBurnSec = IdealMainBurnSec(dist);
                 float burnSec = Mathf.Max(MinRendezvousBurnSec, idealBurnSec);
                 yield return PushAndStartCoroutine(RotThenBurnMain(b, burnSec));
                 yield return PushAndStartCoroutine(KillRelVCo(target));
             }
-            else if (!closeEnough && fireAux)
+            else if (fireAux)
             {
                 float idealBurnSec = IdealAuxBurnSec(dist);
                 float burnSec = Mathf.Max(MinRendezvousBurnSec, idealBurnSec);
                 yield return PushAndStartCoroutine(RotThenBurnAux(b, burnSec));
                 yield return PushAndStartCoroutine(KillRelVCo(target));
             }
-//            else if (!closeEnough && fireRCS)
-//            {
-//                yield return PushAndStartCoroutine(FaceTargetCo(target));
-//                float idealBurnSec = IdealRCSBurnSec(dist);
-//                float burnSec = Mathf.Max(ship.RCSBurnMinSec, idealBurnSec);
-//                ship.RCSBurst(b, burnSec);
-//                yield return new WaitForSeconds(burnSec);
-//                ship.RCSBurst(-b, burnSec);
-//                yield return new WaitForSeconds(burnSec);
-//                yield return PushAndStartCoroutine(KillRelVCo(target));
-//                closeEnough = true;
-//            }
-            if (closeEnough)
+            else
             {
-                yield return PushAndStartCoroutine(FaceTargetCo(target, true));
-                PopCoroutine();
-                if (callback != null)
-                {
-                    callback();
-                }
-                yield break;
+                break;
             }
         }
+
+        Destroy(approachTarget);
+        GravityEngine.instance.InactivateBody(approachNBody);
+        yield return PushAndStartCoroutine(FaceTargetCo(target, true));
+        PopCoroutine();
+        if (callback != null)
+        {
+            callback();
+        }
+        yield break;
     }
 
     private float DockContactDistM = 1f;
@@ -926,7 +922,7 @@ private float MinRendezvousEpsilonM = 1;
         float maxDeltaV = CalcMainEngineMaxDeltaV();
         float secToMax = CalcDeltaVMainBurnSec(maxDeltaV);
         float dist;
-        PhysicsUtils.CalcDistance(transform, target, out dist);
+        PhysicsUtils.CalcDistance(gameObject, target, out dist);
         float speedupDist = 0.1f * dist;
         float secSpeedup = Mathf.Sqrt(2f * speedupDist / ship.CurrentMainEngineAccPerSec());
         float sec = Mathf.Min(secSpeedup, secToMax);

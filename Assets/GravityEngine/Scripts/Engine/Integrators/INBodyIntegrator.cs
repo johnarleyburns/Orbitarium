@@ -26,7 +26,7 @@ public interface INBodyIntegrator {
 	/// <param name="nbody">NBody component</param>
 	/// <param name="position">Physics position</param>
 	/// <param name="velocity">Physics velocity</param>
-	void AddNBody( int bodyNum, NBody nbody, Vector3 position, Vector3 velocity);
+	void AddNBody(int bodyNum, NBody nbody, DVector3 position, DVector3 velocity);
 
     /// <summary>
     /// Removes NBody at index i.
@@ -40,11 +40,11 @@ public interface INBodyIntegrator {
 	/// <param name="growBy">Grow by.</param>
 	void GrowArrays(int growBy);
 			
-	Vector3 GetVelocityForIndex(int i); 
+	DVector3 GetVelocityForIndex(int i); 
 
-	void SetVelocityForIndex(int i, Vector3 vel); 
+	void SetVelocityForIndex(int i, DVector3 vel); 
 
-	Vector3 GetAccelerationForIndex(int i); 
+	DVector3 GetAccelerationForIndex(int i); 
 
 	// Call ONCE after all game objects have been added to allow integrator to pre-calc
 	// starting quantities required for integration

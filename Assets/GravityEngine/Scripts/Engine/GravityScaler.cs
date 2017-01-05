@@ -141,7 +141,7 @@ public class GravityScaler : MonoBehaviour  {
 				iorbit.ApplyScale(lengthScale);
 			} else {
 				if (units == GravityScaler.Units.DIMENSIONLESS && lengthScale == 1f) {
-					nbody.initialPos = nbody.transform.position;
+					nbody.initialPos = new DVector3(nbody.transform.position);
 				}
 				nbody.ApplyScale(lengthScale, velocityScale);	
 			}

@@ -13,11 +13,13 @@
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>Unity Subset v3.5</TargetFrameworkProfile>
-    <CompilerResponseFile></CompilerResponseFile>
+    <CompilerResponseFile>
+    </CompilerResponseFile>
     <UnityProjectType>Game:1</UnityProjectType>
     <UnityBuildTarget>StandaloneWindows:5</UnityBuildTarget>
     <UnityVersion>5.4.1f1</UnityVersion>
-    <RootNamespace></RootNamespace>
+    <RootNamespace>
+    </RootNamespace>
     <LangVersion Condition=" '$(VisualStudioVersion)' != '10.0' ">4</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -123,6 +125,7 @@
     <Compile Include="Assets\Extended GUI Elements\Scripts\Window.cs" />
     <Compile Include="Assets\Extended GUI Elements\Scripts\WindowHeader.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\Engine\Accelerometer.cs" />
+    <Compile Include="Assets\GravityEngine\Scripts\Engine\DVector3.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\Engine\ExplosionFromNBody.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\Engine\GravityEngine.cs" />
     <Compile Include="Assets\GravityEngine\Scripts\Engine\GravityParticles.cs" />
@@ -394,7 +397,7 @@
     <None Include="Assets\Extended GUI Elements\Sprites\license.txt" />
     <None Include="Assets\Missile Behaviours\Changelog.txt" />
     <None Include="Assets\Missile Behaviours\ReadMe.txt" />
-    <None Include="Assets\Missile Behaviours\Scenes\Demo02\In case the demo doesn&apos;t work.txt" />
+    <None Include="Assets\Missile Behaviours\Scenes\Demo02\In case the demo doesn't work.txt" />
     <None Include="Assets\Models\Derelict mining station\Things to know.txt" />
     <None Include="Assets\Models\Eezo Harvesting Facility\Things to know.txt" />
     <None Include="Assets\Models\Mining Drill LS-GE\Terms of Use.txt" />

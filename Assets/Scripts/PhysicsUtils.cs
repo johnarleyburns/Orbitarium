@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System;
 
 public class PhysicsUtils : MonoBehaviour {
 
@@ -37,11 +38,11 @@ public class PhysicsUtils : MonoBehaviour {
         {
             GameObject otherNBody = NUtils.GetNBodyGameObject(otherBody);
             GameObject myNBody = NUtils.GetNBodyGameObject(myNBodyChild);
-            Vector3 relVelVec =
+            DVector3 relVelVec =
                 GravityEngine.instance.GetVelocity(otherNBody)
                 -
                 GravityEngine.instance.GetVelocity(myNBody);
-            relVel = NUtils.GetNBodyToModelScale(otherBody) * relVelVec.magnitude;
+            relVel = (float)(NUtils.GetNBodyToModelScale(otherBody) * relVelVec.magnitude);
             bool bouncing = relVel < minRelVtoExplode;
             return bouncing;
         }
@@ -56,11 +57,11 @@ public class PhysicsUtils : MonoBehaviour {
             float dist = Vector3.Distance(rocket.DockingPort.transform.position, otherBody.transform.position);
             GameObject otherNBody = NUtils.GetNBodyGameObject(otherBody);
             GameObject myNBody = NUtils.GetNBodyGameObject(myNBodyChild);
-            Vector3 relVelVec =
+            DVector3 relVelVec =
                 GravityEngine.instance.GetVelocity(otherNBody)
                 -
                 GravityEngine.instance.GetVelocity(myNBody);
-            float relVel = NUtils.GetNBodyToModelScale(otherBody) * relVelVec.magnitude;
+            float relVel = (float)(NUtils.GetNBodyToModelScale(otherBody) * relVelVec.magnitude);
             Transform dockGhostModel = otherBody.transform.GetChild(0).GetChild(0).transform;
             float relTheta = Quaternion.Angle(myNBodyChild.transform.rotation, dockGhostModel.rotation);
             bool isRelv = relVel >= minRelVtoDock && relVel <= maxRelVtoDock;
@@ -76,36 +77,38 @@ public class PhysicsUtils : MonoBehaviour {
 
     public static Vector3 CalcRelV(Transform source, GameObject target)
     {
-        Vector3 myVel = GravityEngine.instance.GetVelocity(NUtils.GetNBodyGameObject(source.gameObject));
-        Vector3 targetVel = GravityEngine.instance.GetVelocity(NUtils.GetNBodyGameObject(target));
-        Vector3 relVec = myVel - targetVel;
-        return NUtils.GetNBodyToModelScale(target) * relVec;
+        DVector3 myVel = GravityEngine.instance.GetVelocity(NUtils.GetNBodyGameObject(source.gameObject));
+        DVector3 targetVel = GravityEngine.instance.GetVelocity(NUtils.GetNBodyGameObject(target));
+        DVector3 relVec = myVel - targetVel;
+        return (NUtils.GetNBodyToModelScale(target) * relVec).ToVector3();
     }
 
 
     public static void CalcRelV(Transform source, GameObject target, out Vector3 targetVec, out float relv, out Vector3 relVelUnit)
     {
-        float scale = NUtils.GetNBodyToModelScale(target);
+        double scale = NUtils.GetNBodyToModelScale(target);
         GameObject sourceNBody = NUtils.GetNBodyGameObject(source.gameObject);
         GameObject targetNBody = NUtils.GetNBodyGameObject(target);
-        Vector3 myVel = GravityEngine.instance.GetVelocity(sourceNBody);
-        Vector3 targetVel = GravityEngine.instance.GetVelocity(targetNBody);
-        Vector3 relVel = myVel - targetVel;
-        Vector3 tVec = targetNBody.transform.position - sourceNBody.transform.position;
-        float relVelDot = Vector3.Dot(relVel, tVec);
-        relv = scale * Mathf.Sign(relVelDot) * relVel.magnitude;
-        targetVec = scale * tVec;
-        relVelUnit = relVel.normalized;
+        DVector3 myVel = GravityEngine.instance.GetVelocity(sourceNBody);
+        DVector3 targetVel = GravityEngine.instance.GetVelocity(targetNBody);
+        DVector3 relVel = myVel - targetVel;
+        DVector3 sPos;
+        DVector3 tPos;
+        GravityEngine.instance.GetPosition(sourceNBody.GetComponent<NBody>(), out sPos);
+        GravityEngine.instance.GetPosition(targetNBody.GetComponent<NBody>(), out tPos);
+        DVector3 tVec = tPos - sPos;
+        double relVelDot = DVector3.Dot(relVel, tVec);
+        relv = (float)(scale * Math.Sign(relVelDot) * relVel.magnitude);
+        targetVec = (scale * tVec).ToVector3();
+        relVelUnit = relVel.normalized.ToVector3();
     }
 
-    public static void CalcDistance(Transform source, GameObject target, out float dist)
+    public static void CalcDistance(GameObject source, GameObject target, out float dist)
     {
-        CalcDistance(source.transform.position, target.transform.position, NUtils.GetNBodyToModelScale(target), out dist);
-    }
-
-    public static void CalcDistance(Vector3 s, Vector3 t, float scale, out float dist)
-    {
-        dist = scale * (t - s).magnitude;
+        GameObject sNBody = NUtils.GetNBodyGameObject(source);
+        GameObject tNBody = NUtils.GetNBodyGameObject(target);
+        float scale = NUtils.GetNBodyToModelScale(target);
+        dist = scale * (tNBody.transform.position - sNBody.transform.position).magnitude;
     }
 
     public static void CalcDockPlanar(Transform source, GameObject targetDock, float relv, Vector3 relunitvec, out float closingDist, out float closingRelv, out Vector2 planarVec)

@@ -38,7 +38,7 @@ public class OrbitSimpleDecay : MonoBehaviour {
 	// Update is called once per frame
 	void FixedUpdate () {
 		if (initOk && GravityEngine.instance.IsSetup()) {
-			Vector3 velocity = GravityEngine.instance.GetVelocity(transform.gameObject);
+			Vector3 velocity = GravityEngine.instance.GetVelocity(transform.gameObject).ToVector3();
 			GravityEngine.instance.ApplyImpulse(nbody, -1f * decayFactor * velocity);
 		}
 	}

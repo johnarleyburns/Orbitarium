@@ -13,7 +13,7 @@ public class GravityParticlesEditor : Editor {
 		GUI.changed = false;
 
 		GravityParticles nbp = (GravityParticles) target;
-		Vector3 initialV = nbp.initialVelocity;
+		DVector3 initialV = nbp.initialVelocity;
 		bool addNBodyVelocity = nbp.addNBodyVelocity;
 
 		IGravityParticlesInit particlesInit = nbp.GetComponent<IGravityParticlesInit>();
@@ -32,10 +32,10 @@ public class GravityParticlesEditor : Editor {
 					EditorGUILayout.LabelField("Initial Velocity: (from NBody)" , EditorStyles.boldLabel);
 
 				} else {
-					initialV = EditorGUILayout.Vector3Field(new GUIContent("Initial Velocity", iTip), nbp.initialVelocity);
+					initialV = new DVector3(EditorGUILayout.Vector3Field(new GUIContent("Initial Velocity", iTip), nbp.initialVelocity.ToVector3()));
 				}
 			} else {
-				initialV = EditorGUILayout.Vector3Field(new GUIContent("Initial Velocity", iTip), nbp.initialVelocity);
+                initialV = new DVector3(EditorGUILayout.Vector3Field(new GUIContent("Initial Velocity", iTip), nbp.initialVelocity.ToVector3()));
 			}
 		} else {
 			EditorGUILayout.LabelField("Initalize with: " + particlesInit.GetType().ToString() , EditorStyles.boldLabel);

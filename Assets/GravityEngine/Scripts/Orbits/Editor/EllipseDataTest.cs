@@ -370,7 +370,7 @@ public class EllipseDataTest {
  
     private void TestRV(OrbitData od, GameObject planet, GameObject star, float orbitRadius)  {
     	Vector3 r_initial = planet.transform.position;
-		Vector3 v_initial = planet.GetComponent<NBody>().vel;
+        DVector3 v_initial = planet.GetComponent<NBody>().vel;
 
 		GameObject testPlanet = TestSetupUtils.CreatePlanetInOrbit(star, 1f, orbitRadius);
 		OrbitEllipse testEllipse = testPlanet.GetComponent<OrbitEllipse>();
@@ -379,11 +379,11 @@ public class EllipseDataTest {
 		testEllipse.Init();
 		testEllipse.InitNBody(1f, 1f);
 		Vector3 r = testPlanet.transform.position;
-		Vector3 v = testPlanet.GetComponent<NBody>().vel;
+		DVector3 v = testPlanet.GetComponent<NBody>().vel;
 		Debug.Log(" r_i=" + r_initial + " r=" + r + " delta=" + Vector3.Distance(r_initial, r));
-		Debug.Log(" v_i=" + v_initial + " v=" + v + " delta=" + Vector3.Distance(v_initial, v));
+		Debug.Log(" v_i=" + v_initial + " v=" + v + " delta=" + DVector3.Distance(v_initial, v));
 		Assert.IsTrue( FloatEqual( Vector3.Distance(r_initial, r), 0f, 1E-2));
-		Assert.IsTrue( FloatEqual( Vector3.Distance(v_initial, v), 0f, 1E-2));
+		Assert.IsTrue( FloatEqual( (float)DVector3.Distance(v_initial, v), 0f, 1E-2));
 
     }
 

@@ -161,9 +161,9 @@ public class NBodyCollision : MonoBehaviour {
     {
         GameObject otherBodyWithNBody = NUtils.GetNBodyGameObject(otherBody);
         GameObject myBodyWithNBody = NUtils.GetNBodyGameObject(transform.gameObject);
-        Vector3 deltaV_vec = GravityEngine.instance.GetVelocity(otherBodyWithNBody)
+        DVector3 deltaV_vec = GravityEngine.instance.GetVelocity(otherBodyWithNBody)
         	- GravityEngine.instance.GetVelocity(myBodyWithNBody);
-		float deltaV = deltaV_vec.magnitude;
+		double deltaV = deltaV_vec.magnitude;
 		bouncing =  (deltaV < explodeOrBounceVelocity * GravityEngine.Instance().GetVelocityScale());
 		return bouncing;
     }

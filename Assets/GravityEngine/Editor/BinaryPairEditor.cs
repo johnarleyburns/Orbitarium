@@ -9,11 +9,11 @@ public class BinaryPairEditor : EllipseBaseEditor {
 	{
 		GUI.changed = false;
 		BinaryPair bPair = (BinaryPair) target;
-		Vector3 velocity = Vector3.zero;
+		DVector3 velocity = DVector3.zero;
 
 		GravityScaler.Units units = GravityEngine.Instance().units;
 		string prompt = string.Format("Velocity ({0})", GravityScaler.VelocityUnits(units));
-		velocity = EditorGUILayout.Vector3Field(new GUIContent(prompt, "velocity of binary center of mass"), bPair.velocity);
+		velocity = new DVector3(EditorGUILayout.Vector3Field(new GUIContent(prompt, "velocity of binary center of mass"), bPair.velocity.ToVector3()));
 
 
 		if (GUI.changed) {

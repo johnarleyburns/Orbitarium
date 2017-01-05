@@ -20,7 +20,15 @@ public class NBodyDimensions : MonoBehaviour {
         {
             NBody p = PlayerNBody.GetComponent<NBody>();
             NBody n = NBody.GetComponent<NBody>();
-            transform.position = (n.transform.position - p.transform.position) * NBodyToModelScaleFactor;
+            DVector3 pVec;
+            DVector3 nVec;
+            GravityEngine.instance.GetPosition(p, out pVec);
+            GravityEngine.instance.GetPosition(n, out nVec);
+            double scale = NBodyToModelScaleFactor;
+            DVector3 originOffset = nVec - pVec;
+            DVector3 scaledOriginOffset = scale * originOffset;
+            DVector3 scaledPos = scaledOriginOffset; // player always at 0 in near space
+            transform.position = scaledPos.ToVector3();
         }
 	}
 }

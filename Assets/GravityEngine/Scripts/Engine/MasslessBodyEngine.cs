@@ -295,19 +295,19 @@ public class MasslessBodyEngine  {
 	public void UpdateBodies(float physicalScale) {
 		for (int i=0; i < numBodies; i++) {
 			if ((info[i] & GravityEngine.INACTIVE) == 0) {
-				Vector3 position = new Vector3((float) r[i,0], (float) r[i,1], (float) r[i,2]); 
-				bodies[i].transform.position = physicalScale * position;
+				DVector3 position = new DVector3(r[i,0], r[i,1], r[i,2]); 
+				bodies[i].transform.position = position.ToVector3(Vector3.zero, physicalScale);
 			}
 		}
 	}	
 
-	public Vector3 GetVelocity(GameObject body) {
+	public DVector3 GetVelocity(GameObject body) {
 		NBody nbody = body.GetComponent<NBody>();
 		int i = nbody.engineRef.index;
-		return new Vector3((float) v[i,0], (float) v[i,1], (float) v[i,2]);
+		return new DVector3(v[i,0], v[i,1], v[i,2]);
 	}
 
-	public void SetVelocity(GameObject body, Vector3 velocity) {
+	public void SetVelocity(GameObject body, DVector3 velocity) {
 		NBody nbody = body.GetComponent<NBody>();
 		int i = nbody.engineRef.index;
 		v[i,0] = velocity.x;
@@ -315,22 +315,30 @@ public class MasslessBodyEngine  {
 		v[i,2] = velocity.z;
 	}
 
-	public void SetVelocityAtIndex(int i, Vector3 velocity) {
+	public void SetVelocityAtIndex(int i, DVector3 velocity) {
 		v[i,0] = velocity.x;
 		v[i,1] = velocity.y;
 		v[i,2] = velocity.z;
 	}
 
-	public void SetPositionAtIndex(int i, Vector3 pos) {
-		r[i,0] = pos.x;
-		r[i,1] = pos.y;
-		r[i,2] = pos.z;
-	}
+    public void SetPositionAtIndex(int i, DVector3 pos)
+    {
+        r[i, 0] = pos.x;
+        r[i, 1] = pos.y;
+        r[i, 2] = pos.z;
+    }
 
-	public Vector3 GetAcceleration(GameObject body) {
+    public void GetPositionAtIndex(int i, out DVector3 pos)
+    {
+        pos.x = r[i, 0];
+        pos.y = r[i, 1];
+        pos.z = r[i, 2];
+    }
+
+    public DVector3 GetAcceleration(GameObject body) {
 		NBody nbody = body.GetComponent<NBody>();
 		int i = nbody.engineRef.index;
-		return new Vector3((float) a[i,0], (float) a[i,1], (float) a[i,2]);
+		return new DVector3( a[i,0], a[i,1], a[i,2]);
 	}
 		
 }

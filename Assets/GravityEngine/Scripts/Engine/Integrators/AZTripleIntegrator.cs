@@ -122,7 +122,7 @@ public sealed class AZTripleIntegrator : INBodyIntegrator {
 		
 	}
 	
-	public void AddNBody( int bodyNum, NBody nbody, Vector3 position, Vector3 velocity) {
+	public void AddNBody( int bodyNum, NBody nbody, DVector3 position, DVector3 velocity) {
 
 		numBodies++;
 		if (numBodies > maxBodies) {
@@ -150,17 +150,17 @@ public sealed class AZTripleIntegrator : INBodyIntegrator {
 	}
 
 	
-	public Vector3 GetVelocityForIndex(int i) {
+	public DVector3 GetVelocityForIndex(int i) {
 		Debug.LogWarning("Not supported in this integrator");
-		return Vector3.zero;
+		return DVector3.zero;
 	}
 
-	public 	void SetVelocityForIndex(int i, Vector3 vel) {
+	public 	void SetVelocityForIndex(int i, DVector3 vel) {
 		Debug.LogError("Not supported in this integrator");
 	}
 
-	public Vector3 GetAccelerationForIndex(int i) {
-		return Vector3.zero;
+	public DVector3 GetAccelerationForIndex(int i) {
+		return DVector3.zero;
 	}
 
 	public float GetEnergy(ref double[] mass, ref double[,] pos) {
