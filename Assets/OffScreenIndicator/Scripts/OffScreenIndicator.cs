@@ -27,7 +27,6 @@ namespace Greyman
 
         //public 
         private OffScreenIndicatorManager manager;
-        private bool showing;
         private int runtimeIndicatorsAddedCount = 0;
         private List<Transform> allTargets = new List<Transform>();
 

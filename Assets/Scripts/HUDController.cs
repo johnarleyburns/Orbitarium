@@ -89,7 +89,7 @@ public class HUDController : MonoBehaviour, IPropertyChangeObserver
             Vector3 targetVec;
             float targetRelV;
             Vector3 targetRelVUnitVec;
-            PhysicsUtils.CalcRelV(gameController.GetPlayer().transform, target, out targetVec, out targetRelV, out targetRelVUnitVec);
+            PhysicsUtils.CalcRelV(gameController.GetPlayer(), target, out targetVec, out targetRelV, out targetRelVUnitVec);
             float targetDist = targetVec.magnitude;
             if (isSelectedTarget)
             {

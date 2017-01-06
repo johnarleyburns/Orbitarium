@@ -13,13 +13,11 @@
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>Unity Subset v3.5</TargetFrameworkProfile>
-    <CompilerResponseFile>
-    </CompilerResponseFile>
+    <CompilerResponseFile></CompilerResponseFile>
     <UnityProjectType>Game:1</UnityProjectType>
     <UnityBuildTarget>StandaloneWindows:5</UnityBuildTarget>
     <UnityVersion>5.4.1f1</UnityVersion>
-    <RootNamespace>
-    </RootNamespace>
+    <RootNamespace></RootNamespace>
     <LangVersion Condition=" '$(VisualStudioVersion)' != '10.0' ">4</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -220,6 +218,7 @@
     <Compile Include="Assets\OffScreenIndicator\Scripts\OffScreenIndicatorManager.cs" />
     <Compile Include="Assets\OffScreenIndicator\Scripts\OffScreenIndicatorManagerCanvas.cs" />
     <Compile Include="Assets\OffScreenIndicator\Scripts\OffScreenIndicatorManagerVR.cs" />
+    <Compile Include="Assets\OverShoulderCamera.cs" />
     <Compile Include="Assets\Scripts\Autopilot.cs" />
     <Compile Include="Assets\Scripts\DialogText.cs" />
     <Compile Include="Assets\Scripts\DisplayUtils.cs" />
@@ -245,7 +244,7 @@
     <Compile Include="Assets\Scripts\MissileShipController.cs" />
     <Compile Include="Assets\Scripts\MusicController.cs" />
     <Compile Include="Assets\Scripts\NBodyDimensions.cs" />
-    <Compile Include="Assets\Scripts\OverShoulderCameraSpin.cs" />
+    <Compile Include="Assets\Scripts\OverviewCameraSpin.cs" />
     <Compile Include="Assets\Scripts\PerlinShake.cs" />
     <Compile Include="Assets\Scripts\PhysicsUtils.cs" />
     <Compile Include="Assets\Scripts\PlayerShip.cs" />
@@ -397,7 +396,7 @@
     <None Include="Assets\Extended GUI Elements\Sprites\license.txt" />
     <None Include="Assets\Missile Behaviours\Changelog.txt" />
     <None Include="Assets\Missile Behaviours\ReadMe.txt" />
-    <None Include="Assets\Missile Behaviours\Scenes\Demo02\In case the demo doesn't work.txt" />
+    <None Include="Assets\Missile Behaviours\Scenes\Demo02\In case the demo doesn&apos;t work.txt" />
     <None Include="Assets\Models\Derelict mining station\Things to know.txt" />
     <None Include="Assets\Models\Eezo Harvesting Facility\Things to know.txt" />
     <None Include="Assets\Models\Mining Drill LS-GE\Terms of Use.txt" />

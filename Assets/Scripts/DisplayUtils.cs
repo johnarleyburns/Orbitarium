@@ -4,15 +4,28 @@ public class DisplayUtils {
 
     public static string TimeToTargetText(float dist, float relv)
     {
+        const float minTimeDist = 10f;
         string timeToTargetText;
-        if (relv <= 0)
+        if (relv <= 0 && dist > minTimeDist)
         {
             timeToTargetText = "Inf";
         }
         else
         {
-            float sec = dist / relv;
-            timeToTargetText = string.Format("{0:,0} s", sec);
+            float sec;
+            if (dist <= minTimeDist)
+            {
+                sec = 0;
+            }
+            else
+            {
+                sec = dist / relv;
+            }
+            timeToTargetText = sec > 604800 ? string.Format("{0:,0} w {1:,0} d", sec / 604800, (sec % 604800) / 86400)
+                : (sec > 86400 ? string.Format("{0:,0} d {1:0,0} h", sec / 86400, (sec % 86400) / 3600)
+                : (sec > 3600 ? string.Format("{0:,0} h {1:0,0} m", sec / 3600, (sec % 3600) / 60)
+                    : (sec > 60 ? string.Format("{0:,0} m {1:0,0} s", sec / 60, sec % 60)
+                    : string.Format("{0:,0} s", sec))));
         }
         return timeToTargetText;
     }

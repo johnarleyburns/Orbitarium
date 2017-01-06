@@ -84,10 +84,10 @@ public class PhysicsUtils : MonoBehaviour {
     }
 
 
-    public static void CalcRelV(Transform source, GameObject target, out Vector3 targetVec, out float relv, out Vector3 relVelUnit)
+    public static void CalcRelV(GameObject source, GameObject target, out Vector3 targetVec, out float relv, out Vector3 relVelUnit)
     {
         double scale = NUtils.GetNBodyToModelScale(target);
-        GameObject sourceNBody = NUtils.GetNBodyGameObject(source.gameObject);
+        GameObject sourceNBody = NUtils.GetNBodyGameObject(source);
         GameObject targetNBody = NUtils.GetNBodyGameObject(target);
         DVector3 myVel = GravityEngine.instance.GetVelocity(sourceNBody);
         DVector3 targetVel = GravityEngine.instance.GetVelocity(targetNBody);

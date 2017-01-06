@@ -69,7 +69,17 @@ public struct DVector3
     {
         get
         {
-            return this / magnitude;
+            double m = magnitude;
+            DVector3 n;
+            if (m > 0)
+            {
+                n = this / m;
+            }
+            else
+            {
+                n = DVector3.zero;
+            }
+            return n;
         }
     }
 

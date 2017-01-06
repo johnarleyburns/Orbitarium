@@ -153,12 +153,13 @@ public class MFDDockingController : IPropertyChangeObserver
     {
         if (dockTarget != null)
         {
+            GameObject player = gameController.GetPlayer();
             Transform playerShipTransform = gameController.GetPlayerShip().transform;
 
             Vector3 targetVec;
             float relv;
             Vector3 relunitvec;
-            PhysicsUtils.CalcRelV(playerShipTransform.parent.transform, dockTarget, out targetVec, out relv, out relunitvec);
+            PhysicsUtils.CalcRelV(player, dockTarget, out targetVec, out relv, out relunitvec);
 
             //float closingDist;
             //float closingRelv;

@@ -516,7 +516,7 @@ public class Autopilot : MonoBehaviour
         Vector3 targetVec;
         float relv;
         Vector3 relVelUnit;
-        PhysicsUtils.CalcRelV(transform.parent.transform, target, out targetVec, out relv, out relVelUnit);
+        PhysicsUtils.CalcRelV(gameObject, target, out targetVec, out relv, out relVelUnit);
         Vector3 f = relVelUnit;
         Vector3 a = CalcAPNG(target.transform.position, relv, relVelUnit);
         float maxRCSBurn = 1f;
@@ -533,7 +533,7 @@ public class Autopilot : MonoBehaviour
         Vector3 targetVec;
         float relv;
         Vector3 relVelUnit;
-        PhysicsUtils.CalcRelV(transform.parent.transform, target, out targetVec, out relv, out relVelUnit);
+        PhysicsUtils.CalcRelV(gameObject, target, out targetVec, out relv, out relVelUnit);
         float dist = targetVec.magnitude;
         Vector3 f = relVelUnit;
 
@@ -578,7 +578,7 @@ public class Autopilot : MonoBehaviour
 
     private float AimTimeSec = 3.45f;
     
-    private void CreateVirtualApproachTarget(GameObject target, GameObject approachNBody, GameObject approach) // destroy gameobjects after using
+    private void PositionApproachTarget(GameObject target, GameObject approachNBody, GameObject approach) // destroy gameobjects after using
     {
         float radius = gameController.TargetData().GetTargetRadius(target);
         float dist = radius + RendezvousDistM;
@@ -591,13 +591,13 @@ public class Autopilot : MonoBehaviour
         float approachDir = isDock ? -1 : 1;
         DVector3 approachForward = new DVector3(approachDir * target.transform.forward);
         DVector3 approachPos = new DVector3(target.transform.position) + dist * approachForward;
-        Quaternion forwardQ = target.transform.rotation;
-        Quaternion approachRot = Quaternion.Euler(0f, 180f, 0f) * forwardQ;
+        //Quaternion forwardQ = target.transform.rotation;
+        //Quaternion approachRot = Quaternion.Euler(0f, 180f, 0f) * forwardQ;
 
         NBodyDimensions dim = g.GetComponent<NBodyDimensions>();
         DVector3 nBodyPos = TransformNearToFar(approachPos, dim.PlayerNBody, dim.NBodyToModelScaleFactor);
         g.transform.position = approachPos.ToVector3();
-        g.transform.rotation = approachRot;
+        //g.transform.rotation = approachRot;
         DVector3 tVel = GravityEngine.instance.GetVelocity(NUtils.GetNBodyGameObject(target));
 
         GravityEngine.instance.InactivateBody(nBody);
@@ -667,14 +667,15 @@ public class Autopilot : MonoBehaviour
         dim.NBodyToModelScaleFactor = scale;
         dim.NBody = approachNBody;
 
+        ship.CutoffAll();
+        yield return KillRelVCo(target);
+
         for (;;)
         {
-            ship.CutoffAll();
-            CreateVirtualApproachTarget(target, approachNBody, approachTarget);
-            yield return KillRelVCo(target);
-            Vector3 b = (approachTarget.transform.position - transform.position).normalized;
-            float dist;
-            PhysicsUtils.CalcDistance(gameObject, approachTarget, out dist);
+            PositionApproachTarget(target, approachNBody, approachTarget);
+            Vector3 tVec = (approachTarget.transform.position - transform.position);
+            Vector3 b = tVec.normalized;
+            float dist = tVec.magnitude;
             float minMainBurnDist = MinMainBurnDist(MinRendezvousBurnSec);
             float minAuxBurnDist = MinAuxBurnDist(MinRendezvousBurnSec);
             bool fireMain = dist >= minMainBurnDist && dist > MinRendezvousEpsilonM;
@@ -785,7 +786,7 @@ public class Autopilot : MonoBehaviour
             Vector3 targetVec;
             float relv;
             Vector3 relunitvec;
-            PhysicsUtils.CalcRelV(transform.parent.transform, targetDock, out targetVec, out relv, out relunitvec);
+            PhysicsUtils.CalcRelV(gameObject, targetDock, out targetVec, out relv, out relunitvec);
             float targetAngle = Quaternion.Angle(transform.rotation, Quaternion.LookRotation(approachVec, transform.up));
             //            Vector3 targetVec = CalcVectorToTarget(targetDock);
             //            float relvecAngle = Quaternion.Angle(Quaternion.LookRotation(transform.forward), Quaternion.LookRotation(relvec));
@@ -1036,7 +1037,7 @@ public class Autopilot : MonoBehaviour
         Vector3 targetVec;
         float relv;
         Vector3 relVelUnit;
-        PhysicsUtils.CalcRelV(transform.parent.transform, target, out targetVec, out relv, out relVelUnit);
+        PhysicsUtils.CalcRelV(gameObject, target, out targetVec, out relv, out relVelUnit);
         float N = NavigationalConstantAPNG;
         Vector3 vr = relv * -relVelUnit;
         Vector3 r = targetVec;

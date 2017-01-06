@@ -8,7 +8,7 @@ using System.Collections;
 /// (the boom length) and oriented to point at this object. Then pressing the keys will spin the camera
 /// around the object this script is attached to.
 /// </summary>
-public class OverShoulderCameraSpin : MonoBehaviour
+public class OverviewCameraSpin : MonoBehaviour
 {
 
     //! Rate of spin (degrees per Update)
@@ -21,16 +21,15 @@ public class OverShoulderCameraSpin : MonoBehaviour
     //private float zoomStep = 0.02f;
     private Camera boomCamera;
     private GameObject target;
-    private Vector3 point;
-    
+    private Vector3 boomOffset = new Vector3(5, 5, -40);
+    private Vector3 rotationAxis = new Vector3(0f, 1f, 0f);
+    private GameObject looker;
+
     // Use this for initialization
     void Start()
     {
         boomCamera = GetComponentInChildren<Camera>();
-        //if (boomCamera != null)
-        //{
-        //    initialBoom = boomCamera.transform.localPosition;
-        //}
+        looker = new GameObject();
     }
 
     // Update is called once per frame
@@ -40,14 +39,18 @@ public class OverShoulderCameraSpin : MonoBehaviour
         {
             if (isFar)
             {
-                transform.LookAt(point);//makes the camera look to it
-                transform.RotateAround(point, new Vector3(0.0f, 1.0f, 0.0f), Time.deltaTime * spinRateDegPerSec);
+                Vector3 nearPos = target.transform.position;
+                Vector3 farPos = NUtils.GetNBodyGameObject(target).transform.position;
+                looker.transform.LookAt(nearPos);
+                looker.transform.RotateAround(nearPos, rotationAxis, Time.deltaTime * spinRateDegPerSec);
+                transform.position = farPos;
+                transform.rotation = looker.transform.rotation;
             }
             else
             {
-                Vector3 npoint = NUtils.GetNBodyGameObject(target).transform.position;
-                transform.LookAt(npoint);//makes the camera look to it
-                transform.RotateAround(npoint, new Vector3(0.0f, 1.0f, 0.0f), Time.deltaTime * spinRateDegPerSec);
+                Vector3 nearPos = target.transform.position;
+                transform.LookAt(nearPos);
+                transform.RotateAround(nearPos, rotationAxis, Time.deltaTime * spinRateDegPerSec);
             }
         }
         /*
@@ -90,11 +93,20 @@ public class OverShoulderCameraSpin : MonoBehaviour
     public void UpdateTarget(GameObject newTarget)
     {
         target = newTarget;
-        if (!isFar)
+        if (isFar)
         {
-            point = target.transform.position;//get target's coords
-            transform.position = point + new Vector3(5, 5, -40);
-            //transform.LookAt(point);//makes the camera look to it
+            Vector3 nearPos = target.transform.position;
+            Vector3 farPos = NUtils.GetNBodyGameObject(target).transform.position;
+            looker.transform.position = nearPos + boomOffset;
+            looker.transform.LookAt(nearPos);
+            transform.position = farPos;
+            transform.rotation = looker.transform.rotation;
+        }
+        else
+        {
+            Vector3 nearPos = target.transform.position;
+            transform.position = nearPos + boomOffset;
+            transform.LookAt(nearPos);
         }
     }
 

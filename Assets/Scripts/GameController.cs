@@ -6,6 +6,7 @@ using System.Collections.Generic;
 public class GameController : MonoBehaviour
 {
     public GameObject NBodyPrefab;
+    public GameObject NBodyWithColliderPrefab;
     public GameObject PlayerShipPrefab;
     public GameObject EnemyShipPrefab;
     public GameObject FPSCanvas;
@@ -35,8 +36,9 @@ public class GameController : MonoBehaviour
     //public GameObject EezoDock;
     //public GameObject EezoDockGhost;
     //public GameObject EezoDockingPort;
-    public Transform PlayerSpawn;
-    public Transform EnemySpawn;
+    public Transform PlayerFarSpawn;
+    public Transform EnemyFarSpawn;
+    public Transform EnemyNearSpawn;
     public PlayerStartMode StartMode;
     public float PlayerInitialImpulse;
     public float EnemyRandomSpreadMeters = 200;
@@ -428,12 +430,13 @@ public class GameController : MonoBehaviour
     private void InstantiatePlayer()
     {
         DestroyPlayer();
-        GameObject nBody = Instantiate(NBodyPrefab, Vector3.zero, Quaternion.identity) as GameObject;
+        GameObject nBody = Instantiate(NBodyWithColliderPrefab, PlayerFarSpawn.position, Quaternion.identity) as GameObject;
         player = Instantiate(PlayerShipPrefab, Vector3.zero, Quaternion.identity) as GameObject;
         player.GetComponent<PlayerShipController>().gameController = this;
         player.GetComponent<NBodyDimensions>().NBody = nBody;
         player.GetComponent<NBodyDimensions>().PlayerNBody = nBody;
         player.GetComponent<PlayerShipController>().NBodyDimensions = player.GetComponent<NBodyDimensions>();
+        player.transform.GetChild(0).transform.rotation = PlayerFarSpawn.rotation;
         GravityEngine.instance.AddBody(nBody);
         nBody.name = "NBody " + player.name;
 
@@ -447,8 +450,6 @@ public class GameController : MonoBehaviour
                 //GetPlayerShip().Dock(EezoDockingPort.transform.GetChild(0).gameObject, false);
                 break;
             case PlayerStartMode.SPAWN:               
-                player.transform.GetChild(0).transform.rotation = PlayerSpawn.rotation;
-                GravityEngine.instance.UpdatePositionAndVelocity(nBody.GetComponent<NBody>(), PlayerSpawn.position, Vector3.zero);
                 break;
         }
     }
@@ -491,8 +492,9 @@ public class GameController : MonoBehaviour
     {
         GameObject playerNBody = NUtils.GetNBodyGameObject(player);
 
-        GameObject nBody = Instantiate(NBodyPrefab, Vector3.zero, Quaternion.identity) as GameObject;
-        GameObject enemy = Instantiate(EnemyShipPrefab, Vector3.zero, Quaternion.identity) as GameObject;
+        KeyValuePair<Vector3, Quaternion> spawn = NextEnemySpawn(playerNBody);
+        GameObject nBody = Instantiate(NBodyWithColliderPrefab, EnemyFarSpawn.position, Quaternion.identity) as GameObject;
+        GameObject enemy = Instantiate(EnemyShipPrefab, EnemyNearSpawn.position, Quaternion.identity) as GameObject;
         enemy.GetComponent<EnemyShipController>().gameController = this;
         enemy.GetComponent<NBodyDimensions>().NBody = nBody;
         enemy.GetComponent<NBodyDimensions>().PlayerNBody = playerNBody;
@@ -500,15 +502,15 @@ public class GameController : MonoBehaviour
         GravityEngine.instance.AddBody(nBody);
 
         GameObject enemyModel = enemy.GetComponent<EnemyShipController>().ShipModel;
-        enemyModel.GetComponent<EnemyShip>().StartShip();
         string nameRoot = enemyModel.GetComponent<EnemyShip>().VisibleName;
         enemy.name = string.Format("{0}-{1}", nameRoot, suffix);
         nBody.name = string.Format("NBody {0}-{1}", nameRoot, suffix);
 
-        KeyValuePair < Vector3, Quaternion> spawn = NextEnemySpawn(playerNBody);
+        enemy.transform.rotation = spawn.Value;
         enemy.transform.GetChild(0).transform.rotation = spawn.Value;
         GravityEngine.instance.UpdatePositionAndVelocity(nBody.GetComponent<NBody>(), spawn.Key, Vector3.zero);
 
+        enemyModel.GetComponent<EnemyShip>().StartShip();
         targetDB.AddTarget(enemy, TargetDB.TargetType.ENEMY);
         hudController.AddTargetIndicator(enemy);
     }
@@ -517,7 +519,7 @@ public class GameController : MonoBehaviour
     {
         float scale = NUtils.GetNBodyToModelScale(player);
         Vector3 enemyOffset = (EnemyRandomSpreadMeters/scale) * Random.insideUnitSphere;
-        Vector3 enemySpawnPoint = EnemySpawn.position + enemyOffset;
+        Vector3 enemySpawnPoint = EnemyFarSpawn.position + enemyOffset;
         Quaternion enemyRandomRotation = Quaternion.AngleAxis(Random.Range(0, 360), Random.onUnitSphere);
         Quaternion enemyLookRotation = Quaternion.LookRotation(enemySpawnPoint - playerNBody.transform.position); // facePlayer
         Quaternion enemyOffsetRotation = Quaternion.RotateTowards(enemyLookRotation, enemyRandomRotation, 90f);
@@ -557,7 +559,6 @@ public class GameController : MonoBehaviour
 
     public void EnableOverviewCamera()
     {
-        GameObject playerModel = player.GetComponent<PlayerShipController>().ShipModel;
         OverviewUICamera.enabled = true;
         OverviewNearCamera.enabled = true;
         OverviewFarCamera.enabled = true;
@@ -572,13 +573,13 @@ public class GameController : MonoBehaviour
         RightFarCamera.enabled = false;
         OverShoulderNearCamera.enabled = false;
         OverShoulderFarCamera.enabled = false;
-        OverviewNearCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
-        OverviewFarCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
+        GameObject playerModel = player.GetComponent<PlayerShipController>().ShipModel;
+        OverviewNearCamera.GetComponent<OverviewCameraSpin>().UpdateTarget(playerModel);
+        OverviewFarCamera.GetComponent<OverviewCameraSpin>().UpdateTarget(playerModel);
     }
 
     public void EnableOverShoulderCamera()
     {
-        GameObject playerModel = player.GetComponent<PlayerShipController>().ShipModel;
         UICamera.enabled = true;
         OverShoulderNearCamera.enabled = true;
         OverShoulderFarCamera.enabled = true;
@@ -593,8 +594,9 @@ public class GameController : MonoBehaviour
         OverviewUICamera.enabled = false;
         OverviewNearCamera.enabled = false;
         OverviewFarCamera.enabled = false;
-        OverShoulderNearCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
-        OverShoulderFarCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
+        GameObject playerModel = player.GetComponent<PlayerShipController>().ShipModel;
+        OverShoulderNearCamera.GetComponent<OverviewCameraSpin>().UpdateTarget(playerModel);
+        OverShoulderFarCamera.GetComponent<OverviewCameraSpin>().UpdateTarget(playerModel);
     }
 
     public GameObject GetPlayer()
@@ -777,11 +779,11 @@ public class GameController : MonoBehaviour
         LeftFarCamera.GetComponent<FPSCameraController>().UpdatePlayer(playerModel);
         RightNearCamera.GetComponent<FPSCameraController>().UpdatePlayer(playerModel);
         RightFarCamera.GetComponent<FPSCameraController>().UpdatePlayer(playerModel);
-        OverShoulderNearCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
-        OverShoulderFarCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
+        OverShoulderNearCamera.GetComponent<OverviewCameraSpin>().UpdateTarget(playerModel);
+        OverShoulderFarCamera.GetComponent<OverviewCameraSpin>().UpdateTarget(playerModel);
         //OverviewUICamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
-        OverviewNearCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
-        OverviewFarCamera.GetComponent<OverShoulderCameraSpin>().UpdateTarget(playerModel);
+        OverviewNearCamera.GetComponent<OverviewCameraSpin>().UpdateTarget(playerModel);
+        OverviewFarCamera.GetComponent<OverviewCameraSpin>().UpdateTarget(playerModel);
     }
 
     public void Dock(GameObject ship, GameObject shipDockingPort, GameObject dockGhost, GameObject dockingPort)
