@@ -118,6 +118,7 @@ public class PhysicsUtils : MonoBehaviour {
         Vector3 planeNormal = dockGhostModel.forward;
         Vector3 dockUp = dockGhostModel.up;
         GameObject emptyGO = new GameObject();
+        emptyGO.name = "Dock Planar Virtual Point";
         Vector3 shipModelPoint = source.position;
         emptyGO.transform.position = planeOrigin;
         emptyGO.transform.rotation = Quaternion.LookRotation(planeNormal, dockUp);

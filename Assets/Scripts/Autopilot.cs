@@ -662,6 +662,7 @@ public class Autopilot : MonoBehaviour
         GravityEngine.instance.AddBody(approachNBody);
 
         GameObject approachTarget = new GameObject();
+        approachTarget.name = "Approach Target" + target.name + " For " + gameObject.name;
         NBodyDimensions dim = approachTarget.AddComponent<NBodyDimensions>();
         dim.PlayerNBody = playerNBody;
         dim.NBodyToModelScaleFactor = scale;

@@ -42,7 +42,10 @@ public class NBodyCollision : MonoBehaviour {
     public float explodeOrBounceVelocity = 0;
 
     //! (For a bounce collision) This factor is applied to determine the recoil velocities. 1 indicates no energy loss in the collision.
-    public float bounceFactor = 1f; 
+    public float bounceFactor = 1f;
+
+    public bool Propogate = false;
+    public GameObject PropogateModel;
 
 	private float lastDistance; 
 	private float myRadius;
@@ -95,9 +98,9 @@ public class NBodyCollision : MonoBehaviour {
 			Debug.Log("Collision type " + collisionType + " for " + gameObject.name);
 #pragma warning restore 162
 
-        if (PhysicsUtils.ShouldDock(gameObject, otherBody))
+        if (Propogate && PhysicsUtils.ShouldDock(gameObject, otherBody))
         {
-            PerformDock(gameObject, otherBody);
+            PropogateModel.GetComponent<NBodyPropogatedCollision>().PerformDock(gameObject, otherBody);
         } else if (collisionType == CollisionType.ABSORB_IMMEDIATE) {
 			// as soon as they touch remove colliding object
 			GravityEngine.instance.Collision(otherBodyWithNBody, myBodyWithNBody, collisionType, 0f);
@@ -111,17 +114,40 @@ public class NBodyCollision : MonoBehaviour {
 			GravityEngine.instance.Collision(otherBodyWithNBody, myBodyWithNBody, collisionType, bounceFactor);
 
 		} else if (collisionType == CollisionType.EXPLODE) {
-            ExplodeCollide(otherBody);
-        }
-        else if (collisionType == CollisionType.EXPLODE_OR_BOUNCE)
-        {
-            if (ShouldBounce(otherBody))
+            if (Propogate && PropogateModel != null)
             {
-                GravityEngine.instance.Collision(otherBodyWithNBody, myBodyWithNBody, CollisionType.BOUNCE, bounceFactor);
+                PropogateModel.GetComponent<NBodyPropogatedCollision>().ExplodeCollide(otherBody);
             }
             else
             {
                 ExplodeCollide(otherBody);
+            }
+        }
+        else if (collisionType == CollisionType.EXPLODE_OR_BOUNCE)
+        {
+            bool prop = Propogate && PropogateModel != null;
+            double relVel;
+            if (ShouldBounce(otherBody, out relVel))
+            {
+                if (prop)
+                {
+                    PropogateModel.GetComponent<NBodyPropogatedCollision>().Bounce(otherBody, (float)relVel);
+                }
+                else
+                {
+                    GravityEngine.instance.Collision(otherBodyWithNBody, myBodyWithNBody, CollisionType.BOUNCE, bounceFactor);
+                }
+            }
+            else
+            {
+                if (prop)
+                {
+                    PropogateModel.GetComponent<NBodyPropogatedCollision>().ExplodeCollide(otherBody);
+                }
+                else
+                {
+                    ExplodeCollide(otherBody);
+                }
             }
         }
         else
@@ -157,14 +183,15 @@ public class NBodyCollision : MonoBehaviour {
     }
 
     /* JAB ADD */
-    private bool ShouldBounce(GameObject otherBody)
+    private bool ShouldBounce(GameObject otherBody, out double relV)
     {
         GameObject otherBodyWithNBody = NUtils.GetNBodyGameObject(otherBody);
         GameObject myBodyWithNBody = NUtils.GetNBodyGameObject(transform.gameObject);
         DVector3 deltaV_vec = GravityEngine.instance.GetVelocity(otherBodyWithNBody)
         	- GravityEngine.instance.GetVelocity(myBodyWithNBody);
 		double deltaV = deltaV_vec.magnitude;
-		bouncing =  (deltaV < explodeOrBounceVelocity * GravityEngine.Instance().GetVelocityScale());
+        relV = explodeOrBounceVelocity * GravityEngine.Instance().GetVelocityScale();
+        bouncing =  deltaV < relV;
 		return bouncing;
     }
     /* JAB END */
@@ -284,19 +311,5 @@ public class NBodyCollision : MonoBehaviour {
 		GravityEngine.instance.InactivateBody(myBodyWithNBody);
 		explosionGO.SetActive(true);
 	}
-
-    private void PerformDock(GameObject myNBodyChild, GameObject otherBody)
-    {
-        if (myNBodyChild.tag == "Player")
-        {
-            PlayerShip ship = myNBodyChild.GetComponent<PlayerShip>();
-            ship.Dock(otherBody);
-            // attach ship to dock
-        }
-        else
-        {
-            // do some dock for enemy ships
-        }
-    }
 
 }

@@ -30,6 +30,7 @@ public class OverviewCameraSpin : MonoBehaviour
     {
         boomCamera = GetComponentInChildren<Camera>();
         looker = new GameObject();
+        looker.name = "Overview Camera Looker";
     }
 
     // Update is called once per frame

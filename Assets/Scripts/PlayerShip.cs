@@ -312,39 +312,50 @@ public class PlayerShip : MonoBehaviour, IControllableShip
             float relVel;
             if (!PhysicsUtils.Fused(otherBody) && PhysicsUtils.ShouldBounce(gameObject, otherBody, out relVel))
             {
-                bool shake;
-                if (relVel >= minRelVtoDamage)
-                {
-                    shake = true;
-                    health--;
-                }
-                else if (otherBody.tag != "Dock")
-                {
-                    shake = true;
-                    //PerformDock(otherBody); // called from collider
-                }
-                else
-                {
-                    shake = false;
-                }
-                if (shake)
-                {
-                    nearCameraController.PlayCollisionShake();
-                    farCameraController.PlayCollisionShake();
-                    rearNearCameraController.PlayCollisionShake();
-                    rearFarCameraController.PlayCollisionShake();
-                    leftNearCameraController.PlayCollisionShake();
-                    leftFarCameraController.PlayCollisionShake();
-                    rightNearCameraController.PlayCollisionShake();
-                    rightFarCameraController.PlayCollisionShake();
-                }
+                Bounce(otherBody, relVel);
             }
             else
             {
-                health = 0; // boom
-                GameOverCollision(otherBody.name);
+                ExplodeCollide(otherBody);
             }
         }
+    }
+
+    public void Bounce(GameObject otherBody, float relVel)
+    {
+
+        bool shake;
+        if (relVel >= minRelVtoDamage)
+        {
+            shake = true;
+            health--;
+        }
+        else if (otherBody.tag != "Dock")
+        {
+            shake = true;
+            //PerformDock(otherBody); // called from collider
+        }
+        else
+        {
+            shake = false;
+        }
+        if (shake)
+        {
+            nearCameraController.PlayCollisionShake();
+            farCameraController.PlayCollisionShake();
+            rearNearCameraController.PlayCollisionShake();
+            rearFarCameraController.PlayCollisionShake();
+            leftNearCameraController.PlayCollisionShake();
+            leftFarCameraController.PlayCollisionShake();
+            rightNearCameraController.PlayCollisionShake();
+            rightFarCameraController.PlayCollisionShake();
+        }
+    }
+
+    public void ExplodeCollide(GameObject otherBody)
+    {
+        health = 0; // boom
+        GameOverCollision(otherBody.name);
     }
 
     public void Dock(GameObject dockModel, bool withSound = true)

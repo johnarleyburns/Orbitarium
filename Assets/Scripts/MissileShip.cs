@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class MissileShip : MonoBehaviour
+public class MissileShip : MonoBehaviour, IControllableShip
 {
 
     public GameController gameController;
@@ -63,10 +63,25 @@ public class MissileShip : MonoBehaviour
     {
         if (gameController != null)
         {
-            ShipExplosion.GetComponent<ParticleSystem>().Play();
-            gameObject.SetActive(false);
-            gameController.DestroyMissileByCollision(transform.parent.gameObject);
+            ExplodeCollide(null);
         }
+    }
+
+    public void Bounce(GameObject otherBody, float relVel)
+    {
+        ExplodeCollide(otherBody);
+    }
+
+    public void ExplodeCollide(GameObject otherBody)
+    {
+        ShipExplosion.GetComponent<ParticleSystem>().Play();
+        gameObject.SetActive(false);
+        gameController.DestroyMissileByCollision(transform.parent.gameObject);
+    }
+
+    public void Dock(GameObject dockModel, bool withSound = true)
+    {
+        Debug.LogWarning("Dock MissileShip not implemented");
     }
 
     private void UpdateGoal()

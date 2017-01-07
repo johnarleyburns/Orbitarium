@@ -41,20 +41,34 @@ public class EnemyShip : MonoBehaviour, IControllableShip {
             float relVel;
             if (!PhysicsUtils.Fused(otherBody) && PhysicsUtils.ShouldBounce(gameObject, otherBody, out relVel))
             {
-//                gameController.FPSCamera.GetComponent<FPSCameraController>().PlayMainEngineShake();
-                if (relVel >= minRelVtoDamage)
-                {
-                    health--;
-                }
+                Bounce(otherBody, relVel);
             }
             else
             {
-                health = 0; // boom
-                ShipExplosion.GetComponent<ParticleSystem>().Play();
-                gameObject.SetActive(false);
-                gameController.DestroyEnemyShipByCollision(transform.parent.gameObject);
+                ExplodeCollide(otherBody);
             }
         }
+    }
+
+    public void Bounce(GameObject otherBody, float relVel)
+    {
+        if (relVel >= minRelVtoDamage)
+        {
+            health--;
+        }
+    }
+
+    public void ExplodeCollide(GameObject otherBody)
+    {
+        health = 0; // boom
+        ShipExplosion.GetComponent<ParticleSystem>().Play();
+        gameObject.SetActive(false);
+        gameController.DestroyEnemyShipByCollision(transform.parent.gameObject);
+    }
+
+    public void Dock(GameObject dockModel, bool withSound = true)
+    {
+        Debug.LogWarning("EnemyShip Dock not implemented");
     }
 
     private void UpdateGoal()

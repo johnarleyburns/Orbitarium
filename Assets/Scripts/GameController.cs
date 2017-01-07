@@ -432,15 +432,19 @@ public class GameController : MonoBehaviour
         DestroyPlayer();
         GameObject nBody = Instantiate(NBodyWithColliderPrefab, PlayerFarSpawn.position, Quaternion.identity) as GameObject;
         player = Instantiate(PlayerShipPrefab, Vector3.zero, Quaternion.identity) as GameObject;
+        GameObject playerModel = player.GetComponent<PlayerShipController>().ShipModel;
+
         player.GetComponent<PlayerShipController>().gameController = this;
         player.GetComponent<NBodyDimensions>().NBody = nBody;
         player.GetComponent<NBodyDimensions>().PlayerNBody = nBody;
         player.GetComponent<PlayerShipController>().NBodyDimensions = player.GetComponent<NBodyDimensions>();
         player.transform.GetChild(0).transform.rotation = PlayerFarSpawn.rotation;
-        GravityEngine.instance.AddBody(nBody);
+        nBody.transform.GetChild(0).GetComponent<NBodyCollision>().Propogate = true;
+        nBody.transform.GetChild(0).GetComponent<NBodyCollision>().PropogateModel = playerModel;
         nBody.name = "NBody " + player.name;
 
-        GameObject playerModel = player.GetComponent<PlayerShipController>().ShipModel;
+        GravityEngine.instance.AddBody(nBody);
+        
         SetupCameras(playerModel);
         playerModel.GetComponent<PlayerShip>().StartShip();
 
@@ -495,13 +499,17 @@ public class GameController : MonoBehaviour
         KeyValuePair<Vector3, Quaternion> spawn = NextEnemySpawn(playerNBody);
         GameObject nBody = Instantiate(NBodyWithColliderPrefab, EnemyFarSpawn.position, Quaternion.identity) as GameObject;
         GameObject enemy = Instantiate(EnemyShipPrefab, EnemyNearSpawn.position, Quaternion.identity) as GameObject;
+        GameObject enemyModel = enemy.GetComponent<EnemyShipController>().ShipModel;
+
         enemy.GetComponent<EnemyShipController>().gameController = this;
         enemy.GetComponent<NBodyDimensions>().NBody = nBody;
         enemy.GetComponent<NBodyDimensions>().PlayerNBody = playerNBody;
         enemy.GetComponent<EnemyShipController>().NBodyDimensions = player.GetComponent<NBodyDimensions>();
+        nBody.transform.GetChild(0).GetComponent<NBodyCollision>().Propogate = true;
+        nBody.transform.GetChild(0).GetComponent<NBodyCollision>().PropogateModel = enemyModel;
+
         GravityEngine.instance.AddBody(nBody);
 
-        GameObject enemyModel = enemy.GetComponent<EnemyShipController>().ShipModel;
         string nameRoot = enemyModel.GetComponent<EnemyShip>().VisibleName;
         enemy.name = string.Format("{0}-{1}", nameRoot, suffix);
         nBody.name = string.Format("NBody {0}-{1}", nameRoot, suffix);
