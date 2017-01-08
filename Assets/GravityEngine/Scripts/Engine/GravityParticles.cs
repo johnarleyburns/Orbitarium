@@ -413,7 +413,7 @@ public class GravityParticles : MonoBehaviour {
 								if (oneTimeBurst) {
 									r[j,0] = OUT_OF_VIEW;
 								} else {
-									particles[j].lifetime = 0;
+									particles[j].remainingLifetime = 0;
 								}
 								continue;
 							}					
@@ -474,7 +474,7 @@ public class GravityParticles : MonoBehaviour {
 			log += " is Stopped " + gravityParticles.isStopped + " num=" + gravityParticles.particleCount + " pcount=" + particleCount + "\n";
 			int logTo = (gravityParticles.maxParticles < 10) ? gravityParticles.maxParticles : 10;
 			for (int i=0; i < logTo; i++) {
-				log += string.Format("{0}  rand={1} life={2} inactive={3} ", i, particles[i].randomSeed, particles[i].lifetime, inactive[i]);
+				log += string.Format("{0}  rand={1} life={2} inactive={3} ", i, particles[i].randomSeed, particles[i].remainingLifetime, inactive[i]);
 				log += " pos=" + particles[i].position ;
 				log += " phyPos= " + r[i,0] + " " + r[i,1] + " " + r[i,2];
 				log += "\n";
