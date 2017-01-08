@@ -82,6 +82,7 @@ public class HUDController : MonoBehaviour, IPropertyChangeObserver
     {
         int indicatorId = targetIndicatorId[target];
         bool isSelectedTarget = target == selectedTarget;
+        TargetDB.TargetType targetType = gameController.TargetData().GetTargetType(target);
         GameObject targetNBody = NUtils.GetNBodyGameObject(target);
         bool calcRelV = targetNBody != null;
         if (calcRelV)
@@ -90,7 +91,9 @@ public class HUDController : MonoBehaviour, IPropertyChangeObserver
             float targetRelV;
             Vector3 targetRelVUnitVec;
             PhysicsUtils.CalcRelV(gameController.GetPlayer(), target, out targetVec, out targetRelV, out targetRelVUnitVec);
-            float targetDist = targetVec.magnitude;
+            float distToCenter = targetVec.magnitude;
+            float radius = gameController.TargetData().GetTargetRadius(target);
+            float targetDist = distToCenter - radius;
             if (isSelectedTarget)
             {
                 UpdateSelectedTargetIndicator(targetDist, targetRelV);
