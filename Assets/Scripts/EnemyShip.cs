@@ -52,6 +52,8 @@ public class EnemyShip : MonoBehaviour, IControllableShip {
 
     public void Bounce(GameObject otherBody, float relVel)
     {
+        Vector3 relV = PhysicsUtils.CalcRelV(transform, otherBody);
+        ship.ApplyImpulse(-relV.normalized, relVel, 1);
         if (relVel >= minRelVtoDamage)
         {
             health--;

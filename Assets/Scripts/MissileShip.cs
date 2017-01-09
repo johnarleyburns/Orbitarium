@@ -5,6 +5,7 @@ public class MissileShip : MonoBehaviour, IControllableShip
 {
 
     public GameController gameController;
+    public GameObject NBodyMissilePrefab;
     public GameObject ShipExplosion;
     public float MissileEjectV = 5f;
 
@@ -45,17 +46,39 @@ public class MissileShip : MonoBehaviour, IControllableShip
 
     private IEnumerator FireMissileCo()
     {
-        GameObject nBody = NUtils.GetNBodyGameObject(gameObject);
-        GameObject parent = nBody.transform.parent.gameObject;
-        nBody.transform.parent = null;
-        Vector3 pos = nBody.transform.position;
-        Vector3 vel = GravityEngine.instance.GetVelocity(NUtils.GetNBodyGameObject(parent)).ToVector3();
-        GravityEngine.instance.UpdatePositionAndVelocity(nBody.GetComponent<NBody>(), pos, vel);
-        GravityEngine.instance.ActivateBody(nBody);
-        GravityEngine.instance.ApplyImpulse(nBody.GetComponent<NBody>(), MissileEjectV * nBody.transform.forward);
-        yield return new WaitForSeconds(1);
-        capsuleCollider.enabled = true;
+        GameObject attachmentSlot = transform.parent.gameObject;
+        NBodyDimensions shipDim = NUtils.GetNBodyDimensions(attachmentSlot.transform.parent.gameObject);
+        //Vector3 attachmentCenter = attachmentSlot.transform.position;
+        //Vector3 shipCenter = shipDim.transform.position;
+        //Vector3 awayFromShip = (attachmentCenter - shipCenter).normalized;
+        Vector3 awayFromShip = shipDim.transform.forward;
+
+        GameObject shipNBody = shipDim.NBody;
+        DVector3 shipNBodyPos;
+        GravityEngine.instance.GetPosition(shipNBody.GetComponent<NBody>(), out shipNBodyPos);
+        DVector3 farAttachmentPos = shipNBodyPos + new DVector3(awayFromShip) / shipDim.NBodyToModelScaleFactor;
+
+        GameObject nBody = Instantiate(NBodyMissilePrefab, farAttachmentPos.ToVector3(), Quaternion.identity) as GameObject;
+
+        NBodyDimensions missileDim = NUtils.GetNBodyDimensions(gameObject);
+        GameObject playerNBody = NUtils.GetNBodyGameObject(gameController.GetPlayer());
+        missileDim.transform.parent = null;
+        missileDim.NBody = nBody;
+        missileDim.PlayerNBody = playerNBody;
+        nBody.transform.GetChild(0).GetComponent<NBodyCollision>().Propogate = true;
+        nBody.transform.GetChild(0).GetComponent<NBodyCollision>().PropogateModel = gameObject;
+        nBody.name = string.Format("NBody {0}", name);
+        DVector3 shipVel = GravityEngine.instance.GetVelocity(shipNBody);
+        DVector3 missileVel = shipVel; // + new DVector3(MissileEjectV * awayFromShip) / shipDim.NBodyToModelScaleFactor;
+
+        GravityEngine.instance.AddBody(nBody);
+        GravityEngine.instance.UpdatePositionAndVelocity(nBody.GetComponent<NBody>(), farAttachmentPos, missileVel);
+        ship.NBodyDimensions = missileDim;
+        ship.ApplyImpulse(nBody.transform.forward, MissileEjectV, 1);
         currentGoalCommand = Autopilot.Command.INTERCEPT;
+        yield return new WaitForSeconds(3f);
+        nBody.transform.GetChild(0).GetComponent<SphereCollider>().enabled = true;
+        //capsuleCollider.enabled = true;
         yield break;
     }
 
@@ -74,8 +97,9 @@ public class MissileShip : MonoBehaviour, IControllableShip
 
     public void ExplodeCollide(GameObject otherBody)
     {
+        NBodyDimensions dim = NUtils.GetNBodyDimensions(gameObject);
         ShipExplosion.GetComponent<ParticleSystem>().Play();
-        gameObject.SetActive(false);
+        gameController.DestroyMissileByCollision(dim.NBody);
         gameController.DestroyMissileByCollision(transform.parent.gameObject);
     }
 

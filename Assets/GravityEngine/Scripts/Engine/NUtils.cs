@@ -117,7 +117,7 @@ public class NUtils {
         }
     }
 
-    private static NBodyDimensions GetNBodyDimensions(GameObject body)
+    public static NBodyDimensions GetNBodyDimensions(GameObject body)
     {
         NBodyDimensions d = body.GetComponent<NBodyDimensions>();
         while (d == null && body.transform.parent != null)

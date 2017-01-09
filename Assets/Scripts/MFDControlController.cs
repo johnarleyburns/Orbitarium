@@ -537,6 +537,8 @@ public class MFDControlController : IPropertyChangeObserver
         toggleMap[RotToggle.KILL].isToggled = false;
     }
 
+    private bool warnedLow = false;
+
     private void HandleFuelPropertyChanged(string name, object value)
     {
         switch (name)
@@ -547,7 +549,10 @@ public class MFDControlController : IPropertyChangeObserver
                 break;
             case "FuelRemainingText":
                 FuelRemainingText.text = value as string;
-                if (gameController.GetPlayerShip().IsLowFuel()) { Speak(DialogText.LowFuel); }
+                if (!warnedLow && gameController.GetPlayerShip().IsLowFuel()) {
+                    Speak(DialogText.LowFuel);
+                    warnedLow = true;
+                }
                 break;
         }
     }

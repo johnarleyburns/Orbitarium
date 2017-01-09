@@ -98,7 +98,13 @@ public class NBodyCollision : MonoBehaviour {
 			Debug.Log("Collision type " + collisionType + " for " + gameObject.name);
 #pragma warning restore 162
 
-        if (Propogate && PhysicsUtils.ShouldDock(gameObject, otherBody))
+        bool prop = Propogate && PropogateModel != null;
+        GameObject otherChild = otherBodyWithNBody.transform.GetChild(0).gameObject;
+        NBodyCollision otherCol = otherChild == null ? null : otherChild.GetComponent<NBodyCollision>();
+        GameObject otherPropModel = otherCol != null && otherCol.Propogate && otherCol.PropogateModel != null ? otherCol.PropogateModel : null;
+        bool otherProp = otherPropModel != null;
+                
+        if (prop && PhysicsUtils.ShouldDock(gameObject, otherBody))
         {
             PropogateModel.GetComponent<NBodyPropogatedCollision>().PerformDock(gameObject, otherBody);
         } else if (collisionType == CollisionType.ABSORB_IMMEDIATE) {
@@ -112,28 +118,35 @@ public class NBodyCollision : MonoBehaviour {
 
 		} else if (collisionType == CollisionType.BOUNCE) {
 			GravityEngine.instance.Collision(otherBodyWithNBody, myBodyWithNBody, collisionType, bounceFactor);
-
-		} else if (collisionType == CollisionType.EXPLODE) {
-            if (Propogate && PropogateModel != null)
+        }
+        else if (collisionType == CollisionType.EXPLODE) {
+            if (prop)
             {
                 PropogateModel.GetComponent<NBodyPropogatedCollision>().ExplodeCollide(otherBody);
             }
-            else
+            if (otherProp)
+            {
+                otherPropModel.GetComponent<NBodyPropogatedCollision>().ExplodeCollide(myBodyWithNBody);
+            }
+            if (!prop && !otherProp)
             {
                 ExplodeCollide(otherBody);
             }
         }
         else if (collisionType == CollisionType.EXPLODE_OR_BOUNCE)
         {
-            bool prop = Propogate && PropogateModel != null;
             double relVel;
             if (ShouldBounce(otherBody, out relVel))
             {
                 if (prop)
                 {
-                    PropogateModel.GetComponent<NBodyPropogatedCollision>().Bounce(otherBody, (float)relVel);
+                    PropogateModel.GetComponent<NBodyPropogatedCollision>().Bounce(otherBody, (float)relVel * bounceFactor);
                 }
-                else
+                if (otherProp)
+                {
+                    otherPropModel.GetComponent<NBodyPropogatedCollision>().Bounce(myBodyWithNBody, (float)relVel * bounceFactor);
+                }
+                if (!prop && !otherProp)
                 {
                     GravityEngine.instance.Collision(otherBodyWithNBody, myBodyWithNBody, CollisionType.BOUNCE, bounceFactor);
                 }
@@ -144,7 +157,11 @@ public class NBodyCollision : MonoBehaviour {
                 {
                     PropogateModel.GetComponent<NBodyPropogatedCollision>().ExplodeCollide(otherBody);
                 }
-                else
+                if (otherProp)
+                {
+                    otherPropModel.GetComponent<NBodyPropogatedCollision>().ExplodeCollide(myBodyWithNBody);
+                }
+                if (!prop && !otherProp)
                 {
                     ExplodeCollide(otherBody);
                 }
@@ -190,7 +207,7 @@ public class NBodyCollision : MonoBehaviour {
         DVector3 deltaV_vec = GravityEngine.instance.GetVelocity(otherBodyWithNBody)
         	- GravityEngine.instance.GetVelocity(myBodyWithNBody);
 		double deltaV = deltaV_vec.magnitude;
-        relV = explodeOrBounceVelocity * GravityEngine.Instance().GetVelocityScale();
+        relV = explodeOrBounceVelocity; // scale factor
         bouncing =  deltaV < relV;
 		return bouncing;
     }

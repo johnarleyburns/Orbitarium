@@ -31,6 +31,10 @@ public class GameController : MonoBehaviour
     public Camera OverviewFarCamera;
     public GameObject ReferenceBody;
     public GameObject ReferenceBodyTarget;
+    public GameObject ReferenceBodyMoon;
+    public GameObject ReferenceBodyMoonTarget;
+    public Vector3 ReferenceBodyMoonPosition;
+    public Vector3 ReferenceBodyMoonVelocity;
     //public GameObject Didymos;
     //public GameObject Didymoon;
     //public GameObject EezoDock;
@@ -303,7 +307,7 @@ public class GameController : MonoBehaviour
         musicController.GameOverMusic.Stop();
         CleanupScene();
         //FIXME always have base menu screen scene
-        SceneManager.UnloadScene(SceneManager.GetActiveScene().name);
+        //SceneManager.UnloadScene(SceneManager.GetActiveScene().name);
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
@@ -427,37 +431,6 @@ public class GameController : MonoBehaviour
         return gameState == GameState.RUNNING;
     }
 
-    private void InstantiatePlayer()
-    {
-        DestroyPlayer();
-        GameObject nBody = Instantiate(NBodyWithColliderPrefab, PlayerFarSpawn.position, Quaternion.identity) as GameObject;
-        player = Instantiate(PlayerShipPrefab, Vector3.zero, Quaternion.identity) as GameObject;
-        GameObject playerModel = player.GetComponent<PlayerShipController>().ShipModel;
-
-        player.GetComponent<PlayerShipController>().gameController = this;
-        player.GetComponent<NBodyDimensions>().NBody = nBody;
-        player.GetComponent<NBodyDimensions>().PlayerNBody = nBody;
-        player.GetComponent<PlayerShipController>().NBodyDimensions = player.GetComponent<NBodyDimensions>();
-        player.transform.GetChild(0).transform.rotation = PlayerFarSpawn.rotation;
-        nBody.transform.GetChild(0).GetComponent<NBodyCollision>().Propogate = true;
-        nBody.transform.GetChild(0).GetComponent<NBodyCollision>().PropogateModel = playerModel;
-        nBody.name = "NBody " + player.name;
-
-        GravityEngine.instance.AddBody(nBody);
-        
-        SetupCameras(playerModel);
-        playerModel.GetComponent<PlayerShip>().StartShip();
-
-        switch (StartMode)
-        {
-            case PlayerStartMode.DOCKED:
-                //GetPlayerShip().Dock(EezoDockingPort.transform.GetChild(0).gameObject, false);
-                break;
-            case PlayerStartMode.SPAWN:               
-                break;
-        }
-    }
-
     public enum PlayerStartMode
     {
         SPAWN,
@@ -476,11 +449,13 @@ public class GameController : MonoBehaviour
     private void SetupInitialVelocities()
     {
         float playerImpulse = Random.Range(0, PlayerInitialImpulse);
-        player.GetComponent<PlayerShipController>().ShipModel.GetComponent<RocketShip>().ApplyImpulse(player.transform.forward, playerImpulse, 1);
+        Vector3 playerRelV = playerImpulse * player.transform.forward;
+        player.GetComponent<PlayerShipController>().ShipModel.GetComponent<RocketShip>().ApplyImpulse(playerRelV.normalized, playerRelV.magnitude, 1);
         foreach (GameObject enemyShip in targetDB.GetTargets(TargetDB.TargetType.ENEMY))
         {
             float enemyImpulse = Random.Range(0.1f * EnemyInitialImpulse, EnemyInitialImpulse);
-            enemyShip.GetComponent<EnemyShipController>().ShipModel.GetComponent<RocketShip>().ApplyImpulse(enemyShip.transform.forward, enemyImpulse, 1);
+            Vector3 enemyRelV = enemyImpulse * enemyShip.transform.forward;
+            enemyShip.GetComponent<EnemyShipController>().ShipModel.GetComponent<RocketShip>().ApplyImpulse(enemyRelV.normalized, enemyRelV.magnitude, 1);
         }
     }
 
@@ -492,14 +467,50 @@ public class GameController : MonoBehaviour
         }
     }
 
+    private void InstantiatePlayer()
+    {
+        DestroyPlayer();
+        GameObject nBody = Instantiate(NBodyWithColliderPrefab, PlayerFarSpawn.position, Quaternion.identity) as GameObject;
+        player = Instantiate(PlayerShipPrefab, Vector3.zero, Quaternion.identity) as GameObject;
+        GameObject playerModel = player.GetComponent<PlayerShipController>().ShipModel;
+
+        player.GetComponent<PlayerShipController>().gameController = this;
+        player.GetComponent<NBodyDimensions>().NBody = nBody;
+        player.GetComponent<NBodyDimensions>().PlayerNBody = nBody;
+        player.GetComponent<PlayerShipController>().NBodyDimensions = player.GetComponent<NBodyDimensions>();
+        player.transform.GetChild(0).transform.rotation = PlayerFarSpawn.rotation;
+        nBody.transform.GetChild(0).GetComponent<NBodyCollision>().Propogate = true;
+        nBody.transform.GetChild(0).GetComponent<NBodyCollision>().PropogateModel = playerModel;
+        nBody.name = "NBody " + player.name;
+
+        GravityEngine.instance.AddBody(nBody);
+        GravityEngine.instance.UpdatePositionAndVelocity(nBody.GetComponent<NBody>(), PlayerFarSpawn.position, ReferenceBodyMoonVelocity);
+
+        SetupCameras(playerModel);
+        playerModel.GetComponent<PlayerShip>().StartShip();
+
+        switch (StartMode)
+        {
+            case PlayerStartMode.DOCKED:
+                //GetPlayerShip().Dock(EezoDockingPort.transform.GetChild(0).gameObject, false);
+                break;
+            case PlayerStartMode.SPAWN:
+                break;
+        }
+    }
+
     private void InstantiateEnemy(string suffix)
     {
         GameObject playerNBody = NUtils.GetNBodyGameObject(player);
 
-        KeyValuePair<Vector3, Quaternion> spawn = NextEnemySpawn(playerNBody);
-        GameObject nBody = Instantiate(NBodyWithColliderPrefab, EnemyFarSpawn.position, Quaternion.identity) as GameObject;
-        GameObject enemy = Instantiate(EnemyShipPrefab, EnemyNearSpawn.position, Quaternion.identity) as GameObject;
+        DVector3 farPos;
+        Vector3 nearPos;
+        Quaternion rot;
+        NextEnemySpawn(playerNBody, out farPos, out nearPos, out rot);
+        GameObject nBody = Instantiate(NBodyWithColliderPrefab, farPos.ToVector3(), Quaternion.identity) as GameObject;
+        GameObject enemy = Instantiate(EnemyShipPrefab, nearPos, Quaternion.identity) as GameObject;
         GameObject enemyModel = enemy.GetComponent<EnemyShipController>().ShipModel;
+        string nameRoot = enemyModel.GetComponent<EnemyShip>().VisibleName;
 
         enemy.GetComponent<EnemyShipController>().gameController = this;
         enemy.GetComponent<NBodyDimensions>().NBody = nBody;
@@ -507,32 +518,41 @@ public class GameController : MonoBehaviour
         enemy.GetComponent<EnemyShipController>().NBodyDimensions = player.GetComponent<NBodyDimensions>();
         nBody.transform.GetChild(0).GetComponent<NBodyCollision>().Propogate = true;
         nBody.transform.GetChild(0).GetComponent<NBodyCollision>().PropogateModel = enemyModel;
-
-        GravityEngine.instance.AddBody(nBody);
-
-        string nameRoot = enemyModel.GetComponent<EnemyShip>().VisibleName;
         enemy.name = string.Format("{0}-{1}", nameRoot, suffix);
         nBody.name = string.Format("NBody {0}-{1}", nameRoot, suffix);
 
-        enemy.transform.rotation = spawn.Value;
-        enemy.transform.GetChild(0).transform.rotation = spawn.Value;
-        GravityEngine.instance.UpdatePositionAndVelocity(nBody.GetComponent<NBody>(), spawn.Key, Vector3.zero);
+        GravityEngine.instance.AddBody(nBody);
+
+        enemy.transform.rotation = rot;
+        enemy.transform.GetChild(0).transform.rotation = rot;
+        GravityEngine.instance.UpdatePositionAndVelocity(nBody.GetComponent<NBody>(), farPos.ToVector3(), ReferenceBodyMoonVelocity);
 
         enemyModel.GetComponent<EnemyShip>().StartShip();
         targetDB.AddTarget(enemy, TargetDB.TargetType.ENEMY);
         hudController.AddTargetIndicator(enemy);
     }
 
-    private KeyValuePair<Vector3, Quaternion> NextEnemySpawn(GameObject playerNBody)
+    private void NextEnemySpawn(GameObject playerNBody, out DVector3 farPos, out Vector3 nearPos, out Quaternion rot)
     {
-        float scale = NUtils.GetNBodyToModelScale(player);
-        Vector3 enemyOffset = (EnemyRandomSpreadMeters/scale) * Random.insideUnitSphere;
-        Vector3 enemySpawnPoint = EnemyFarSpawn.position + enemyOffset;
+        double scale = NUtils.GetNBodyToModelScale(player);
+        DVector3 enemyOffset = (EnemyRandomSpreadMeters/scale) * new DVector3(Random.insideUnitSphere);
+        DVector3 enemySpawnPoint = new DVector3(EnemyFarSpawn.position) + enemyOffset;
+
+        DVector3 playerPos;
+        GravityEngine.instance.GetPosition(playerNBody.GetComponent<NBody>(), out playerPos);
+
+        DVector3 farOffset = enemySpawnPoint - playerPos;
+        DVector3 nearScaledOffset = scale * farOffset;
+        Vector3 near = nearScaledOffset.ToVector3();
+
         Quaternion enemyRandomRotation = Quaternion.AngleAxis(Random.Range(0, 360), Random.onUnitSphere);
-        Quaternion enemyLookRotation = Quaternion.LookRotation(enemySpawnPoint - playerNBody.transform.position); // facePlayer
+        Quaternion enemyLookRotation = Quaternion.LookRotation((enemySpawnPoint - playerPos).ToVector3()); // facePlayer
         Quaternion enemyOffsetRotation = Quaternion.RotateTowards(enemyLookRotation, enemyRandomRotation, 90f);
         Quaternion enemySpawnRotation = enemyOffsetRotation * enemyLookRotation;
-        return new KeyValuePair<Vector3, Quaternion>(enemySpawnPoint, enemySpawnRotation);
+
+        farPos = enemySpawnPoint;
+        nearPos = near;
+        rot = enemySpawnRotation;
     }
 
     public void EnableFPSCamera()
@@ -683,14 +703,26 @@ public class GameController : MonoBehaviour
         GravityEngine.instance.AddBody(ReferenceBody);
         targetDB.AddTarget(ReferenceBodyTarget, TargetDB.TargetType.PLANET);
         hudController.AddTargetIndicator(ReferenceBodyTarget);
+
+
+        ReferenceBodyMoonTarget.GetComponent<NBodyDimensions>().PlayerNBody = NUtils.GetNBodyGameObject(player);
+        ReferenceBodyMoonTarget.GetComponent<NBodyDimensions>().NBody = ReferenceBodyMoon;
+        GravityEngine.instance.AddBody(ReferenceBodyMoon);
+        GravityEngine.instance.UpdatePositionAndVelocity(
+            NUtils.GetNBodyGameObject(ReferenceBodyMoon).GetComponent<NBody>(),
+            new DVector3(ReferenceBodyMoonPosition),
+            new DVector3(ReferenceBodyMoonVelocity)); 
+        targetDB.AddTarget(ReferenceBodyMoonTarget, TargetDB.TargetType.MOON);
+        hudController.AddTargetIndicator(ReferenceBodyMoonTarget);
+        
         /*
-        targetDB.AddTarget(Didymos, TargetDB.TargetType.ASTEROID);
-        targetDB.AddTarget(Didymoon, TargetDB.TargetType.MOON);
-        targetDB.AddTarget(EezoDock, TargetDB.TargetType.DOCK);
-        hudController.AddTargetIndicator(Didymos);
-        hudController.AddTargetIndicator(Didymoon);
-        hudController.AddTargetIndicator(EezoDock);
-        */
+                targetDB.AddTarget(Didymos, TargetDB.TargetType.ASTEROID);
+                targetDB.AddTarget(Didymoon, TargetDB.TargetType.MOON);
+                targetDB.AddTarget(EezoDock, TargetDB.TargetType.DOCK);
+                hudController.AddTargetIndicator(Didymos);
+                hudController.AddTargetIndicator(Didymoon);
+                hudController.AddTargetIndicator(EezoDock);
+                */
     }
 
     private void AddHUDFixedIndicators()
@@ -752,9 +784,7 @@ public class GameController : MonoBehaviour
             hudController.RemoveIndicator(ship.transform);
             targetDB.RemoveTarget(ship);
             hudController.SelectNextTargetPreferClosestEnemy();
-            //GravityEngine.instance.RemoveBody(ship);     
-            //Destroy(ship);
-            GravityEngine.instance.InactivateBody(ship);
+            GravityEngine.instance.InactivateBody(NUtils.GetNBodyGameObject(ship));
             ship.SetActive(false);
         }
     }

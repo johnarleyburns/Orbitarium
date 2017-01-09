@@ -73,10 +73,6 @@ public class ShipWeapons : MonoBehaviour {
                 missile.transform.GetChild(1).transform.localRotation = Quaternion.identity;
                 missile.GetComponent<MissileShipController>().SetGameController(gameController);
                 MissileSlots[missileSlotPosition] = missile;
-                //if (!isPlayer) { // no autodetect 
-                //    GravityEngine.instance.AddBody(missile);
-                //    GravityEngine.instance.InactivateBody(missile);
-                //}
             }
             i++;
         }

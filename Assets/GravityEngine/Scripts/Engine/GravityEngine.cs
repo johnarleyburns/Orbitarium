@@ -969,7 +969,8 @@ public class GravityEngine : MonoBehaviour {
 				if (nbody1.mass == 0) {
 					if (nbody1.engineRef.bodyType == BodyType.MASSLESS) {
 						DVector3 vel1_ml = masslessEngine.GetVelocity(body1);
-						masslessEngine.SetVelocity(body1, -1d*vel1_ml);
+//                        GravityEngine.instance.ApplyImpulse(nbody1, -1d * vel1_ml / 1000d);
+						masslessEngine.SetVelocityAtIndex(index1, -1d*vel1_ml);
 					} else {
 						DVector3 vel1_m = integrator.GetVelocityForIndex(index1);
 						integrator.SetVelocityForIndex(index1, -1d*vel1_m);
@@ -978,10 +979,12 @@ public class GravityEngine : MonoBehaviour {
 				if (nbody2.mass == 0) {
 					if (nbody2.engineRef.bodyType == BodyType.MASSLESS) {
 						DVector3 vel2_ml = masslessEngine.GetVelocity(body2);
-						masslessEngine.SetVelocity(body1, vel2_ml);
-					} else {
+//                        GravityEngine.instance.ApplyImpulse(nbody2, -1d * vel2_ml / 1000d);
+                        						masslessEngine.SetVelocityAtIndex(index2, -1d*vel2_ml);
+                    }
+                    else {
 						DVector3 vel2_m = integrator.GetVelocityForIndex(index2);
-						integrator.SetVelocityForIndex(index1, -1d*vel2_m);
+						integrator.SetVelocityForIndex(index2, -1d*vel2_m);
 					}
 				}
 			}
