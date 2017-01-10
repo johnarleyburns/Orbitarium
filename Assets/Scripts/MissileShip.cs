@@ -76,7 +76,7 @@ public class MissileShip : MonoBehaviour, IControllableShip
         GravityEngine.instance.AddBody(nBody);
         GravityEngine.instance.UpdatePositionAndVelocity(nBody.GetComponent<NBody>(), farAttachmentPos, missileVel);
         ship.NBodyDimensions = missileDim;
-        ship.ApplyImpulse(nBody.transform.forward, MissileEjectV, 1);
+        ship.ApplyImpulse(transform.forward, MissileEjectV, 1);
         currentGoalCommand = Autopilot.Command.INTERCEPT;
         yield return new WaitForSeconds(MissileArmSec);
         nBody.transform.GetChild(0).GetComponent<SphereCollider>().enabled = true;
@@ -99,8 +99,26 @@ public class MissileShip : MonoBehaviour, IControllableShip
 
     public void ExplodeCollide(GameObject otherBody)
     {
-        NBodyDimensions dim = NUtils.GetNBodyDimensions(gameObject);
         ShipExplosion.GetComponent<ParticleSystem>().Play();
+        if (otherBody == null) // self destruct
+        {
+            StartCoroutine(SelfDestructCo());
+        }
+        else
+        {
+            Destruct();
+        }
+    }
+
+    private IEnumerator SelfDestructCo()
+    {
+        yield return new WaitForSeconds(3);
+        Destruct();
+    }
+
+    private void Destruct()
+    {
+        NBodyDimensions dim = NUtils.GetNBodyDimensions(gameObject);
         gameController.DestroyMissileByCollision(dim.NBody);
         gameController.DestroyMissileByCollision(transform.parent.gameObject);
     }

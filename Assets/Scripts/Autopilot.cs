@@ -914,19 +914,6 @@ public class Autopilot : MonoBehaviour
         return t;
     }
 
-    private float CalcSpeedupSec(GameObject target)
-    {
-        float maxDeltaV = CalcMainEngineMaxDeltaV();
-        float secMaxdV = CalcDeltaVMainBurnSec(maxDeltaV);
-        float dist;
-        PhysicsUtils.CalcDistance(gameObject, target, out dist);
-        float maxSpeedupDist = 0.1f * dist;
-        float secMaxSpeedup = Mathf.Sqrt(2f * maxSpeedupDist / ship.CurrentMainEngineAccPerSec());
-        float secMinSpeedup = ship.CurrentAuxAccPerSec() / MinInterceptV;
-        float sec = Mathf.Max(Mathf.Min(secMaxdV, secMaxSpeedup), secMinSpeedup);
-        return sec;
-    }
-
     IEnumerator APNGSpeedupCo(GameObject target, float sec)
     {
         yield return PushAndStartCoroutine(FaceTargetCo(target));
@@ -935,16 +922,25 @@ public class Autopilot : MonoBehaviour
         PopCoroutine();
     }
 
-    private float MinInterceptV = 30f;
+    private float SidewinderBurnTime = 2f;
 
     IEnumerator APNGToTargetCo(GameObject target, CompletedCallback callback)
     {
 
-
+        ship.MainEngineBurst(SidewinderBurnTime);
         for (;;)
         {
-            if (!gameController.TargetData().HasTarget(target))
+            Vector3 targetVec;
+            float relv;
+            Vector3 relVelUnit;
+            PhysicsUtils.CalcRelV(gameObject, target, out targetVec, out relv, out relVelUnit);
+            bool lostTarget = !gameController.TargetData().HasTarget(target);
+            bool lowFuel = ship.NormalizedFuel() < 0.01f;
+            bool wrongDirectionAfterBurn = !ship.IsMainEngineGo() && relv < 0;
+            if (lostTarget || lowFuel || wrongDirectionAfterBurn)
             {
+                ship.CutoffAll();
+                ship.GetComponent<MissileShip>().ExplodeCollide(null);
                 PopCoroutine();
                 if (callback != null)
                 {
@@ -954,23 +950,7 @@ public class Autopilot : MonoBehaviour
             }
             else
             {
-                Vector3 targetVec;
-                float relv;
-                Vector3 relVelUnit;
-                PhysicsUtils.CalcRelV(gameObject, target, out targetVec, out relv, out relVelUnit);
-                float secBurn = CalcSpeedupSec(target);
-                if (relv < 0)
-                {
-                    yield return PushAndStartCoroutine(KillRelVCo(target));
-                }
-                else if (relv < 0.5f * MinInterceptV)
-                {
-                    yield return APNGSpeedupCo(target, secBurn);
-                }
-                else
-                {
-                    yield return PushAndStartCoroutine(APNGRCSBurnCo(target, relv, relVelUnit));
-                }
+                yield return PushAndStartCoroutine(APNGRCSBurnCo(target, relv, relVelUnit));
                 yield return new WaitForEndOfFrame();
             }
         }
