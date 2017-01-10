@@ -109,12 +109,19 @@ public class HUDController : MonoBehaviour, IPropertyChangeObserver
         OffscreenIndicator.UpdateIndicatorText(indicatorId, targetString);
     }
 
+    private double indicatorDist = 10000f;
+
     private void UpdateSelectedTargetIndicator(float dist, float relV)
     {
         string distText = DisplayUtils.DistanceText(dist);
         string relvText = DisplayUtils.RelvText(relV);
         string timeToTargetText = DisplayUtils.TimeToTargetText(dist, relV);
-        inputController.TargetDirectionIndicator.transform.position = selectedTarget.transform.position;
+        DVector3 targetNBodyPos;
+        GravityEngine.instance.GetPosition(NUtils.GetNBodyGameObject(selectedTarget).GetComponent<NBody>(), out targetNBodyPos);
+        DVector3 myNBodyPos;
+        GravityEngine.instance.GetPosition(NUtils.GetNBodyGameObject(gameController.GetPlayer()).GetComponent<NBody>(), out myNBodyPos);
+        DVector3 targetDir = (targetNBodyPos - myNBodyPos).normalized;
+        inputController.TargetDirectionIndicator.transform.position = (indicatorDist * targetDir).ToVector3();
         if (OffscreenIndicator.indicators[HUD_INDICATOR_TARGET_DIRECTION].hasOnScreenText)
         {
             string targetString = string.Format("{0}\n{1}", relvText, timeToTargetText);

@@ -469,7 +469,6 @@ public class Autopilot : MonoBehaviour
         }
     }
 
-    private float RCSDist = 10f;
     private float RCSMaxV = 0.02f;
 
     IEnumerator KillRelVCo(GameObject target, CompletedCallback callback = null)
@@ -511,12 +510,8 @@ public class Autopilot : MonoBehaviour
         yield break;
     }
 
-    IEnumerator APNGRotateBurnCo(GameObject target)
+    IEnumerator APNGRCSBurnCo(GameObject target, float relv, Vector3 relVelUnit)
     {
-        Vector3 targetVec;
-        float relv;
-        Vector3 relVelUnit;
-        PhysicsUtils.CalcRelV(gameObject, target, out targetVec, out relv, out relVelUnit);
         Vector3 f = relVelUnit;
         Vector3 a = CalcAPNG(target.transform.position, relv, relVelUnit);
         float maxRCSBurn = 1f;
@@ -919,19 +914,32 @@ public class Autopilot : MonoBehaviour
         return t;
     }
 
-    IEnumerator APNGToTargetCo(GameObject target, CompletedCallback callback)
+    private float CalcSpeedupSec(GameObject target)
     {
         float maxDeltaV = CalcMainEngineMaxDeltaV();
-        float secToMax = CalcDeltaVMainBurnSec(maxDeltaV);
+        float secMaxdV = CalcDeltaVMainBurnSec(maxDeltaV);
         float dist;
         PhysicsUtils.CalcDistance(gameObject, target, out dist);
-        float speedupDist = 0.1f * dist;
-        float secSpeedup = Mathf.Sqrt(2f * speedupDist / ship.CurrentMainEngineAccPerSec());
-        float sec = Mathf.Min(secSpeedup, secToMax);
+        float maxSpeedupDist = 0.1f * dist;
+        float secMaxSpeedup = Mathf.Sqrt(2f * maxSpeedupDist / ship.CurrentMainEngineAccPerSec());
+        float secMinSpeedup = ship.CurrentAuxAccPerSec() / MinInterceptV;
+        float sec = Mathf.Max(Mathf.Min(secMaxdV, secMaxSpeedup), secMinSpeedup);
+        return sec;
+    }
 
+    IEnumerator APNGSpeedupCo(GameObject target, float sec)
+    {
         yield return PushAndStartCoroutine(FaceTargetCo(target));
         ship.MainEngineBurst(sec);
         yield return new WaitForSeconds(sec);
+        PopCoroutine();
+    }
+
+    private float MinInterceptV = 30f;
+
+    IEnumerator APNGToTargetCo(GameObject target, CompletedCallback callback)
+    {
+
 
         for (;;)
         {
@@ -946,7 +954,23 @@ public class Autopilot : MonoBehaviour
             }
             else
             {
-                yield return PushAndStartCoroutine(APNGRotateBurnCo(target));
+                Vector3 targetVec;
+                float relv;
+                Vector3 relVelUnit;
+                PhysicsUtils.CalcRelV(gameObject, target, out targetVec, out relv, out relVelUnit);
+                float secBurn = CalcSpeedupSec(target);
+                if (relv < 0)
+                {
+                    yield return PushAndStartCoroutine(KillRelVCo(target));
+                }
+                else if (relv < 0.5f * MinInterceptV)
+                {
+                    yield return APNGSpeedupCo(target, secBurn);
+                }
+                else
+                {
+                    yield return PushAndStartCoroutine(APNGRCSBurnCo(target, relv, relVelUnit));
+                }
                 yield return new WaitForEndOfFrame();
             }
         }

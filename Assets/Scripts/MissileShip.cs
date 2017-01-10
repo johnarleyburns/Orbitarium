@@ -44,6 +44,8 @@ public class MissileShip : MonoBehaviour, IControllableShip
         return success;
     }
 
+    private float MissileArmSec = 3f;
+
     private IEnumerator FireMissileCo()
     {
         GameObject attachmentSlot = transform.parent.gameObject;
@@ -51,7 +53,7 @@ public class MissileShip : MonoBehaviour, IControllableShip
         //Vector3 attachmentCenter = attachmentSlot.transform.position;
         //Vector3 shipCenter = shipDim.transform.position;
         //Vector3 awayFromShip = (attachmentCenter - shipCenter).normalized;
-        Vector3 awayFromShip = shipDim.transform.forward;
+        Vector3 awayFromShip = shipDim.transform.GetChild(0).transform.forward;
 
         GameObject shipNBody = shipDim.NBody;
         DVector3 shipNBodyPos;
@@ -76,7 +78,7 @@ public class MissileShip : MonoBehaviour, IControllableShip
         ship.NBodyDimensions = missileDim;
         ship.ApplyImpulse(nBody.transform.forward, MissileEjectV, 1);
         currentGoalCommand = Autopilot.Command.INTERCEPT;
-        yield return new WaitForSeconds(3f);
+        yield return new WaitForSeconds(MissileArmSec);
         nBody.transform.GetChild(0).GetComponent<SphereCollider>().enabled = true;
         //capsuleCollider.enabled = true;
         yield break;
