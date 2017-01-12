@@ -31,10 +31,13 @@ public class RocketShip : MonoBehaviour {
     private bool auxEngineOn;
     private bool rcsFineControlOn;
     private bool rcsOn;
+    private bool rcsAngularOn;
     private float mainEngineCutoffTimer = -1;
     private float auxEngineCutoffTimer = -1;
     private float rcsCutoffTimer = -1;
+    private float rcsAngularCutoffTimer = -1;
     private Vector3 rcsDirection;
+    private Quaternion rcsAngularDirection;
     private Quaternion currentSpinPerSec;
 
     void Start()
@@ -58,6 +61,7 @@ public class RocketShip : MonoBehaviour {
                     UpdateThrustRates();
                     UpdateEngines();
                     UpdateRCS();
+                    UpdateAngularRCS();
                     UpdateApplyCurrentSpin();
                     break;
             }
@@ -105,6 +109,7 @@ public class RocketShip : MonoBehaviour {
         MainEngineCutoff();
         AuxEngineCutoff();
         RCSCutoff();
+        RCSAngularCutoff();
     }
 
     public bool IsMainEngineGo()
@@ -203,9 +208,14 @@ public class RocketShip : MonoBehaviour {
         rcsOn = false;
     }
 
+    public void RCSAngularCutoff()
+    {
+        rcsAngularOn = false;
+    }
+
     public bool IsRCSFiring()
     {
-        return rcsOn;
+        return rcsOn || rcsAngularOn;
     }
 
     public void RCSBurst(Vector3 rcsDir, float sec)
@@ -220,6 +230,21 @@ public class RocketShip : MonoBehaviour {
         else
         {
             RCSCutoff();
+        }
+    }
+
+    public void RCSAngularBurst(Quaternion rcsDir, float sec)
+    {
+        float adj = currentRCSFactor();
+        if (rcsDir != Quaternion.identity && currentFuelKg > sec * RCSFuelKgPerSec * adj)
+        {
+            rcsAngularDirection = rcsDir;
+            rcsAngularCutoffTimer = sec;
+            rcsAngularOn = true;
+        }
+        else
+        {
+            RCSAngularCutoff();
         }
     }
 
@@ -247,6 +272,28 @@ public class RocketShip : MonoBehaviour {
             {
                 RCSCutoff();
                 rcsCutoffTimer = -1;
+            }
+        }
+    }
+
+    private void UpdateAngularRCS()
+    {
+        if (rcsAngularOn)
+        {
+            float adj = currentRCSFactor();
+            if (currentFuelKg > RCSFuelKgPerSec * adj && (rcsAngularCutoffTimer <= -1 || rcsAngularCutoffTimer > 0))
+            {
+                ApplyRCSSpin(rcsAngularDirection);
+                ApplyFuel(-RCSFuelKgPerSec * adj);
+                if (rcsAngularCutoffTimer > 0)
+                {
+                    rcsAngularCutoffTimer -= Time.deltaTime;
+                }
+            }
+            else
+            {
+                RCSAngularCutoff();
+                rcsAngularCutoffTimer = -1;
             }
         }
     }
@@ -296,15 +343,28 @@ public class RocketShip : MonoBehaviour {
         RCSAngularDegPerSec = Mathf.Rad2Deg * Mathf.Sqrt(RCSThrustPerSec / RCSRadiusM);
     }
 
-    public void ApplyRCSSpin(Quaternion spinDelta)
+    public Quaternion QToSpinDelta(Quaternion deltaQ)
     {
-        Quaternion timeSpinQ = Quaternion.Slerp(currentSpinPerSec, currentSpinPerSec * spinDelta, Time.deltaTime);
+        float s = CurrentRCSAngularDegPerSec();
+        Quaternion q = Quaternion.RotateTowards(Quaternion.identity, deltaQ, s);
+        return q;
+    }
+
+    public void ApplyRCSSpin(Quaternion spinDelta) // needs to be "unit quaternion" with deg angle max of angular deg per sec
+    {
+        //        currentSpinPerSec = spinDelta * currentSpinPerSec;
+        //        Quaternion timeSpinQ = Quaternion.Slerp(currentSpinPerSec, currentSpinPerSec * spinDelta, Time.deltaTime);
+        Quaternion timeSpinQ = Quaternion.Slerp(currentSpinPerSec, spinDelta * currentSpinPerSec, Time.deltaTime);
+        //        Quaternion timeSpinQ = Quaternion.RotateTowards(currentSpinPerSec, spinDelta * currentSpinPerSec, Time.deltaTime);
+        //        Quaternion timeSpinQ = Quaternion.RotateTowards(currentSpinPerSec, currentSpinPerSec * spinDelta, Time.deltaTime);
         currentSpinPerSec = timeSpinQ;
     }
 
     public void UpdateApplyCurrentSpin()
     {
-        Quaternion timeQ = Quaternion.Slerp(transform.rotation, transform.rotation * currentSpinPerSec, Time.deltaTime);
+        //Quaternion timeQ = Quaternion.Slerp(transform.rotation, transform.rotation * currentSpinPerSec, Time.deltaTime);
+        Quaternion timeQ = Quaternion.Slerp(transform.rotation, currentSpinPerSec * transform.rotation, Time.deltaTime);
+//        Quaternion timeQ = Quaternion.RotateTowards(transform.rotation, currentSpinPerSec * transform.rotation, Time.deltaTime);
         transform.rotation = timeQ;
     }
 
@@ -323,35 +383,60 @@ public class RocketShip : MonoBehaviour {
 
     private static readonly float minSpinDeltaTheta = 1f; // too small and it snafus
     private static readonly float precisionMinSpinDeltaTheta = 0.2f; // too small and it snafus
+    private static readonly float maxSpinSpeed = 18f;
 
-    public bool ConvergeSpin(Quaternion targetQ, bool precision = false)
+    //public bool IsSpinRotConverged(Quaternion targetQ, bool precision = false)
+  //  {
+//
+//    }
+
+    public bool IsSpinRateZeroed(bool precision = false)
     {
-        float dTheta = precision ? precisionMinSpinDeltaTheta : minSpinDeltaTheta;
+        float dTheta = DTheta(precision);
+        return Mathf.Abs(Quaternion.Angle(currentSpinPerSec, Quaternion.identity)) < dTheta;
+    }
 
-        Quaternion deltaQ = Quaternion.Inverse(transform.rotation) * targetQ;
-
+    public float SecToCoast(Quaternion targetQ)
+    {
         float angleLeft = Mathf.Abs(Quaternion.Angle(transform.rotation, targetQ));
         float spinSpeed = Mathf.Abs(Quaternion.Angle(currentSpinPerSec, Quaternion.identity));
-
         float secToCoast = angleLeft / spinSpeed;
-        float secToStop = Mathf.Sqrt(2 * spinSpeed / RCSAngularDegPerSec);
+        return secToCoast;
+    }
 
-        if (secToStop < secToCoast) // speedup
-        {
-            currentSpinPerSec = Quaternion.RotateTowards(currentSpinPerSec, deltaQ, RCSAngularDegPerSec * Time.deltaTime);
-        }
-        else // stop
-        {
-            currentSpinPerSec = Quaternion.RotateTowards(currentSpinPerSec, Quaternion.identity, RCSAngularDegPerSec * Time.deltaTime);
-        }
-        bool convergedSpin = Mathf.Abs(Quaternion.Angle(currentSpinPerSec, Quaternion.identity)) < dTheta;
-        bool convergedRotation = targetQ == Quaternion.identity || Mathf.Abs(Quaternion.Angle(transform.rotation, targetQ)) < dTheta;
-        bool converged = convergedSpin && convergedRotation;
-        if (converged)
-        {
-            currentSpinPerSec = Quaternion.identity;
-        }
-        return converged;
+    public float SecToStop(Quaternion targetQ)
+    {
+        float spinSpeed = Mathf.Abs(Quaternion.Angle(currentSpinPerSec, Quaternion.identity));
+        float secToStop = Mathf.Sqrt(2 * spinSpeed / RCSAngularDegPerSec);
+        return secToStop;
+    }
+
+    public bool IsRotConverged(Quaternion targetQ, bool precision = false)
+    {
+        float dTheta = DTheta(precision);
+        return targetQ == Quaternion.identity || Mathf.Abs(Quaternion.Angle(transform.rotation, targetQ)) < dTheta;
+    }
+
+    public float DTheta(bool precision = false)
+    {
+        float dTheta = precision ? precisionMinSpinDeltaTheta : minSpinDeltaTheta;
+        return dTheta;
+    }
+
+    public void SpinTowards(Quaternion targetQ, float sec)
+    {
+        Quaternion deltaQ = Quaternion.Inverse(transform.rotation) * targetQ;
+        currentSpinPerSec = Quaternion.RotateTowards(currentSpinPerSec, deltaQ, RCSAngularDegPerSec * Time.deltaTime);
+    }
+
+    public void SpinToStop(float sec)
+    {
+        SpinTowards(Quaternion.identity, sec);
+    }
+
+    public float SpinDegPerSec()
+    {
+        return Quaternion.Angle(Quaternion.identity, CurrentSpinPerSec);
     }
 
     public float MainEngineExhaustVelocity()

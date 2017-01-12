@@ -205,25 +205,17 @@ public class Autopilot : MonoBehaviour
 
     IEnumerator RotToUnitVec(Vector3 b, bool precision = false, CompletedCallback callback = null)
     {
+        Quaternion p = transform.rotation; // original rot
         for (;;)
         {
             Quaternion q = Quaternion.LookRotation(b);
-            bool converged = ship.ConvergeSpin(q, precision);
-            if (converged)
-            {
-                cmgActive = false;
+            yield return PushAndStartCoroutine(SpinFromToCo(p, q, precision));
                 PopCoroutine();
                 if (callback != null)
                 {
                     callback();
                 }
                 yield break;
-            }
-            else
-            {
-                cmgActive = true;
-            }
-            yield return new WaitForEndOfFrame();
         }
     }
     
@@ -263,6 +255,7 @@ public class Autopilot : MonoBehaviour
         float prevTimer = UpdateTrackTime;
         for (;;)
         {
+            Quaternion p = transform.rotation;
             Vector3 tVec = (target.transform.position - transform.parent.transform.position).normalized;
             if (prevTimer <= 0)
             {
@@ -276,9 +269,7 @@ public class Autopilot : MonoBehaviour
             Vector3 deltaB = (tVec - prevTVec) / UpdateTrackTime;
             Vector3 b = tVec + NavigationalConstant * deltaB;
             Quaternion q = Quaternion.LookRotation(b);
-            bool converged = ship.ConvergeSpin(q, true);
-            cmgActive = !converged;
-            yield return new WaitForEndOfFrame();
+            yield return PushAndStartCoroutine(SpinFromToCo(p, q));
         }
     }
 
@@ -286,6 +277,7 @@ public class Autopilot : MonoBehaviour
     {
         Vector3 prevTVec = (target.transform.position - transform.parent.transform.position).normalized;
         float prevTimer = UpdateTrackTime;
+        Quaternion p = transform.rotation; // original rot
         for (;;)
         {
             Vector3 tVec = (target.transform.position - transform.parent.transform.position).normalized;
@@ -301,64 +293,119 @@ public class Autopilot : MonoBehaviour
             Vector3 deltaB = (tVec - prevTVec) / UpdateTrackTime;
             Vector3 b = tVec + NavigationalConstant * deltaB;
             Quaternion q = Quaternion.LookRotation(b);
-            bool converged = ship.ConvergeSpin(q);
-            cmgActive = !converged;
-            if (converged)
-            {
-                PopCoroutine();
-                yield break;
-            }
-            else
-            {
-                yield return new WaitForEndOfFrame();
-            }
+            yield return PushAndStartCoroutine(SpinFromToCo(p, q));
+            yield break;
         }
     }
 
     IEnumerator FaceTargetCo(GameObject target, bool precision = false, CompletedCallback callback = null)
     {
-        for (;;)
+        yield return PushAndStartCoroutine(KillRotCo());
+        Quaternion p = transform.rotation; // original rot
+        Vector3 b = CalcVectorToTarget(target).normalized;
+        Quaternion q = Quaternion.LookRotation(b);
+        yield return PushAndStartCoroutine(SpinFromToCo(p, q, precision));
+        yield return PushAndStartCoroutine(KillRotCo());
+        PopCoroutine();
+        if (callback != null)
         {
-            Vector3 b = CalcVectorToTarget(target).normalized;
-            Vector3 up = target.transform.childCount > 0 ? target.transform.GetChild(0).transform.up : target.transform.up;
-            Quaternion q = Quaternion.LookRotation(b, target.transform.GetChild(0).transform.up);
-            bool converged = ship.ConvergeSpin(q, precision);
-            if (converged)
-            {
-                cmgActive = false;
-                PopCoroutine();
-                if (callback != null)
-                {
-                    callback();
-                }
-                yield break;
-            }
-            else
-            {
-                cmgActive = true;
-            }
-            yield return new WaitForEndOfFrame();
+            callback();
         }
+        yield break;
     }
 
-    IEnumerator AlignToTarget(GameObject target)
+    private float RCSAngularBurnTimeForAngle(float angle)
     {
-        for (;;)
+        return Mathf.Sqrt(2f * angle / ship.CurrentRCSAngularDegPerSec());
+    }
+
+    private float CoastTimeForAngle(float angle, float angularV)
+    {
+        return angle / angularV;
+    }
+
+    private IEnumerator SpinFromToCo(Quaternion startQ, Quaternion _targetQ, bool precision = false)
+    {
+        Quaternion targetQ = Quaternion.Euler(_targetQ.eulerAngles.x, _targetQ.eulerAngles.y, startQ.eulerAngles.z);
+        float totalAngle = Quaternion.Angle(startQ, targetQ);
+        Quaternion currentQ = transform.rotation;
+
+        float secToCoast = ship.SecToCoast(targetQ);
+        float secToStop = ship.SecToStop(targetQ);
+        float degPerSec = ship.SpinDegPerSec();
+
+        // how far to go
+        Quaternion deltaQ = targetQ * Quaternion.Inverse(startQ);
+        float deltaAngle = Quaternion.Angle(Quaternion.identity, deltaQ);
+
+        float maxAngularV = 10f; // deg per sec
+        float maxRCSAngularBurnSec = maxAngularV / ship.CurrentRCSAngularDegPerSec();
+
+        float quarterAngle = deltaAngle / 4f;
+        float desiredRCSAngularBurnSec = RCSAngularBurnTimeForAngle(quarterAngle);
+
+        float burnSec = Mathf.Min(desiredRCSAngularBurnSec, maxRCSAngularBurnSec);
+        if (burnSec > ship.RCSBurnMinSec)
         {
-            Quaternion q = Quaternion.FromToRotation(transform.forward, target.transform.forward) * transform.rotation;
-            bool converged = ship.ConvergeSpin(q);
-            if (converged)
-            {
-                cmgActive = false;
-                PopCoroutine();
-                yield break;
-            }
-            else
-            {
-                cmgActive = true;
-            }
-            yield return new WaitForEndOfFrame();
+            float halfAngle = deltaAngle / 4f;
+            float angularVAfterBurn = ship.CurrentRCSAngularDegPerSec() * burnSec;
+            //float coastSec = CoastTimeForAngle(halfAngle, angularVAfterBurn);
+            Quaternion q = ship.QToSpinDelta(deltaQ);
+
+            // start
+            ship.RCSAngularBurst(q, burnSec);
+            yield return new WaitForSeconds(burnSec);
+
+            // how far?
+            float angleSoFar = Quaternion.Angle(startQ, transform.rotation);
+            float coastAngle = totalAngle - 2f * angleSoFar;
+            float currentAngularV = Quaternion.Angle(Quaternion.identity, ship.CurrentSpinPerSec);
+            float coastSec = coastAngle / currentAngularV;
+            yield return new WaitForSeconds(coastSec);
+
+            // stop
+            ship.RCSAngularBurst(Quaternion.Inverse(q), burnSec);
+            yield return new WaitForSeconds(burnSec);
         }
+        PopCoroutine();
+        yield break;
+        /*
+                if (secToStop >= secToCoast) // halt
+                {
+                    yield return PushAndStartCoroutine(KillRotCo());
+                    yield break;
+                }
+                else if (secToCoast < 2f * secToStop) // coast
+                {
+
+                }
+                else if ()
+                /*
+                if (degPerSec >= MaxRotationDegPerSec)
+                {
+
+                }
+                */
+        /*
+        if (secToStop < secToCoast) // speedup
+        {
+            ship.SpinTowards(targetQ, Time.deltaTime);
+        }
+        else // stop
+        {
+            ship.SpinToStop(Time.deltaTime);
+        }
+        bool convergedSpin = ship.IsSpinRateZeroed(precision);
+        bool convergedRotation = ship.IsRotConverged(targetQ, precision);
+        bool converged = convergedSpin && convergedRotation;
+        */
+        /*
+        if (converged)
+        {
+            currentSpinPerSec = Quaternion.identity;
+        }
+        return converged;
+        */
     }
 
     IEnumerator RotShootTargetAPNG(GameObject target)
@@ -368,6 +415,7 @@ public class Autopilot : MonoBehaviour
         float prevTimer = UpdateTrackTime;
         for (;;)
         {
+            Quaternion p = transform.rotation; // original rot
             Vector3 tVec = (target.transform.position - transform.parent.transform.position).normalized;
             if (prevTimer <= 0f)
             {
@@ -381,7 +429,7 @@ public class Autopilot : MonoBehaviour
             Vector3 deltaB = (tVec - prevTVec) / UpdateTrackTime;
             Vector3 b = tVec + NavigationalConstant * deltaB;
             Quaternion q = Quaternion.LookRotation(b);
-            bool converged = ship.ConvergeSpin(q);
+            yield return PushAndStartCoroutine(SpinFromToCo(p, q));
             float targetAngle = Quaternion.Angle(transform.rotation, q);
             bool aligned = targetAngle <= MinFireTargetAngle;
             float dist;
@@ -393,19 +441,8 @@ public class Autopilot : MonoBehaviour
             if (aligned && inRange && hasAmmo && gunsReady && targetActive)
             {
                 yield return PushAndStartCoroutine(FireGunCo());
-            }
-            if (converged)
-            {
-                cmgActive = false;
-                if (breakable)
-                {
-                    PopCoroutine();
-                    yield break;
-                }
-            }
-            else
-            {
-                cmgActive = true;
+                PopCoroutine();
+                yield break;
             }
             yield return new WaitForEndOfFrame();
         }
