@@ -49,16 +49,19 @@ public class MissileShip : MonoBehaviour, IControllableShip
     private IEnumerator FireMissileCo()
     {
         GameObject attachmentSlot = transform.parent.gameObject;
+        GameObject nearShipModel = attachmentSlot.transform.GetComponentInParent<RocketShip>().gameObject;
         NBodyDimensions shipDim = NUtils.GetNBodyDimensions(attachmentSlot.transform.parent.gameObject);
-        //Vector3 attachmentCenter = attachmentSlot.transform.position;
-        //Vector3 shipCenter = shipDim.transform.position;
-        //Vector3 awayFromShip = (attachmentCenter - shipCenter).normalized;
-        Vector3 awayFromShip = shipDim.transform.GetChild(0).transform.forward;
+        Vector3 attachmentCenter = attachmentSlot.transform.position;
+        Vector3 nearShipCenter = nearShipModel.transform.position;
+        Vector3 nearShipAttachVec = attachmentCenter - nearShipCenter;
+        DVector3 farShipAttachVec = new DVector3(nearShipAttachVec) / shipDim.NBodyToModelScaleFactor; 
+        //Vector3 awayFromShip = shipDim.transform.GetChild(0).transform.forward;
 
         GameObject shipNBody = shipDim.NBody;
         DVector3 shipNBodyPos;
         GravityEngine.instance.GetPosition(shipNBody.GetComponent<NBody>(), out shipNBodyPos);
-        DVector3 farAttachmentPos = shipNBodyPos + new DVector3(awayFromShip) / shipDim.NBodyToModelScaleFactor;
+        DVector3 farAttachmentPos = shipNBodyPos + farShipAttachVec;
+//        DVector3 farAttachmentPos = shipNBodyPos + new DVector3(awayFromShip) / shipDim.NBodyToModelScaleFactor;
 
         GameObject nBody = Instantiate(NBodyMissilePrefab, farAttachmentPos.ToVector3(), Quaternion.identity) as GameObject;
 
