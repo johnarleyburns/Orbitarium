@@ -446,10 +446,10 @@ public class PlayerShip : MonoBehaviour, IControllableShip
         }
     }
 
-    public void ApplyRCSSpin(Quaternion q)
+    public void UserRCSSpinInput(Quaternion dir)
     {
         rotInput = true;
-        ship.ApplyRCSSpin(q);
+        ship.RCSAngularBurst(dir, Time.deltaTime);
     }
 
 }

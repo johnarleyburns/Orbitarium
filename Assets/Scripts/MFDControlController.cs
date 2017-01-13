@@ -779,12 +779,11 @@ public class MFDControlController : IPropertyChangeObserver
             playerShip.SetRCSMode(PlayerShip.RCSMode.Rotate);
             float s = playerShip.GetComponent<RocketShip>().CurrentRCSAngularDegPerSec();
             Vector3 v = s * rotateVec.normalized;
-            Quaternion p = Quaternion.Euler(v.x, 0, 0);
-            playerShip.ApplyRCSSpin(p);
-            Quaternion q = Quaternion.Euler(0, v.y, 0);
-            playerShip.ApplyRCSSpin(q);
-            Quaternion r = Quaternion.Euler(0, 0, v.z);
-            playerShip.ApplyRCSSpin(r);
+            Vector3 rel = playerShip.transform.TransformDirection(v);
+            Quaternion q = Quaternion.Euler(rel);
+            Quaternion deltaQ = q;
+            Quaternion p = playerShip.GetComponent<RocketShip>().QToSpinDelta(deltaQ);
+            playerShip.UserRCSSpinInput(p);
         }
         if (playerShip.CurrentAutopilotCommand() != Autopilot.Command.KILL_ROTATION && IsKillRotMarked())
         {

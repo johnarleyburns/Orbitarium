@@ -350,21 +350,15 @@ public class RocketShip : MonoBehaviour {
         return q;
     }
 
-    public void ApplyRCSSpin(Quaternion spinDelta) // needs to be "unit quaternion" with deg angle max of angular deg per sec
+    private void ApplyRCSSpin(Quaternion spinDelta) // needs to be "unit quaternion" with deg angle max of angular deg per sec
     {
-        //        currentSpinPerSec = spinDelta * currentSpinPerSec;
-        //        Quaternion timeSpinQ = Quaternion.Slerp(currentSpinPerSec, currentSpinPerSec * spinDelta, Time.deltaTime);
         Quaternion timeSpinQ = Quaternion.Slerp(currentSpinPerSec, spinDelta * currentSpinPerSec, Time.deltaTime);
-        //        Quaternion timeSpinQ = Quaternion.RotateTowards(currentSpinPerSec, spinDelta * currentSpinPerSec, Time.deltaTime);
-        //        Quaternion timeSpinQ = Quaternion.RotateTowards(currentSpinPerSec, currentSpinPerSec * spinDelta, Time.deltaTime);
         currentSpinPerSec = timeSpinQ;
     }
 
     public void UpdateApplyCurrentSpin()
     {
-        //Quaternion timeQ = Quaternion.Slerp(transform.rotation, transform.rotation * currentSpinPerSec, Time.deltaTime);
         Quaternion timeQ = Quaternion.Slerp(transform.rotation, currentSpinPerSec * transform.rotation, Time.deltaTime);
-//        Quaternion timeQ = Quaternion.RotateTowards(transform.rotation, currentSpinPerSec * transform.rotation, Time.deltaTime);
         transform.rotation = timeQ;
     }
 
