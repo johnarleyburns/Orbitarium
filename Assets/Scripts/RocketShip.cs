@@ -5,6 +5,7 @@ public class RocketShip : MonoBehaviour {
 
     public GameController gameController;
     public NBodyDimensions NBodyDimensions;
+    public ParticleSystem MainEnginePlume;
     public GameObject DockingPort;
     public float EmptyMassKg = 10000;
     public float FuelMassKg = 9200;
@@ -63,6 +64,7 @@ public class RocketShip : MonoBehaviour {
                     UpdateRCS();
                     UpdateAngularRCS();
                     UpdateApplyCurrentSpin();
+                    UpdatePlumeEffects();
                     break;
             }
         }
@@ -199,6 +201,24 @@ public class RocketShip : MonoBehaviour {
             {
                 AuxEngineCutoff();
                 auxEngineCutoffTimer = -1;
+            }
+        }
+    }
+
+    private void UpdatePlumeEffects()
+    {
+        if (mainEngineOn)
+        {
+            if (MainEnginePlume != null && !MainEnginePlume.isPlaying)
+            {
+                MainEnginePlume.Play();
+            }
+        }
+        else
+        {
+            if (MainEnginePlume != null && MainEnginePlume.isPlaying)
+            {
+                MainEnginePlume.Stop();
             }
         }
     }
