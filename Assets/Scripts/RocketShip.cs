@@ -9,12 +9,12 @@ public class RocketShip : MonoBehaviour {
     public GameObject DockingPort;
     public float EmptyMassKg = 10000;
     public float FuelMassKg = 9200;
-    public float RCSThrustNewtons = 880; // 220*4 in the SM
     public float EngineThrustNewtons = 25700; // 1 in the SM
     public float AuxThrustNewtons = 3920; // 490 * 8 in the SM
-    public float RCSFuelKgPerSec = 0.14f;
+    public float RCSThrustNewtons = 880; // 220*4 in the SM
     public float EngineFuelKgPerSec = 8.7f;
     public float AuxFuelKgPerSec = 1.3f;
+    public float RCSFuelKgPerSec = 0.14f;
     public float DumpFuelRateKgPerSec = 100;
     public float RCSRadiusM = 2.5f;
     public float minSpinDeltaDegPerSec = 0.2f;

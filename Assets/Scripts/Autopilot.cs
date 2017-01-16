@@ -392,9 +392,12 @@ public class Autopilot : MonoBehaviour
             q = Quaternion.Inverse(ship.QToSpinDelta(deltaQ));
             ship.RCSAngularBurst(q, burnSec);
             yield return new WaitForSeconds(burnSec);
+
+            yield return PushAndStartCoroutine(KillRotCo());
         }
         else
         {
+            yield return PushAndStartCoroutine(KillRotCo());
             PopCoroutine();
             yield break;
         }

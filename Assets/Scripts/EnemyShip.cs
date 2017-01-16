@@ -78,7 +78,6 @@ public class EnemyShip : MonoBehaviour, IControllableShip {
         if (currentGoalCommand == Autopilot.Command.OFF && currentGoalCommand != InitialGoal)
         {
             currentGoalCommand = InitialGoal;
-            //currentGoalCommand = Autopilot.Command.ACTIVE_TRACK;
             GameObject target = gameController.GetPlayer();
             autopilot.ExecuteCommand(currentGoalCommand, target);
         }
