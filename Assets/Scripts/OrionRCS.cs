@@ -4,12 +4,15 @@ using UnityEngine;
 
 public class OrionRCS : MonoBehaviour, IRCSModule {
 
-    public ParticleSystem UpPlume1;
-    public ParticleSystem UpPlume2;
-    public ParticleSystem DownPlume1;
-    public ParticleSystem DownPlume2;
+    public ParticleSystem[] UpPlumes;
+    public ParticleSystem[] DownPlumes;
+    public ParticleSystem[] ForePlumes;
+    public ParticleSystem[] BackPlumes;
+    public ParticleSystem[] LeftPlumes;
+    public ParticleSystem[] RightPlumes;
 
     private static float rcsMin = 0.01f;
+    private bool anyPlay = true;
 
     // Use this for initialization
     void Start () {
@@ -24,23 +27,40 @@ public class OrionRCS : MonoBehaviour, IRCSModule {
     public void RCSBurst(Vector3 dir)
     {
         Vector3 v = dir.normalized;
-        float upPart = Vector3.Dot(dir, -transform.up);
-        if (upPart > rcsMin && !UpPlume1.isPlaying)
+        Play(Vector3.Dot(dir, -transform.up), UpPlumes);
+        Play(Vector3.Dot(dir, transform.up), DownPlumes);
+        Play(Vector3.Dot(dir, -transform.forward), ForePlumes);
+        Play(Vector3.Dot(dir, transform.forward), BackPlumes);
+        Play(Vector3.Dot(dir, transform.right), LeftPlumes);
+        Play(Vector3.Dot(dir, -transform.right), RightPlumes);
+    }
+
+    private void Play(float rcsDot, ParticleSystem[] rcs)
+    {
+        if (rcsDot > rcsMin && rcs != null)
         {
-            UpPlume1.Play();
+            foreach (ParticleSystem p in rcs)
+            {
+                if (!p.isPlaying)
+                {
+                    p.Play();
+                }
+            }
+            anyPlay = true;
         }
-        if (upPart > rcsMin && !UpPlume2.isPlaying)
+    }
+
+    private void Stop(ParticleSystem[] rcs)
+    {
+        if (rcs != null)
         {
-            UpPlume2.Play();
-        }
-        float downPart = -upPart;
-        if (downPart > rcsMin && !DownPlume1.isPlaying)
-        {
-            DownPlume1.Play();
-        }
-        if (downPart > rcsMin && !DownPlume2.isPlaying)
-        {
-            DownPlume2.Play();
+            foreach (ParticleSystem p in rcs)
+            {
+                if (p.isPlaying)
+                {
+                    p.Stop();
+                }
+            }
         }
     }
 
@@ -50,21 +70,15 @@ public class OrionRCS : MonoBehaviour, IRCSModule {
 
     public void RCSCutoff()
     {
-        if (UpPlume1.isPlaying)
+        if (anyPlay)
         {
-            UpPlume1.Stop();
-        }
-        if (UpPlume2.isPlaying)
-        {
-            UpPlume2.Stop();
-        }
-        if (DownPlume1.isPlaying)
-        {
-            DownPlume1.Stop();
-        }
-        if (DownPlume2.isPlaying)
-        {
-            DownPlume2.Stop();
+            Stop(UpPlumes);
+            Stop(DownPlumes);
+            Stop(ForePlumes);
+            Stop(BackPlumes);
+            Stop(LeftPlumes);
+            Stop(RightPlumes);
+            anyPlay = false;
         }
     }
 
