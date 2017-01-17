@@ -7,7 +7,9 @@ public class MissileShip : MonoBehaviour, IControllableShip
     public GameController gameController;
     public GameObject NBodyMissilePrefab;
     public GameObject ShipExplosion;
-    public float MissileEjectV = 5f;
+    public float MissileEjectV = 10f;
+    public float MissileClearShipSec = 1f;
+    public float MissileArmSec = 2f;
 
     private RocketShip ship;
     private Autopilot autopilot;
@@ -44,8 +46,6 @@ public class MissileShip : MonoBehaviour, IControllableShip
         return success;
     }
 
-    private float MissileArmSec = 3f;
-
     private IEnumerator FireMissileCo()
     {
         GameObject attachmentSlot = transform.parent.gameObject;
@@ -80,10 +80,11 @@ public class MissileShip : MonoBehaviour, IControllableShip
         GravityEngine.instance.UpdatePositionAndVelocity(nBody.GetComponent<NBody>(), farAttachmentPos, missileVel);
         ship.NBodyDimensions = missileDim;
         ship.ApplyImpulse(transform.forward, MissileEjectV, 1);
+        currentGoalCommand = Autopilot.Command.OFF;
+        yield return new WaitForSeconds(MissileClearShipSec);
         currentGoalCommand = Autopilot.Command.INTERCEPT;
-        yield return new WaitForSeconds(MissileArmSec);
+        yield return new WaitForSeconds(MissileClearShipSec - MissileArmSec);
         nBody.transform.GetChild(0).GetComponent<SphereCollider>().enabled = true;
-        //capsuleCollider.enabled = true;
         yield break;
     }
 
