@@ -6,6 +6,7 @@ public class RocketShip : MonoBehaviour {
     public GameController gameController;
     public NBodyDimensions NBodyDimensions;
     public ParticleSystem MainEnginePlume;
+    public GameObject RCS;
     public GameObject DockingPort;
     public float EmptyMassKg = 10000;
     public float FuelMassKg = 9200;
@@ -40,6 +41,7 @@ public class RocketShip : MonoBehaviour {
     private Vector3 rcsDirection;
     private Quaternion rcsAngularDirection;
     private Quaternion currentSpinPerSec;
+    private IRCSModule RCSModule;
 
     void Start()
     {
@@ -49,6 +51,7 @@ public class RocketShip : MonoBehaviour {
         currentTotalMassKg = EmptyMassKg + FuelMassKg;
         currentFuelKg = FuelMassKg;
         currentSpinPerSec = Quaternion.identity;
+        RCSModule = RCS == null ? null : RCS.GetComponent<IRCSModule>();
         UpdateThrustRates();
     }
 
@@ -64,7 +67,8 @@ public class RocketShip : MonoBehaviour {
                     UpdateRCS();
                     UpdateAngularRCS();
                     UpdateApplyCurrentSpin();
-                    UpdatePlumeEffects();
+                    UpdateMainEnginePlume();
+                    UpdateRCSPlume();
                     break;
             }
         }
@@ -205,7 +209,7 @@ public class RocketShip : MonoBehaviour {
         }
     }
 
-    private void UpdatePlumeEffects()
+    private void UpdateMainEnginePlume()
     {
         if (mainEngineOn)
         {
@@ -283,6 +287,10 @@ public class RocketShip : MonoBehaviour {
             {
                 ApplyImpulse(rcsDirection, RCSThrustPerSec * adj, Time.deltaTime);
                 ApplyFuel(-RCSFuelKgPerSec * adj);
+                if (RCSModule != null)
+                {
+                    RCSModule.RCSBurst(rcsDirection);
+                }
                 if (rcsCutoffTimer > 0)
                 {
                     rcsCutoffTimer -= Time.deltaTime;
@@ -291,7 +299,30 @@ public class RocketShip : MonoBehaviour {
             else
             {
                 RCSCutoff();
+                if (RCSModule != null)
+                {
+                    RCSModule.RCSCutoff();
+                }
                 rcsCutoffTimer = -1;
+            }
+        }
+    }
+
+    private void UpdateRCSPlume()
+    {
+        if (RCSModule != null)
+        {
+            if (rcsOn)
+            {
+                RCSModule.RCSBurst(rcsDirection);
+            }
+            if (rcsAngularOn)
+            {
+                RCSModule.RCSAngularBurst(rcsAngularDirection);
+            }
+            if (!rcsOn && !rcsAngularOn)
+            {
+                RCSModule.RCSCutoff();
             }
         }
     }

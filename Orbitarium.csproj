@@ -241,6 +241,7 @@
     <Compile Include="Assets\Scripts\HUDController.cs" />
     <Compile Include="Assets\Scripts\IControlableShip.cs" />
     <Compile Include="Assets\Scripts\IPropertyChangeObserver.cs" />
+    <Compile Include="Assets\Scripts\IRCSModule.cs" />
     <Compile Include="Assets\Scripts\InputController.cs" />
     <Compile Include="Assets\Scripts\MFDAutopilotController.cs" />
     <Compile Include="Assets\Scripts\MFDControlController.cs" />
@@ -252,6 +253,7 @@
     <Compile Include="Assets\Scripts\MusicController.cs" />
     <Compile Include="Assets\Scripts\NBodyDimensions.cs" />
     <Compile Include="Assets\Scripts\NBodyPropogatedCollision.cs" />
+    <Compile Include="Assets\Scripts\OrionRCS.cs" />
     <Compile Include="Assets\Scripts\OverShoulderCamera.cs" />
     <Compile Include="Assets\Scripts\OverviewCameraSpin.cs" />
     <Compile Include="Assets\Scripts\PerlinShake.cs" />
