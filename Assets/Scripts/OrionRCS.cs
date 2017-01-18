@@ -10,6 +10,12 @@ public class OrionRCS : MonoBehaviour, IRCSModule {
     public ParticleSystem[] BackPlumes;
     public ParticleSystem[] LeftPlumes;
     public ParticleSystem[] RightPlumes;
+    public ParticleSystem[] PitchUpPlumes;
+    public ParticleSystem[] PitchDownPlumes;
+    public ParticleSystem[] YawLeftPlumes;
+    public ParticleSystem[] YawRightPlumes;
+    public ParticleSystem[] RollCounterPlumes;
+    public ParticleSystem[] RollClockPlumes;
 
     private static float rcsMin = 0.01f;
     private bool anyPlay = true;
@@ -70,33 +76,40 @@ public class OrionRCS : MonoBehaviour, IRCSModule {
 
     private static float angularMin = 5f;
 
-    public void RCSAngularBurst(Quaternion dir)
+    public void RCSAngularBurst(Quaternion p)
     {
-        Vector3 e = Map180(dir.eulerAngles);
+        float min = rcsMin;
+        Vector3 axis;
+        float angle;
+        p.ToAngleAxis(out angle, out axis);
+        axis = transform.TransformPoint(axis);
+        Play(Vector3.Dot(axis, -transform.up), PitchDownPlumes, min);
+        Play(Vector3.Dot(axis, transform.up), PitchUpPlumes, min);
+        /*
+        Vector3 e = Map180(p.eulerAngles);
         if (e.x > angularMin)
         {
-            Play(1, DownPlumes, 0);
+            Play(1, PitchDownPlumes, 0);
         }
-        if (e.x < -angularMin)
+        else if (e.x < -angularMin)
         {
-            Play(1, UpPlumes, 0);
+            Play(1, PitchUpPlumes, 0);
         }
-        if (e.y > angularMin)
+        else if (e.y > angularMin)
         {
-            Play(1, RightPlumes, 0);
+            Play(1, YawRightPlumes, 0);
         }
-        if (e.y < -angularMin)
+        else if (e.y < -angularMin)
         {
-            Play(1, LeftPlumes, 0);
+            Play(1, YawLeftPlumes, 0);
         }
-        /*
-        if (e.z > angularMin)
+        else if (e.z > angularMin)
         {
-            Play(1, ForePlumes, 0);
+            Play(1, RollCounterPlumes, 0);
         }
-        if (e.z < -angularMin)
+        else if (e.z < -angularMin)
         {
-            Play(1, BackPlumes, 0);
+            Play(1, RollClockPlumes, 0);
         }
         */
     }
@@ -121,6 +134,12 @@ public class OrionRCS : MonoBehaviour, IRCSModule {
             Stop(BackPlumes);
             Stop(LeftPlumes);
             Stop(RightPlumes);
+            Stop(PitchUpPlumes);
+            Stop(PitchDownPlumes);
+            Stop(YawLeftPlumes);
+            Stop(YawRightPlumes);
+            Stop(RollCounterPlumes);
+            Stop(RollClockPlumes);
             anyPlay = false;
         }
     }
