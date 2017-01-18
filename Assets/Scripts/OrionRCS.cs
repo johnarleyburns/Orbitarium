@@ -26,18 +26,22 @@ public class OrionRCS : MonoBehaviour, IRCSModule {
 
     public void RCSBurst(Vector3 dir)
     {
+        RCSBurst(dir, rcsMin);
+    }
+    private void RCSBurst(Vector3 dir, float min)
+    {
         Vector3 v = dir.normalized;
-        Play(Vector3.Dot(dir, -transform.up), UpPlumes);
-        Play(Vector3.Dot(dir, transform.up), DownPlumes);
-        Play(Vector3.Dot(dir, -transform.forward), ForePlumes);
-        Play(Vector3.Dot(dir, transform.forward), BackPlumes);
-        Play(Vector3.Dot(dir, transform.right), LeftPlumes);
-        Play(Vector3.Dot(dir, -transform.right), RightPlumes);
+        Play(Vector3.Dot(dir, -transform.up), UpPlumes, min);
+        Play(Vector3.Dot(dir, transform.up), DownPlumes, min);
+        Play(Vector3.Dot(dir, -transform.forward), ForePlumes, min);
+        Play(Vector3.Dot(dir, transform.forward), BackPlumes, min);
+        Play(Vector3.Dot(dir, transform.right), LeftPlumes, min);
+        Play(Vector3.Dot(dir, -transform.right), RightPlumes, min);
     }
 
-    private void Play(float rcsDot, ParticleSystem[] rcs)
+    private void Play(float rcsDot, ParticleSystem[] rcs, float min)
     {
-        if (rcsDot > rcsMin && rcs != null)
+        if (rcsDot > min && rcs != null)
         {
             foreach (ParticleSystem p in rcs)
             {
@@ -64,8 +68,47 @@ public class OrionRCS : MonoBehaviour, IRCSModule {
         }
     }
 
+    private static float angularMin = 5f;
+
     public void RCSAngularBurst(Quaternion dir)
     {
+        Vector3 e = Map180(dir.eulerAngles);
+        if (e.x > angularMin)
+        {
+            Play(1, DownPlumes, 0);
+        }
+        if (e.x < -angularMin)
+        {
+            Play(1, UpPlumes, 0);
+        }
+        if (e.y > angularMin)
+        {
+            Play(1, RightPlumes, 0);
+        }
+        if (e.y < -angularMin)
+        {
+            Play(1, LeftPlumes, 0);
+        }
+        /*
+        if (e.z > angularMin)
+        {
+            Play(1, ForePlumes, 0);
+        }
+        if (e.z < -angularMin)
+        {
+            Play(1, BackPlumes, 0);
+        }
+        */
+    }
+
+    private float Map180(float deg)
+    {
+        return deg > 180f ? -(360f - deg) : deg;
+    }
+
+    private Vector3 Map180(Vector3 v)
+    {
+        return new Vector3(Map180(v.x), Map180(v.y), Map180(v.z));
     }
 
     public void RCSCutoff()
