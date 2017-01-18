@@ -549,7 +549,8 @@ public class MFDControlController : IPropertyChangeObserver
                 break;
             case "FuelRemainingText":
                 FuelRemainingText.text = value as string;
-                if (!warnedLow && gameController.GetPlayerShip().IsLowFuel()) {
+                if (!warnedLow && gameController.GetPlayerShip().IsLowFuel())
+                {
                     Speak(DialogText.LowFuel);
                     warnedLow = true;
                 }
@@ -598,160 +599,139 @@ public class MFDControlController : IPropertyChangeObserver
         }
     }
 
+    private Dictionary<string, bool> wasPressed = new Dictionary<string, bool>();
+
+    delegate void ToggleFunc();
+
+    private void UpdateToggle(string inputAxis, ToggleFunc toggle)
+    {
+        bool wasP;
+        if (!wasPressed.TryGetValue(inputAxis, out wasP))
+        {
+            wasPressed[inputAxis] = false;
+            wasP = false;
+        }
+        if (Input.GetAxisRaw(inputAxis) > 0 && !wasP)
+        {
+            wasPressed[inputAxis] = true;
+            toggle();
+        }
+        else if (Input.GetAxisRaw(inputAxis) == 0 && wasP)
+        {
+            wasPressed[inputAxis] = false;
+        }
+    }
+
+    private void UpdateAxis(string inputAxis, ToggleFunc toggleNegOn, ToggleFunc toggleNegOff, ToggleFunc togglePosOn, ToggleFunc togglePosOff)
+    {
+        string inputAxisNeg = inputAxis + "Neg";
+        string inputAxisPos = inputAxis + "Pos";
+        bool wasNeg;
+        if (!wasPressed.TryGetValue(inputAxisNeg, out wasNeg))
+        {
+            wasPressed[inputAxisNeg] = false;
+            wasNeg = false;
+        }
+        bool wasPos;
+        if (!wasPressed.TryGetValue(inputAxisPos, out wasPos))
+        {
+            wasPressed[inputAxisPos] = false;
+            wasPos = false;
+        }
+        if (Input.GetAxisRaw(inputAxis) < 0 && !wasNeg)
+        {
+            wasPressed[inputAxisNeg] = true;
+            toggleNegOn();
+        }
+        else if (Input.GetAxisRaw(inputAxis) == 0 && wasNeg)
+        {
+            wasPressed[inputAxisNeg] = false;
+            toggleNegOff();
+        }
+        if (Input.GetAxisRaw(inputAxis) > 0 && !wasPos)
+        {
+            wasPressed[inputAxisPos] = true;
+            togglePosOn();
+        }
+        else if (Input.GetAxisRaw(inputAxis) == 0 && wasPos)
+        {
+            wasPressed[inputAxisPos] = false;
+            togglePosOff();
+        }
+    }
+
     private void UpdateEngineInput()
     {
-        //      UpdateDoubleTap(KeyCode.KeypadEnter, ref doubleTapEngineTimer, ToggleEngine, Rendezvous);
-        if (Input.GetKeyDown(KeyCode.KeypadEnter))
-        {
-            gameController.GetPlayerShip().ToggleEngine();
-        }
-        if (Input.GetKeyDown(KeyCode.KeypadPlus))
-        {
-            gameController.GetPlayerShip().ToggleAuxEngine();
-        }
+        UpdateToggle("MainEngineToggle", gameController.GetPlayerShip().ToggleEngine);
+        UpdateToggle("AuxEngineToggle", gameController.GetPlayerShip().ToggleAuxEngine);
     }
 
     private void UpdateCameraInput()
     {
-        if (Input.GetKeyDown(KeyCode.F1))
-        {
-            gameController.GetPlayerShip().ToggleCamera();
-        }
+        UpdateToggle("ToggleCamera", gameController.GetPlayerShip().ToggleCamera);
     }
-
 
     private void UpdateKeyInputToggleMode()
     {
-        if (Input.GetKeyDown(KeyCode.KeypadDivide))
-        {
-            ToggleRCSModeFromKey();
-        }
+        UpdateToggle("RCSTranslateRotateToggle", ToggleRCSModeFromKey);
     }
 
     private void UpdateKeyInputKillRot()
     {
-        if (Input.GetKeyDown(KeyCode.Keypad5))
+        UpdateToggle("KillRotation", ToggleKillRot);
+    }
+
+    private void ToggleKillRot()
+    {
+        if (gameController.GetPlayerShip().CurrentAutopilotCommand() != Autopilot.Command.KILL_ROTATION)
         {
-            if (gameController.GetPlayerShip().CurrentAutopilotCommand() != Autopilot.Command.KILL_ROTATION)
-            {
-                gameController.GetPlayerShip().KillRot();
-                inputController.PropertyChanged("Circle2Kill_OnClick", null);
-            }
+            gameController.GetPlayerShip().KillRot();
+            inputController.PropertyChanged("Circle2Kill_OnClick", null);
         }
     }
 
     private void UpdateKeyInputTranslate()
     {
-        if (Input.GetKeyDown(KeyCode.Keypad6))
-        {
-            inputController.PropertyChanged("Circle1Fore_OnPointerDown", null);
-        }
-        else if (Input.GetKeyUp(KeyCode.Keypad6))
-        {
-            inputController.PropertyChanged("Circle1Fore_OnPointerUp", null);
-        }
-
-        if (Input.GetKeyDown(KeyCode.Keypad9))
-        {
-            inputController.PropertyChanged("Circle1Aft_OnPointerDown", null);
-        }
-        else if (Input.GetKeyUp(KeyCode.Keypad9))
-        {
-            inputController.PropertyChanged("Circle1Aft_OnPointerUp", null);
-        }
-
-        if (Input.GetKeyDown(KeyCode.Keypad2))
-        {
-            inputController.PropertyChanged("Circle1Up_OnPointerDown", null);
-        }
-        else if (Input.GetKeyUp(KeyCode.Keypad2))
-        {
-            inputController.PropertyChanged("Circle1Up_OnPointerUp", null);
-        }
-
-        if (Input.GetKeyDown(KeyCode.Keypad8))
-        {
-            inputController.PropertyChanged("Circle1Down_OnPointerDown", null);
-        }
-        else if (Input.GetKeyUp(KeyCode.Keypad8))
-        {
-            inputController.PropertyChanged("Circle1Down_OnPointerUp", null);
-        }
-
-        if (Input.GetKeyDown(KeyCode.Keypad1))
-        {
-            inputController.PropertyChanged("Circle1Left_OnPointerDown", null);
-        }
-        else if (Input.GetKeyUp(KeyCode.Keypad1))
-        {
-            inputController.PropertyChanged("Circle1Left_OnPointerUp", null);
-        }
-
-        if (Input.GetKeyDown(KeyCode.Keypad3))
-        {
-            inputController.PropertyChanged("Circle1Right_OnPointerDown", null);
-        }
-        else if (Input.GetKeyUp(KeyCode.Keypad3))
-        {
-            inputController.PropertyChanged("Circle1Right_OnPointerUp", null);
-        }
+        UpdateAxis("RCSTranslateZ",
+            delegate { inputController.PropertyChanged("Circle1Aft_OnPointerDown", null); },
+            delegate { inputController.PropertyChanged("Circle1Aft_OnPointerUp", null); },
+            delegate { inputController.PropertyChanged("Circle1Fore_OnPointerDown", null); },
+            delegate { inputController.PropertyChanged("Circle1Fore_OnPointerUp", null); }
+        );
+        UpdateAxis("RCSTranslateY",
+            delegate { inputController.PropertyChanged("Circle1Down_OnPointerDown", null); },
+            delegate { inputController.PropertyChanged("Circle1Down_OnPointerUp", null); },
+            delegate { inputController.PropertyChanged("Circle1Up_OnPointerDown", null); },
+            delegate { inputController.PropertyChanged("Circle1Up_OnPointerUp", null); }
+        );
+        UpdateAxis("RCSTranslateX",
+            delegate { inputController.PropertyChanged("Circle1Left_OnPointerDown", null); },
+            delegate { inputController.PropertyChanged("Circle1Left_OnPointerUp", null); },
+            delegate { inputController.PropertyChanged("Circle1Right_OnPointerDown", null); },
+            delegate { inputController.PropertyChanged("Circle1Right_OnPointerUp", null); }
+        );
     }
 
     private void UpdateKeyInputRotate()
     {
-        if (Input.GetKeyDown(KeyCode.Keypad6))
-        {
-            inputController.PropertyChanged("Circle2Clock_OnPointerDown", null);
-        }
-        else if (Input.GetKeyUp(KeyCode.Keypad6))
-        {
-            inputController.PropertyChanged("Circle2Clock_OnPointerUp", null);
-        }
-
-        if (Input.GetKeyDown(KeyCode.Keypad4))
-        {
-            inputController.PropertyChanged("Circle2CounterClock_OnPointerDown", null);
-        }
-        else if (Input.GetKeyUp(KeyCode.Keypad4))
-        {
-            inputController.PropertyChanged("Circle2CounterClock_OnPointerUp", null);
-        }
-
-        if (Input.GetKeyDown(KeyCode.Keypad2))
-        {
-            inputController.PropertyChanged("Circle2Up_OnPointerDown", null);
-        }
-        else if (Input.GetKeyUp(KeyCode.Keypad2))
-        {
-            inputController.PropertyChanged("Circle2Up_OnPointerUp", null);
-        }
-
-        if (Input.GetKeyDown(KeyCode.Keypad8))
-        {
-            inputController.PropertyChanged("Circle2Down_OnPointerDown", null);
-        }
-        else if (Input.GetKeyUp(KeyCode.Keypad8))
-        {
-            inputController.PropertyChanged("Circle2Down_OnPointerUp", null);
-        }
-
-        if (Input.GetKeyDown(KeyCode.Keypad1))
-        {
-            inputController.PropertyChanged("Circle2Left_OnPointerDown", null);
-        }
-        else if (Input.GetKeyUp(KeyCode.Keypad1))
-        {
-            inputController.PropertyChanged("Circle2Left_OnPointerUp", null);
-        }
-
-        if (Input.GetKeyDown(KeyCode.Keypad3))
-        {
-            inputController.PropertyChanged("Circle2Right_OnPointerDown", null);
-        }
-        else if (Input.GetKeyUp(KeyCode.Keypad3))
-        {
-            inputController.PropertyChanged("Circle2Right_OnPointerUp", null);
-        }
+        UpdateAxis("RCSRoll",
+            delegate { inputController.PropertyChanged("Circle2CounterClock_OnPointerDown", null); },
+            delegate { inputController.PropertyChanged("Circle2CounterClock_OnPointerUp", null); },
+            delegate { inputController.PropertyChanged("Circle2Clock_OnPointerDown", null); },
+            delegate { inputController.PropertyChanged("Circle2Clock_OnPointerUp", null); }
+        );
+        UpdateAxis("RCSPitch",
+            delegate { inputController.PropertyChanged("Circle2Down_OnPointerDown", null); },
+            delegate { inputController.PropertyChanged("Circle2Down_OnPointerUp", null); },
+            delegate { inputController.PropertyChanged("Circle2Up_OnPointerDown", null); },
+            delegate { inputController.PropertyChanged("Circle2Up_OnPointerUp", null); }
+        );
+        UpdateAxis("RCSYaw",
+            delegate { inputController.PropertyChanged("Circle2Left_OnPointerDown", null); },
+            delegate { inputController.PropertyChanged("Circle2Left_OnPointerUp", null); },
+            delegate { inputController.PropertyChanged("Circle2Right_OnPointerDown", null); },
+            delegate { inputController.PropertyChanged("Circle2Right_OnPointerUp", null); }
+        );
     }
 
     private void UpdateTranslate()
