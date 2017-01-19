@@ -9,7 +9,7 @@ public class MissileShip : MonoBehaviour, IControllableShip
     public GameObject ShipExplosion;
     public float MissileEjectV = 10f;
     public float MissileClearShipSec = 1f;
-    public float MissileArmSec = 2f;
+    public float MissileArmSec = 3f;
 
     private RocketShip ship;
     private Autopilot autopilot;

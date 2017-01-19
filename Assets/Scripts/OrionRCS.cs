@@ -76,15 +76,53 @@ public class OrionRCS : MonoBehaviour, IRCSModule {
 
     private static float angularMin = 5f;
 
+    private enum Axis {  X, Y, Z, NONE };
+    private Axis GreatestAbsAxis(Quaternion p)
+    {
+        float x = Mathf.Abs(p.x);
+        float y = Mathf.Abs(p.y);
+        float z = Mathf.Abs(p.z);
+        if (x > y && x > z)
+        {
+            return Axis.X;
+        }
+        else if (y > x && y > z)
+        {
+            return Axis.Y;
+        }
+        else if (z > x && z > y)
+        {
+            return Axis.Z;
+        }
+        else
+        {
+            return Axis.NONE;
+        }
+    }
+
     public void RCSAngularBurst(Quaternion p)
     {
-        float min = rcsMin;
-        Vector3 axis;
-        float angle;
-        p.ToAngleAxis(out angle, out axis);
-        axis = transform.TransformPoint(axis);
-        Play(Vector3.Dot(axis, -transform.up), PitchDownPlumes, min);
-        Play(Vector3.Dot(axis, transform.up), PitchUpPlumes, min);
+        float min = 0.01f;
+        Quaternion q = p;
+        switch (GreatestAbsAxis(p))
+        {
+            case Axis.X:
+                Play(1, p.x > 0 ? PitchDownPlumes : PitchUpPlumes, 0);
+                break;
+            case Axis.Y:
+                Play(1, p.y > 0 ? YawRightPlumes : YawLeftPlumes, 0);
+                break;
+            case Axis.Z:
+                Play(1, p.z > 0 ? RollClockPlumes : RollCounterPlumes, 0);
+                break;
+        }
+        //float min = rcsMin;
+        //Vector3 axis;
+        //float angle;
+        //p.ToAngleAxis(out angle, out axis);
+        //axis = transform.TransformPoint(axis);
+        //Play(Vector3.Dot(axis, -transform.up), PitchDownPlumes, 0);
+        //Play(Vector3.Dot(axis, transform.up), PitchUpPlumes, min);
         /*
         Vector3 e = Map180(p.eulerAngles);
         if (e.x > angularMin)
