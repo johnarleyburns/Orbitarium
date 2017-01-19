@@ -5,8 +5,8 @@ using System.Collections.Generic;
 
 public class GameController : MonoBehaviour
 {
-    public GameObject NBodyPrefab;
-    public GameObject NBodyWithColliderPrefab;
+    public GameObject NBodyVirtualPrefab;
+    public GameObject NBodyShipPrefab;
     public GameObject PlayerShipPrefab;
     public GameObject EnemyShipPrefab;
     public GameObject FPSCanvas;
@@ -470,7 +470,7 @@ public class GameController : MonoBehaviour
     private void InstantiatePlayer()
     {
         DestroyPlayer();
-        GameObject nBody = Instantiate(NBodyWithColliderPrefab, PlayerFarSpawn.position, Quaternion.identity) as GameObject;
+        GameObject nBody = Instantiate(NBodyShipPrefab, PlayerFarSpawn.position, Quaternion.identity) as GameObject;
         player = Instantiate(PlayerShipPrefab, Vector3.zero, Quaternion.identity) as GameObject;
         GameObject playerModel = player.GetComponent<PlayerShipController>().ShipModel;
 
@@ -507,7 +507,7 @@ public class GameController : MonoBehaviour
         Vector3 nearPos;
         Quaternion rot;
         NextEnemySpawn(playerNBody, out farPos, out nearPos, out rot);
-        GameObject nBody = Instantiate(NBodyWithColliderPrefab, farPos.ToVector3(), Quaternion.identity) as GameObject;
+        GameObject nBody = Instantiate(NBodyShipPrefab, farPos.ToVector3(), Quaternion.identity) as GameObject;
         GameObject enemy = Instantiate(EnemyShipPrefab, nearPos, Quaternion.identity) as GameObject;
         GameObject enemyModel = enemy.GetComponent<EnemyShipController>().ShipModel;
         string nameRoot = enemyModel.GetComponent<EnemyShip>().VisibleName;

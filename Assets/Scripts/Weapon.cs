@@ -95,9 +95,10 @@ public class Weapon : MonoBehaviour
 	public float powerMultiplier = 1.0f;				// The multiplier by which the warmup can affect weapon power; power = power * (heat * powerMultiplier)
 	public float initialForceMultiplier = 1.0f;			// The multiplier by which the warmup can affect the initial force, assuming a projectile system
 	public bool allowCancel = false;					// If true, the player can cancel this warmed up shot by pressing the "Cancel" input button, otherwise a shot will be fired when the player releases the fire key
-	private float heat = 0.0f;							// The amount of time the weapon has been warming up, can be in the range of (0, maxWarmup)
+	private float heat = 0.0f;                          // The amount of time the weapon has been warming up, can be in the range of (0, maxWarmup)
 
-	// Projectile
+    // Projectile
+    public GameObject projectileNBody;
 	public GameObject projectile;						// The projectile to be launched (if the type is projectile)
 	public Transform projectileSpawnSpot;				// The spot where the projectile should be instantiated
     public float projectileSpawnDist;
@@ -612,7 +613,17 @@ public class Weapon : MonoBehaviour
 
 		yield return new WaitForSeconds(delayBeforeFire);
 		Launch();
+        if (nBodyWithCollider != null && scheduleEnableCollider)
+        {
+            yield return new WaitForEndOfFrame();
+            nBodyWithCollider.GetComponentInChildren<SphereCollider>().enabled = true;
+            scheduleEnableCollider = false;
+        }
 	}
+
+    GameObject nBodyWithCollider;
+    bool scheduleEnableCollider;
+
 	IEnumerator DelayBeam()
 	{
 		yield return new WaitForSeconds(delayBeforeFire);
@@ -930,22 +941,48 @@ public class Weapon : MonoBehaviour
         {
             SetCurrentAmmo(currentAmmo - 1);
         }
-		
-		// Fire once for each shotPerRound value
-		for (int i = 0; i < shotPerRound; i++)
+
+        // NBody setup
+        //GameObject shipModel = transform.parent.transform.parent.gameObject;
+        //Vector3 forwardDir = projectileSpawnSpot.forward;
+        Vector3 forwardDir = transform.forward;
+        Quaternion forwardRot = transform.rotation;
+        //Vector3 spawnPos = projectileSpawnSpot.position + projectileSpawnDist * projectileSpawnSpot.forward;
+        //                Vector3 spawnPos = projectileSpawnSpot.position;
+        Vector3 spawnPos = projectileSpawnSpot.position;
+        //Quaternion spawnRot = transform.forward;
+        //Quaternion spawnRot = projectileSpawnSpot.rotation;
+        GameObject playerNBody = NUtils.GetNBodyGameObject(gameController.GetPlayer());
+        GameObject shipNBody = NUtils.GetNBodyGameObject(transform.gameObject);
+        double scale = NUtils.GetNBodyDimensions(transform.gameObject).NBodyToModelScaleFactor;
+        DVector3 shipNBodyPos;
+        GravityEngine.instance.GetPosition(shipNBody.GetComponent<NBody>(), out shipNBodyPos);
+        //Vector3 spawnRel = spawnPos;
+        //DVector3 nBodySpawnPos = shipNBodyPos + new DVector3(spawnRel) / scale;
+        DVector3 nBodySpawnPos = NUtils.TransformNearToFar(new DVector3(spawnPos), playerNBody, (float)scale);
+
+        // Fire once for each shotPerRound value
+        for (int i = 0; i < shotPerRound; i++)
 		{
 			// Instantiate the projectile
 			if (projectile != null)
 			{
-                Vector3 forwardDir = projectileSpawnSpot.forward;
-                //Vector3 spawnPos = projectileSpawnSpot.position + projectileSpawnDist * projectileSpawnSpot.forward;
-                Vector3 spawnPos = projectileSpawnSpot.position;
-                Quaternion spawnRot = projectileSpawnSpot.rotation;
-                GameObject nBodyProj = Instantiate(projectile, spawnPos, spawnRot) as GameObject;
-                GameObject proj = nBodyProj.transform.GetChild(0).gameObject;
-                Vector3 impulse = projectileMuzzleVelocity * forwardDir;
-                GravityEngine.instance.AddBody(nBodyProj);
-                GravityEngine.instance.ApplyImpulse(nBodyProj.GetComponent<NBody>(), impulse);
+                GameObject nBody = Instantiate(projectileNBody);
+                //GameObject projBody = Instantiate(projectile, spawnPos, spawnRot) as GameObject;
+                GameObject projBody = Instantiate(projectile) as GameObject;
+                projBody.GetComponent<NBodyDimensions>().PlayerNBody = playerNBody;
+                projBody.GetComponent<NBodyDimensions>().NBody = nBody;
+                Vector3 farPos = nBodySpawnPos.ToVector3(Vector3.zero, 1d / scale);
+                GameObject proj = projBody.transform.GetChild(0).gameObject;
+
+                DVector3 impulse = (double)projectileMuzzleVelocity/scale * new DVector3(forwardDir);
+                GravityEngine.instance.AddBody(nBody);
+                GravityEngine.instance.UpdatePositionAndVelocity(nBody.GetComponent<NBody>(), nBodySpawnPos, impulse);
+                //yield return new WaitForSeconds(0.01f);
+                nBody.GetComponentInChildren<SphereCollider>().enabled = true;
+                //nBodyWithCollider = nBody;
+                //scheduleEnableCollider = true;
+
 				// Warmup heat
 				if (warmup)
 				{
@@ -972,7 +1009,7 @@ public class Weapon : MonoBehaviour
 		{
 			GameObject muzfx = muzzleEffects[Random.Range(0, muzzleEffects.Length)];
 			if (muzfx != null)
-				Instantiate(muzfx, muzzleEffectsPosition.position, muzzleEffectsPosition.rotation);
+				Instantiate(muzfx, muzzleEffectsPosition.position, forwardRot);
 		}
 
 		// Instantiate shell props

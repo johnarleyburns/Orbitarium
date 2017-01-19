@@ -12,7 +12,6 @@ public class ShipWeapons : MonoBehaviour {
     public bool isPlayer;
 
     private GameController _gameController;
-    private bool initMissilesOnLateUpdate = false;
     private Dictionary<GameObject, GameObject> MissileSlots = new Dictionary<GameObject, GameObject>();
 
     public float CurrentAmmo()
@@ -42,20 +41,6 @@ public class ShipWeapons : MonoBehaviour {
     void Update () {
 	}
 
-    void LateUpdate()
-    {
-        /*
-        if (initMissilesOnLateUpdate)
-        {
-            foreach (GameObject missile in MissileSlots.Values)
-            {
-                GravityEngine.instance.InactivateBody(missile);
-            }
-            initMissilesOnLateUpdate = false;
-        }
-        */
-    }
-
     public void AddMissiles()
     {
         int i = 0;
@@ -79,7 +64,6 @@ public class ShipWeapons : MonoBehaviour {
         if (isPlayer)
         {
             gameController.GetComponent<InputController>().PropertyChanged("MissileCount", MissileSlots.Count);
-            initMissilesOnLateUpdate = true; // fix after autodetect
         }
     }
 

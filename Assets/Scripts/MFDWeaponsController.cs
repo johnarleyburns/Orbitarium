@@ -44,6 +44,7 @@ public class MFDWeaponsController : IPropertyChangeObserver
         inputController.AddObserver("SelectWeaponsTarget", this);
         inputController.AddObserver("MissileCount", this);
         inputController.AddObserver("AmmoCount", this);
+        inputController.AddObserver("ArmedState", this);
 
         ArmButton.onClick.AddListener(delegate { if (inputController.ControlsEnabled) { ArmDisarm(); } });
         WeaponTargetSelectorDropdown.onValueChanged.AddListener(delegate { WeaponTargetSelectorDropdownOnValueChanged(); });
@@ -129,6 +130,18 @@ public class MFDWeaponsController : IPropertyChangeObserver
                 ammoCount = ac;
                 AmmoCountText.text = ammoShown.ToString();
                 break;
+            case "ArmedState":
+                bool? isArmedV = value as bool?;
+                bool isArmed = isArmedV == null ? false : isArmedV.Value;
+                if (isArmed)
+                {
+                    Arm();
+                }
+                else
+                {
+                    Disarm();
+                }
+                break;
         }
     }
 
@@ -145,11 +158,29 @@ public class MFDWeaponsController : IPropertyChangeObserver
         }
     }
 
+    bool fireGunsDown = false;
+    bool fireMissileDown = false;
+
     private void UpdateKeyInput()
     {
-        if (Input.GetKeyDown(KeyCode.Keypad0))
+        if (Input.GetAxisRaw("FireGuns") == 1 && !fireGunsDown)
         {
+            fireGunsDown = true;
             FireGuns();
+        }
+        else if (Input.GetAxisRaw("FireGuns") == 0 && fireGunsDown)
+        {
+            fireGunsDown = false;
+        }
+
+        if (Input.GetAxisRaw("FireMissile") == 1 && !fireMissileDown)
+        {
+            fireMissileDown = true;
+            FireMissile();
+        }
+        else if (Input.GetAxisRaw("FireMissile") == 0 && fireMissileDown)
+        {
+            fireMissileDown = false;
         }
     }
 
@@ -160,14 +191,16 @@ public class MFDWeaponsController : IPropertyChangeObserver
 
     private void ArmDisarm()
     {
+        bool armedState;
         if (ArmButton.isToggled)
         {
-            Arm();
+            armedState = true;
         }
         else
         {
-            Disarm();
+            armedState = false;
         }
+        inputController.PropertyChanged("ArmedState", armedState);
     }
 
     private void Arm()
@@ -177,7 +210,10 @@ public class MFDWeaponsController : IPropertyChangeObserver
 //        FireMissileButton.enabled = true;
 //        FireGunsButton.enabled = true;
         armed = true;
-        Speak(DialogText.WeaponsArmed);
+        if (isPrimaryPanel)
+        {
+            Speak(DialogText.WeaponsArmed);
+        }
     }
 
     private void Disarm()
@@ -187,7 +223,10 @@ public class MFDWeaponsController : IPropertyChangeObserver
 //        FireMissileButton.enabled = false;
 //        FireGunsButton.enabled = false;
         armed = false;
-        Speak(DialogText.WeaponsOffline);
+        if (isPrimaryPanel)
+        {
+            Speak(DialogText.WeaponsOffline);
+        }
     }
 
     public void DisarmForDocking()

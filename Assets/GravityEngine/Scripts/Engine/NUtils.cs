@@ -141,5 +141,13 @@ public class NUtils {
         }
     }
 
+    public static DVector3 TransformNearToFar(DVector3 near, GameObject playerNBody, float scale)
+    {
+        DVector3 farOrigin = new DVector3(playerNBody.transform.position);
+        DVector3 farFromOrigin = (1d / scale) * near;
+        DVector3 far = farOrigin + farFromOrigin;
+        return far;
+    }
+
 
 }

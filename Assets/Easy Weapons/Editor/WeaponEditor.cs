@@ -62,7 +62,8 @@ public class WeaponEditor : Editor
 			// Projectile
 			if (weapon.type == WeaponType.Projectile)
 			{
-				weapon.projectile = (GameObject)EditorGUILayout.ObjectField("Projectile", weapon.projectile, typeof(GameObject), false);
+                weapon.projectileNBody = (GameObject)EditorGUILayout.ObjectField("ProjectileNBody", weapon.projectileNBody, typeof(GameObject), false);
+                weapon.projectile = (GameObject)EditorGUILayout.ObjectField("Projectile", weapon.projectile, typeof(GameObject), false);
                 weapon.projectileSpawnSpot = (Transform)EditorGUILayout.ObjectField("Projectile Spawn Point", weapon.projectileSpawnSpot, typeof(Transform), true);
                 weapon.projectileSpawnDist = EditorGUILayout.FloatField("Spawn distance from point (m)", weapon.projectileSpawnDist);
                 weapon.projectileMuzzleVelocity = EditorGUILayout.FloatField("Muzzle Velocity (m/s)", weapon.projectileMuzzleVelocity);

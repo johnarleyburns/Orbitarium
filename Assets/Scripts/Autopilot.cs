@@ -622,7 +622,7 @@ public class Autopilot : MonoBehaviour
         //Quaternion approachRot = Quaternion.Euler(0f, 180f, 0f) * forwardQ;
 
         NBodyDimensions dim = g.GetComponent<NBodyDimensions>();
-        DVector3 nBodyPos = TransformNearToFar(approachPos, dim.PlayerNBody, dim.NBodyToModelScaleFactor);
+        DVector3 nBodyPos = NUtils.TransformNearToFar(approachPos, dim.PlayerNBody, dim.NBodyToModelScaleFactor);
         g.transform.position = approachPos.ToVector3();
         //g.transform.rotation = approachRot;
         DVector3 tVel = GravityEngine.instance.GetVelocity(NUtils.GetNBodyGameObject(target));
@@ -630,14 +630,6 @@ public class Autopilot : MonoBehaviour
         GravityEngine.instance.InactivateBody(nBody);
         GravityEngine.instance.UpdatePositionAndVelocity(nBody.GetComponent<NBody>(), nBodyPos, tVel);
         GravityEngine.instance.ActivateBody(nBody);
-    }
-
-    private DVector3 TransformNearToFar(DVector3 near, GameObject playerNBody, float scale)
-    {
-        DVector3 farOrigin = new DVector3(playerNBody.transform.position);
-        DVector3 farFromOrigin = (1d / scale) * near;
-        DVector3 far = farOrigin + farFromOrigin;
-        return far;
     }
 
     private float MinRendezvousBurnSec = 0.5f;
@@ -684,7 +676,7 @@ public class Autopilot : MonoBehaviour
         GameObject player = gameController.GetPlayer();
         GameObject playerNBody = NUtils.GetNBodyGameObject(player);
         float scale = NUtils.GetNBodyToModelScale(player);
-        GameObject approachNBody = GameObject.Instantiate(gameController.NBodyPrefab);
+        GameObject approachNBody = GameObject.Instantiate(gameController.NBodyVirtualPrefab);
         approachNBody.name = "NBody Approach " + target.name + " For " + gameObject.name;
         GravityEngine.instance.AddBody(approachNBody);
 
