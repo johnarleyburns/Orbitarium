@@ -4,6 +4,8 @@ using System.Collections.Generic;
 
 public class MFDWeaponsController : IPropertyChangeObserver
 {
+    public int AmmoBurstSize = 30;
+
     private GameObject panel;
     private InputController inputController;
     private GameController gameController;
@@ -144,8 +146,6 @@ public class MFDWeaponsController : IPropertyChangeObserver
                 break;
         }
     }
-
-    private int AmmoBurstSize = 50;
 
     public void Update()
     {

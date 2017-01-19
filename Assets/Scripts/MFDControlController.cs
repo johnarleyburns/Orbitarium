@@ -12,11 +12,11 @@ public class MFDControlController : IPropertyChangeObserver
     private ToggleButton RCSFineOnButton;
     private ToggleButton TranslateButton;
     private ToggleButton RotateButton;
+    private ToggleButton ZoomButton;
 
     private enum RotToggle
     {
         FACE,
-        KILL,
         NML_POS,
         NML_NEG,
         POS,
@@ -64,11 +64,11 @@ public class MFDControlController : IPropertyChangeObserver
         RCSFineOnButton = panel.transform.Search("RCSFineOnButton").GetComponent<ToggleButton>();
         TranslateButton = panel.transform.Search("TranslateButton").GetComponent<ToggleButton>();
         RotateButton = panel.transform.Search("RotateButton").GetComponent<ToggleButton>();
+        ZoomButton = panel.transform.Search("ZoomToggleButton").GetComponent<ToggleButton>();
 
         toggleMap = new Dictionary<RotToggle, ToggleButton>()
         {
             { RotToggle.FACE, panel.transform.Search("FaceRotButton").GetComponent<ToggleButton>() },
-            { RotToggle.KILL, panel.transform.Search("KillRotToggleButton").GetComponent<ToggleButton>() },
             { RotToggle.NML_POS, panel.transform.Search("RotNmlPosToggleButton").GetComponent<ToggleButton>() },
             { RotToggle.NML_NEG, panel.transform.Search("RotNmlNegToggleButton").GetComponent<ToggleButton>() },
             { RotToggle.POS, panel.transform.Search("RotPosToggleButton").GetComponent<ToggleButton>() },
@@ -138,6 +138,8 @@ public class MFDControlController : IPropertyChangeObserver
         RCSFineOnButton.onClick.AddListener(delegate { if (inputController.ControlsEnabled) { gameController.GetPlayerShip().ToggleRCSFineControl(); } });
         TranslateButton.onClick.AddListener(delegate { if (inputController.ControlsEnabled) { ToggleTranslate(); } });
         RotateButton.onClick.AddListener(delegate { if (inputController.ControlsEnabled) { ToggleRotate(); } });
+        ZoomButton.onClick.AddListener(delegate { if (inputController.ControlsEnabled) { gameController.GetPlayerShip().ToggleCameraZoom(); } });
+
         foreach (KeyValuePair<RotToggle, ToggleButton> tb in toggleMap)
         {
             RotToggle selected = tb.Key;
@@ -212,10 +214,6 @@ public class MFDControlController : IPropertyChangeObserver
             case RotToggle.FACE:
                 gameController.GetPlayerShip().ExecuteAutopilotCommand(Autopilot.Command.FACE_TARGET);
                 break;
-            case RotToggle.KILL:
-                gameController.GetPlayerShip().ExecuteAutopilotCommand(Autopilot.Command.KILL_ROTATION);
-                MarkKillRot();
-                break;
             case RotToggle.NML_POS:
                 gameController.GetPlayerShip().ExecuteAutopilotCommand(Autopilot.Command.FACE_NML_POS);
                 break;
@@ -241,9 +239,6 @@ public class MFDControlController : IPropertyChangeObserver
         {
             case Autopilot.Command.FACE_TARGET:
                 t = RotToggle.FACE;
-                break;
-            case Autopilot.Command.KILL_ROTATION:
-                t = RotToggle.KILL;
                 break;
             case Autopilot.Command.FACE_NML_POS:
                 t = RotToggle.NML_POS;
@@ -545,13 +540,11 @@ public class MFDControlController : IPropertyChangeObserver
     private void MarkKillRot()
     {
         Circle2Kill.GetChild(0).GetComponent<Image>().color = HUD_GREEN;
-        toggleMap[RotToggle.KILL].isToggled = true;
     }
 
     private void UnmarkKillRot()
     {
         Circle2Kill.GetChild(0).GetComponent<Image>().color = BUTTON_GREY;
-        toggleMap[RotToggle.KILL].isToggled = false;
     }
 
     private bool warnedLow = false;

@@ -166,4 +166,26 @@ public class FPSCameraController : MonoBehaviour
         shakeRotation = Quaternion.Euler(x, y, z);
     }
 
+    private static float ZOOM_FOV = 6f;
+    private bool isZoomed = false;
+
+    public void ZoomIn()
+    {
+        GetComponent<Camera>().fieldOfView = ZOOM_FOV;
+        isZoomed = true;
+    }
+
+    public bool IsZoomed
+    {
+        get
+        {
+            return isZoomed;
+        }
+    }
+
+    public void ZoomOut()
+    {
+        GetComponent<Camera>().ResetFieldOfView();
+        isZoomed = false;
+    }
 }

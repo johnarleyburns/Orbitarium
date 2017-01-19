@@ -964,7 +964,9 @@ public class Weapon : MonoBehaviour
                 GravityEngine.instance.AddBody(nBody);
                 GravityEngine.instance.UpdatePositionAndVelocity(nBody.GetComponent<NBody>(), nBodySpawnPos, impulse);
                 nBody.GetComponentInChildren<SphereCollider>().enabled = true;
-                
+
+                gameController.ScheduleDestroy(projBody, 4f);
+
 				// Warmup heat
 				if (warmup)
 				{

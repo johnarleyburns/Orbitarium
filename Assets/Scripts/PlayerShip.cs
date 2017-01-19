@@ -158,6 +158,24 @@ public class PlayerShip : MonoBehaviour, IControllableShip
         UpdateCameraMode(newMode);
     }
 
+    private bool isZoomed = false;
+
+    public void ToggleCameraZoom()
+    {
+        if (isZoomed)
+        {
+            nearCameraController.ZoomOut();
+            farCameraController.ZoomOut();
+            isZoomed = false;
+        }
+        else
+        {
+            nearCameraController.ZoomIn();
+            farCameraController.ZoomIn();
+            isZoomed = true;
+        }
+    }
+
     void UpdateCameraMode(CameraMode newMode)
     {
         if (gameController != null && currentCameraMode != newMode)

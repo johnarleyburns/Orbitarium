@@ -334,6 +334,7 @@ public class GameController : MonoBehaviour
             case GameState.RUNNING:
                 UpdateShip();
                 UpdateFollows();
+                UpdateDestroys();
                 UpdateCheckForGamePause();
                 break;
             case GameState.PAUSED:
@@ -773,7 +774,7 @@ public class GameController : MonoBehaviour
         return active;
     }
 
-    public void DestroyNPC(GameObject ship)
+    public void DestroyNPC(GameObject ship, bool withNBody = false)
     {
         if (ship != null)
         {
@@ -784,8 +785,13 @@ public class GameController : MonoBehaviour
             hudController.RemoveIndicator(ship.transform);
             targetDB.RemoveTarget(ship);
             hudController.SelectNextTargetPreferClosestEnemy();
-            GravityEngine.instance.InactivateBody(NUtils.GetNBodyGameObject(ship));
+            GameObject shipNBody = NUtils.GetNBodyGameObject(ship);
+            GravityEngine.instance.InactivateBody(shipNBody);
             ship.SetActive(false);
+            if (withNBody)
+            {
+                shipNBody.SetActive(false);
+            }
         }
     }
 
@@ -852,6 +858,57 @@ public class GameController : MonoBehaviour
         Vector3 vel = UndockVelocity * -nBodyObj.transform.forward;
         GravityEngine.instance.UpdatePositionAndVelocity(nBodyObj.GetComponent<NBody>(), pos, vel);
         inputController.PropertyChanged("Undock", true);
+    }
+
+    private Dictionary<GameObject, float> scheduledDestroys = new Dictionary<GameObject, float>();
+
+    public void ScheduleDestroy(GameObject g, float s)
+    {
+        scheduledDestroys[g] = s;
+    }
+
+    private static float DESTROY_CHECK_INTERVAL_SEC = 1f;
+    private float destroyCheck = DESTROY_CHECK_INTERVAL_SEC;
+
+    private void UpdateDestroys()
+    {
+        if (destroyCheck <= 0)
+        {
+            destroyCheck = DESTROY_CHECK_INTERVAL_SEC;
+            List<GameObject> removes = new List<GameObject>();
+            List<GameObject> keys = new List<GameObject>(scheduledDestroys.Keys);
+            foreach (GameObject g in keys)
+            {
+                float s = scheduledDestroys[g];
+                if (s <= 0)
+                {
+                    NBodyDimensions d = NUtils.GetNBodyDimensions(g);
+                    if (d != null)
+                    {
+                        GameObject n = d.NBody;
+                        if (d != null)
+                        {
+                            GravityEngine.instance.InactivateBody(n);
+                            n.SetActive(false);
+                        }
+                    }
+                    removes.Add(g);
+                }
+                else
+                {
+                    scheduledDestroys[g] = s -= DESTROY_CHECK_INTERVAL_SEC;
+                }
+            }
+            foreach (GameObject g in removes)
+            {
+                scheduledDestroys.Remove(g);
+                Destroy(g);
+            }
+        }
+        else
+        {
+            destroyCheck -= Time.deltaTime;
+        }
     }
 
 }

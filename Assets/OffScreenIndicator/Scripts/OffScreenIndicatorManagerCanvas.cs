@@ -81,9 +81,9 @@ namespace Greyman{
 				arrowIndicators.RemoveAt(id);
 				GameObject.Destroy(oldArrowTarget.arrow);
 				ArrowIndicator.Destroy(oldArrowTarget);
-			} else {
-				Debug.LogWarning ("Target no longer exists: " + target.name);
-			}
+			}// else {
+			//	Debug.LogWarning ("Target no longer exists: " + target.name);
+			//}
 		}
 		
 		protected override void UpdateIndicatorPosition(ArrowIndicator arrowIndicator, int id = 0){
