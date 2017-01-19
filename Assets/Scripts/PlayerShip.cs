@@ -402,6 +402,7 @@ public class PlayerShip : MonoBehaviour, IControllableShip
         {
             ToggleAuxEngine();
         }
+        RCSCutoff();
     }
 
     private void GameOverCollision(string otherName)

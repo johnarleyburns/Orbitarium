@@ -613,16 +613,7 @@ public class Weapon : MonoBehaviour
 
 		yield return new WaitForSeconds(delayBeforeFire);
 		Launch();
-        if (nBodyWithCollider != null && scheduleEnableCollider)
-        {
-            yield return new WaitForEndOfFrame();
-            nBodyWithCollider.GetComponentInChildren<SphereCollider>().enabled = true;
-            scheduleEnableCollider = false;
-        }
 	}
-
-    GameObject nBodyWithCollider;
-    bool scheduleEnableCollider;
 
 	IEnumerator DelayBeam()
 	{
@@ -943,23 +934,16 @@ public class Weapon : MonoBehaviour
         }
 
         // NBody setup
-        //GameObject shipModel = transform.parent.transform.parent.gameObject;
-        //Vector3 forwardDir = projectileSpawnSpot.forward;
         Vector3 forwardDir = transform.forward;
         Quaternion forwardRot = transform.rotation;
-        //Vector3 spawnPos = projectileSpawnSpot.position + projectileSpawnDist * projectileSpawnSpot.forward;
-        //                Vector3 spawnPos = projectileSpawnSpot.position;
         Vector3 spawnPos = projectileSpawnSpot.position;
-        //Quaternion spawnRot = transform.forward;
-        //Quaternion spawnRot = projectileSpawnSpot.rotation;
         GameObject playerNBody = NUtils.GetNBodyGameObject(gameController.GetPlayer());
         GameObject shipNBody = NUtils.GetNBodyGameObject(transform.gameObject);
         double scale = NUtils.GetNBodyDimensions(transform.gameObject).NBodyToModelScaleFactor;
         DVector3 shipNBodyPos;
         GravityEngine.instance.GetPosition(shipNBody.GetComponent<NBody>(), out shipNBodyPos);
-        //Vector3 spawnRel = spawnPos;
-        //DVector3 nBodySpawnPos = shipNBodyPos + new DVector3(spawnRel) / scale;
         DVector3 nBodySpawnPos = NUtils.TransformNearToFar(new DVector3(spawnPos), playerNBody, (float)scale);
+        DVector3 shipV = GravityEngine.instance.GetVelocity(shipNBody);
 
         // Fire once for each shotPerRound value
         for (int i = 0; i < shotPerRound; i++)
@@ -975,14 +959,12 @@ public class Weapon : MonoBehaviour
                 Vector3 farPos = nBodySpawnPos.ToVector3(Vector3.zero, 1d / scale);
                 GameObject proj = projBody.transform.GetChild(0).gameObject;
 
-                DVector3 impulse = (double)projectileMuzzleVelocity/scale * new DVector3(forwardDir);
+                DVector3 forwardImpulse = (double)projectileMuzzleVelocity / scale * new DVector3(forwardDir);
+                DVector3 impulse = shipV + forwardImpulse;
                 GravityEngine.instance.AddBody(nBody);
                 GravityEngine.instance.UpdatePositionAndVelocity(nBody.GetComponent<NBody>(), nBodySpawnPos, impulse);
-                //yield return new WaitForSeconds(0.01f);
                 nBody.GetComponentInChildren<SphereCollider>().enabled = true;
-                //nBodyWithCollider = nBody;
-                //scheduleEnableCollider = true;
-
+                
 				// Warmup heat
 				if (warmup)
 				{

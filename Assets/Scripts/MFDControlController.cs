@@ -176,7 +176,6 @@ public class MFDControlController : IPropertyChangeObserver
             if (inputController.ControlsEnabled)
             {
                 gameController.GetPlayerShip().KillRot();
-                inputController.PropertyChanged("Circle2Kill_OnClick", null);
             }
         });
     }
@@ -197,30 +196,12 @@ public class MFDControlController : IPropertyChangeObserver
 
     private void ToggleTranslate()
     {
-        if (TranslateButton.isToggled)
-        {
-            RotateButton.isToggled = true;
-            gameController.GetPlayerShip().SetRCSMode(PlayerShip.RCSMode.Rotate);
-        }
-        else
-        {
-            RotateButton.isToggled = false;
-            gameController.GetPlayerShip().SetRCSMode(PlayerShip.RCSMode.Translate);
-        }
+        gameController.GetPlayerShip().SetRCSMode(PlayerShip.RCSMode.Translate);
     }
 
     private void ToggleRotate()
     {
-        if (RotateButton.isToggled)
-        {
-            TranslateButton.isToggled = true;
-            gameController.GetPlayerShip().SetRCSMode(PlayerShip.RCSMode.Translate);
-        }
-        else
-        {
-            TranslateButton.isToggled = false;
-            gameController.GetPlayerShip().SetRCSMode(PlayerShip.RCSMode.Rotate);
-        }
+        gameController.GetPlayerShip().SetRCSMode(PlayerShip.RCSMode.Rotate);
     }
 
     private void ToggleToRot(RotToggle t)
@@ -251,6 +232,36 @@ public class MFDControlController : IPropertyChangeObserver
                 gameController.GetPlayerShip().ExecuteAutopilotCommand(Autopilot.Command.OFF);
                 break;
         }
+    }
+
+    private RotToggle CommandToToggle(Autopilot.Command c)
+    {
+        RotToggle t;
+        switch (c)
+        {
+            case Autopilot.Command.FACE_TARGET:
+                t = RotToggle.FACE;
+                break;
+            case Autopilot.Command.KILL_ROTATION:
+                t = RotToggle.KILL;
+                break;
+            case Autopilot.Command.FACE_NML_POS:
+                t = RotToggle.NML_POS;
+                break;
+            case Autopilot.Command.FACE_NML_NEG:
+                t = RotToggle.NML_NEG;
+                break;
+            case Autopilot.Command.FACE_POS:
+                t = RotToggle.POS;
+                break;
+            case Autopilot.Command.FACE_NEG:
+                t = RotToggle.NEG;
+                break;
+            default:
+                t = RotToggle.NONE;
+                break;
+        }
+        return t;
     }
 
     private void SetToggleButtons(RotToggle t)
@@ -334,9 +345,15 @@ public class MFDControlController : IPropertyChangeObserver
             case "CommandExecuted":
                 Autopilot.Command? commandP = value as Autopilot.Command?;
                 Autopilot.Command command = commandP == null ? Autopilot.Command.OFF : commandP.Value;
-                if (command == Autopilot.Command.OFF)
+                RotToggle t = CommandToToggle(command);
+                SetToggleButtons(t);
+                if (command == Autopilot.Command.KILL_ROTATION)
                 {
-                    SetToggleButtons(RotToggle.NONE);
+                    MarkKillRot();
+                }
+                else
+                {
+                    UnmarkKillRot();
                 }
                 break;
         }
@@ -576,13 +593,16 @@ public class MFDControlController : IPropertyChangeObserver
 
     private void UpdateKeyInput()
     {
-        UpdateCameraInput();
+        UpdateToggle("ToggleCamera", gameController.GetPlayerShip().ToggleCamera);
         if (inputController.ControlsEnabled)
         {
-            UpdateKeyInputToggleMode();
+            UpdateToggle("RCSTranslateRotateToggle", ToggleRCSModeFromKey);
+            UpdateToggle("MainEngineToggle", gameController.GetPlayerShip().ToggleEngine);
+            UpdateToggle("AuxEngineToggle", gameController.GetPlayerShip().ToggleAuxEngine);
+            UpdateToggle("KillRotation", ToggleKillRot);
+            UpdateToggle("RotateToPos", ToggleRotPos);
+            UpdateToggle("RotateToNeg", ToggleRotNeg);
             UpdateKeyInputTranslateRotate();
-            UpdateEngineInput();
-            UpdateKeyInputKillRot();
         }
     }
 
@@ -660,25 +680,42 @@ public class MFDControlController : IPropertyChangeObserver
         }
     }
 
-    private void UpdateEngineInput()
+    private void UpdateHoldAxis(string inputAxis, ToggleFunc toggleNegOn, ToggleFunc toggleNegOff, ToggleFunc togglePosOn, ToggleFunc togglePosOff)
     {
-        UpdateToggle("MainEngineToggle", gameController.GetPlayerShip().ToggleEngine);
-        UpdateToggle("AuxEngineToggle", gameController.GetPlayerShip().ToggleAuxEngine);
-    }
-
-    private void UpdateCameraInput()
-    {
-        UpdateToggle("ToggleCamera", gameController.GetPlayerShip().ToggleCamera);
-    }
-
-    private void UpdateKeyInputToggleMode()
-    {
-        UpdateToggle("RCSTranslateRotateToggle", ToggleRCSModeFromKey);
-    }
-
-    private void UpdateKeyInputKillRot()
-    {
-        UpdateToggle("KillRotation", ToggleKillRot);
+        string inputAxisNeg = inputAxis + "Neg";
+        string inputAxisPos = inputAxis + "Pos";
+        bool wasNeg;
+        if (!wasPressed.TryGetValue(inputAxisNeg, out wasNeg))
+        {
+            wasPressed[inputAxisNeg] = false;
+            wasNeg = false;
+        }
+        bool wasPos;
+        if (!wasPressed.TryGetValue(inputAxisPos, out wasPos))
+        {
+            wasPressed[inputAxisPos] = false;
+            wasPos = false;
+        }
+        if (Input.GetAxisRaw(inputAxis) < 0)
+        {
+            wasPressed[inputAxisNeg] = true;
+            toggleNegOn();
+        }
+        else if (Input.GetAxisRaw(inputAxis) == 0 && wasNeg)
+        {
+            wasPressed[inputAxisNeg] = false;
+            toggleNegOff();
+        }
+        if (Input.GetAxisRaw(inputAxis) > 0)
+        {
+            wasPressed[inputAxisPos] = true;
+            togglePosOn();
+        }
+        else if (Input.GetAxisRaw(inputAxis) == 0 && wasPos)
+        {
+            wasPressed[inputAxisPos] = false;
+            togglePosOff();
+        }
     }
 
     private void ToggleKillRot()
@@ -686,7 +723,22 @@ public class MFDControlController : IPropertyChangeObserver
         if (gameController.GetPlayerShip().CurrentAutopilotCommand() != Autopilot.Command.KILL_ROTATION)
         {
             gameController.GetPlayerShip().KillRot();
-            inputController.PropertyChanged("Circle2Kill_OnClick", null);
+        }
+    }
+
+    private void ToggleRotPos()
+    {
+        if (gameController.GetPlayerShip().CurrentAutopilotCommand() != Autopilot.Command.FACE_POS)
+        {
+            gameController.GetPlayerShip().ExecuteAutopilotCommand(Autopilot.Command.FACE_POS);
+        }
+    }
+
+    private void ToggleRotNeg()
+    {
+        if (gameController.GetPlayerShip().CurrentAutopilotCommand() != Autopilot.Command.FACE_NEG)
+        {
+            gameController.GetPlayerShip().ExecuteAutopilotCommand(Autopilot.Command.FACE_NEG);
         }
     }
 
@@ -714,19 +766,19 @@ public class MFDControlController : IPropertyChangeObserver
 
     private void UpdateKeyInputRotate()
     {
-        UpdateAxis("RCSRoll",
+        UpdateHoldAxis("RCSRoll",
             delegate { inputController.PropertyChanged("Circle2CounterClock_OnPointerDown", null); },
             delegate { inputController.PropertyChanged("Circle2CounterClock_OnPointerUp", null); },
             delegate { inputController.PropertyChanged("Circle2Clock_OnPointerDown", null); },
             delegate { inputController.PropertyChanged("Circle2Clock_OnPointerUp", null); }
         );
-        UpdateAxis("RCSPitch",
+        UpdateHoldAxis("RCSPitch",
             delegate { inputController.PropertyChanged("Circle2Down_OnPointerDown", null); },
             delegate { inputController.PropertyChanged("Circle2Down_OnPointerUp", null); },
             delegate { inputController.PropertyChanged("Circle2Up_OnPointerDown", null); },
             delegate { inputController.PropertyChanged("Circle2Up_OnPointerUp", null); }
         );
-        UpdateAxis("RCSYaw",
+        UpdateHoldAxis("RCSYaw",
             delegate { inputController.PropertyChanged("Circle2Left_OnPointerDown", null); },
             delegate { inputController.PropertyChanged("Circle2Left_OnPointerUp", null); },
             delegate { inputController.PropertyChanged("Circle2Right_OnPointerDown", null); },
@@ -739,7 +791,10 @@ public class MFDControlController : IPropertyChangeObserver
         PlayerShip playerShip = gameController.GetPlayerShip();
         if (translatePointerDown)
         {
-            playerShip.ExecuteAutopilotCommand(Autopilot.Command.OFF);
+            if (playerShip.CurrentAutopilotCommand() != Autopilot.Command.OFF)
+            {
+                playerShip.ExecuteAutopilotCommand(Autopilot.Command.OFF);
+            }
             playerShip.RCSBurst(translateVec);
             playerShip.SetRCSMode(PlayerShip.RCSMode.Translate);
         }
@@ -755,7 +810,10 @@ public class MFDControlController : IPropertyChangeObserver
         PlayerShip playerShip = gameController.GetPlayerShip();
         if (rotatePointerDown)
         {
-            playerShip.ExecuteAutopilotCommand(Autopilot.Command.OFF);
+            if (playerShip.CurrentAutopilotCommand() != Autopilot.Command.OFF)
+            {
+                playerShip.ExecuteAutopilotCommand(Autopilot.Command.OFF);
+            }
             playerShip.SetRCSMode(PlayerShip.RCSMode.Rotate);
             float s = playerShip.GetComponent<RocketShip>().CurrentRCSAngularDegPerSec();
             Vector3 v = s * rotateVec.normalized;
