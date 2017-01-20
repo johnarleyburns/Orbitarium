@@ -605,14 +605,14 @@ public class Autopilot : MonoBehaviour
 
     private float AimTimeSec = 3.45f;
     
-    private void PositionApproachTarget(GameObject target, GameObject approachNBody, GameObject approach) // destroy gameobjects after using
+    private void PositionApproachTarget(GameObject target, GameObject approachNBody) // destroy gameobjects after using
     {
         float radius = gameController.TargetData().GetTargetRadius(target);
         float dist = radius + RendezvousDistM;
-        PointForward(target, dist, approachNBody, approach);
+        PointForward(target, dist, approachNBody);
     }
 
-    private void PointForward(GameObject target, float dist, GameObject nBody, GameObject g) // destroy g after using
+    private void PointForward(GameObject target, float dist, GameObject nBody) // destroy g after using
     {
         bool isDock = gameController.TargetData().GetTargetType(target) == TargetDB.TargetType.DOCK;
         float approachDir = isDock ? -1 : 1;
@@ -620,16 +620,14 @@ public class Autopilot : MonoBehaviour
         DVector3 approachPos = new DVector3(target.transform.position) + dist * approachForward;
         //Quaternion forwardQ = target.transform.rotation;
         //Quaternion approachRot = Quaternion.Euler(0f, 180f, 0f) * forwardQ;
-
-        NBodyDimensions dim = g.GetComponent<NBodyDimensions>();
+        
+        NBodyDimensions dim = NUtils.GetNBodyDimensions(gameController.GetPlayer());
         DVector3 nBodyPos = NUtils.TransformNearToFar(approachPos, dim.PlayerNBody, dim.NBodyToModelScaleFactor);
-        g.transform.position = approachPos.ToVector3();
-        //g.transform.rotation = approachRot;
         DVector3 tVel = GravityEngine.instance.GetVelocity(NUtils.GetNBodyGameObject(target));
 
-        GravityEngine.instance.InactivateBody(nBody);
+        //GravityEngine.instance.InactivateBody(nBody);
         GravityEngine.instance.UpdatePositionAndVelocity(nBody.GetComponent<NBody>(), nBodyPos, tVel);
-        GravityEngine.instance.ActivateBody(nBody);
+        //GravityEngine.instance.ActivateBody(nBody);
     }
 
     private float MinRendezvousBurnSec = 0.5f;
@@ -673,29 +671,37 @@ public class Autopilot : MonoBehaviour
 
     IEnumerator RendezvousCo(GameObject target, CompletedCallback callback)
     {
+        GameObject myNBody = NUtils.GetNBodyGameObject(gameObject);
         GameObject player = gameController.GetPlayer();
         GameObject playerNBody = NUtils.GetNBodyGameObject(player);
-        float scale = NUtils.GetNBodyToModelScale(player);
+        double scale = NUtils.GetNBodyToModelScale(player);
         GameObject approachNBody = GameObject.Instantiate(gameController.NBodyVirtualPrefab);
         approachNBody.name = "NBody Approach " + target.name + " For " + gameObject.name;
         GravityEngine.instance.AddBody(approachNBody);
 
         GameObject approachTarget = new GameObject();
+        //approachTarget.AddComponent<MeshFilter>();
+        //approachTarget.AddComponent<MeshRenderer>();
         approachTarget.name = "Approach Target" + target.name + " For " + gameObject.name;
         NBodyDimensions dim = approachTarget.AddComponent<NBodyDimensions>();
         dim.PlayerNBody = playerNBody;
-        dim.NBodyToModelScaleFactor = scale;
+        dim.NBodyToModelScaleFactor = (float)scale;
         dim.NBody = approachNBody;
+        dim.UpdatePosition = true;
 
         ship.CutoffAll();
         yield return KillRelVCo(target);
 
         for (;;)
         {
-            PositionApproachTarget(target, approachNBody, approachTarget);
-            Vector3 tVec = (approachTarget.transform.position - transform.position);
-            Vector3 b = tVec.normalized;
-            float dist = tVec.magnitude;
+            PositionApproachTarget(target, approachNBody);
+            DVector3 approachNBodyPos;
+            GravityEngine.instance.GetPosition(approachNBody.GetComponent<NBody>(), out approachNBodyPos);
+            DVector3 myNBodyPos;
+            GravityEngine.instance.GetPosition(myNBody.GetComponent<NBody>(), out myNBodyPos);
+            DVector3 tVec = approachNBodyPos - myNBodyPos;
+            Vector3 b = tVec.normalized.ToVector3();
+            float dist = (float)(scale * tVec.magnitude);
             float minMainBurnDist = MinMainBurnDist(MinRendezvousBurnSec);
             float minAuxBurnDist = MinAuxBurnDist(MinRendezvousBurnSec);
             bool fireMain = dist >= minMainBurnDist && dist > MinRendezvousEpsilonM;
